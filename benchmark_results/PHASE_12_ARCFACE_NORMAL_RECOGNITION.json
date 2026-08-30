@@ -1,0 +1,125 @@
+{
+  "phase": 12,
+  "name": "ARCFACE_NORMAL_RECOGNITION",
+  "timestamp": "2026-08-19T20:43:27+07:00",
+  "status": "PASS",
+  "tests": {
+    "total": 63,
+    "passed": 63,
+    "failed": 0,
+    "skipped": 0
+  },
+  "regression": {
+    "total": 675,
+    "passed": 670,
+    "failed": 0,
+    "skipped": 5
+  },
+  "safety": {
+    "camera_access": false,
+    "mediamtx_access": false,
+    "rtsp_rtmp_access": false,
+    "live_ffmpeg": false,
+    "attendance_logic": false,
+    "in_out_logic": false,
+    "schedule_logic": false,
+    "excel_access": false,
+    "identity_database": false,
+    "identity_matching": false,
+    "1k3d68_dependency": false
+  },
+  "tasks": {
+    "task_1_input_contract": "PASS",
+    "task_2_model_registry": "PASS",
+    "task_3_arcface_inference": "PASS",
+    "task_4_embedding_normalization": "PASS",
+    "task_5_cuda_cpu_consistency": "PASS",
+    "task_6_determinism": "PASS",
+    "task_7_negative_tests": "PASS",
+    "task_8_memory_safety": "PASS",
+    "task_9_safety_boundaries": "PASS",
+    "task_10_targeted_tests": "PASS",
+    "task_11_final_validation": "PASS"
+  },
+  "details": {
+    "input_contract": {
+      "shape": [1, 3, 112, 112],
+      "dtype": "float32",
+      "channel_order": "RGB",
+      "normalization": "(x - 127.5) / 128.0",
+      "range": "[-1, 1]"
+    },
+    "model_registry": {
+      "model_id": "arcface",
+      "filename": "glintr100.onnx",
+      "format": "ONNX",
+      "provider": "onnxruntime",
+      "sha256_verified": true,
+      "preprocessing_config": {
+        "input_height": 112,
+        "input_width": 112,
+        "input_channels": 3,
+        "channel_order": "RGB",
+        "dtype": "float32"
+      },
+      "output_contract": {
+        "output_type": "embedding",
+        "embedding_dimension": 512
+      }
+    },
+    "inference": {
+      "engine": "ONNX Runtime",
+      "providers_tested": ["CPUExecutionProvider", "CUDAExecutionProvider"],
+      "output_shape": [1, 512],
+      "output_dtype": "float32",
+      "finite_values": true,
+      "no_nan": true,
+      "no_inf": true
+    },
+    "normalization": {
+      "method": "L2",
+      "norm_approximately_one": true,
+      "tolerance": 1e-5,
+      "preserves_direction": true,
+      "rejects_zero_norm": true
+    },
+    "cuda_cpu_consistency": {
+      "cuda_available": true,
+      "cosine_similarity": "> 0.9999",
+      "l2_distance": "< 1e-3",
+      "note": "CUDA and CPU outputs consistent within tolerance"
+    },
+    "determinism": {
+      "preprocess_deterministic": true,
+      "inference_deterministic": true,
+      "same_input_same_output": true,
+      "tolerance": 1e-6
+    },
+    "negative_tests": {
+      "rejects_wrong_shape": true,
+      "rejects_wrong_dtype": true,
+      "rejects_nan": true,
+      "rejects_inf": true,
+      "rejects_empty": true,
+      "rejects_wrong_channels": true,
+      "rejects_wrong_spatial": true,
+      "no_silent_reshape": true,
+      "no_silent_resize": true
+    },
+    "memory_safety": {
+      "repeated_inference_bounded": true,
+      "session_reuse_safe": true,
+      "batch_inference_safe": true,
+      "iterations_tested": 50
+    },
+    "safety_boundaries": {
+      "no_camera": true,
+      "no_mediamtx": true,
+      "no_attendance": true,
+      "no_identity_db": true,
+      "no_excel": true
+    }
+  },
+  "blockers": [],
+  "ready_for_phase_13": true
+}

@@ -1,0 +1,322 @@
+{
+  "timestamp": "2026-08-21T04:50:59.741839",
+  "total_tests": 20,
+  "passed_tests": 20,
+  "failed_tests": 0,
+  "skipped_tests": 0,
+  "results": [
+    {
+      "test_name": "time_contract",
+      "passed": true,
+      "duration_ms": 0.022199998056748882,
+      "message": "Time contract validated",
+      "details": {
+        "timestamp_sources": "validated",
+        "temporal_timestamp": "validated",
+        "serialization": "validated",
+        "ordering_preference": "validated"
+      },
+      "error": null
+    },
+    {
+      "test_name": "evidence_contract",
+      "passed": true,
+      "duration_ms": 0.13889999900129624,
+      "message": "IdentityEvidence contract validated",
+      "details": {
+        "fields": "validated",
+        "provenance_chain": "validated",
+        "serialization": "validated",
+        "quality_properties": "validated"
+      },
+      "error": null
+    },
+    {
+      "test_name": "hypothesis_contract",
+      "passed": true,
+      "duration_ms": 0.0397000003431458,
+      "message": "IdentityHypothesis contract validated",
+      "details": {
+        "states": "validated",
+        "fields": "validated",
+        "serialization": "validated",
+        "candidate_support": "validated"
+      },
+      "error": null
+    },
+    {
+      "test_name": "evidence_window_bounds",
+      "passed": true,
+      "duration_ms": 0.4153000008955132,
+      "message": "Bounded evidence window validated",
+      "details": {
+        "max_samples_enforced": true,
+        "max_duration_enforced": true,
+        "finalization_clears": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "quality_aware_aggregation",
+      "passed": true,
+      "duration_ms": 0.27830000180983916,
+      "message": "Quality-aware aggregation validated",
+      "details": {
+        "good_weight": true,
+        "marginal_weight": true,
+        "unusable_excluded": true,
+        "custom_weights": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "candidate_aggregation",
+      "passed": true,
+      "duration_ms": 0.1497999983257614,
+      "message": "Candidate aggregation validated",
+      "details": {
+        "primary_candidate": "person_A",
+        "competing_candidate": "person_B",
+        "weighted_scores": "validated",
+        "all_candidates_tracked": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "temporal_consistency",
+      "passed": true,
+      "duration_ms": 0.2229999990959186,
+      "message": "Temporal consistency validated",
+      "details": {
+        "stable_candidate": "higher_score",
+        "oscillating_candidates": "ambiguous",
+        "ambiguity_margin": "validated"
+      },
+      "error": null
+    },
+    {
+      "test_name": "ambiguity_handling",
+      "passed": true,
+      "duration_ms": 0.5075000008218922,
+      "message": "Ambiguity handling validated",
+      "details": {
+        "insufficient_empty": true,
+        "insufficient_unusable": true,
+        "insufficient_marginal": true,
+        "supported": true,
+        "confident": true,
+        "ambiguous": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "best_evidence_tracking",
+      "passed": true,
+      "duration_ms": 0.12010000136797316,
+      "message": "Best evidence tracking validated",
+      "details": {
+        "best_evidence_id": "tracked",
+        "best_similarity": "tracked",
+        "best_quality": "tracked",
+        "not_equated_with_identity": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "track_isolation",
+      "passed": true,
+      "duration_ms": 0.243499998759944,
+      "message": "Track isolation validated",
+      "details": {
+        "same_camera_different_tracks": "isolated",
+        "different_camera_same_track_id": "isolated",
+        "finalization_independent": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "duplicate_evidence",
+      "passed": true,
+      "duration_ms": 0.044200001866556704,
+      "message": "Duplicate evidence handling validated",
+      "details": {
+        "reject_duplicates_true": "rejected",
+        "reject_duplicates_false": "accepted"
+      },
+      "error": null
+    },
+    {
+      "test_name": "out_of_order_timestamps",
+      "passed": true,
+      "duration_ms": 0.08209999941755086,
+      "message": "Out-of-order timestamp handling validated",
+      "details": {
+        "sort_policy": "sorted",
+        "reject_policy": "rejected",
+        "accept_policy": "arrival_order"
+      },
+      "error": null
+    },
+    {
+      "test_name": "track_finalization",
+      "passed": true,
+      "duration_ms": 0.23090000104275532,
+      "message": "Track finalization validated",
+      "details": {
+        "active_track": "hypothesis_computed",
+        "finalized_track": "window_cleared",
+        "post_finalization": "insufficient",
+        "reconnect_independent": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "determinism",
+      "passed": true,
+      "duration_ms": 1.7293999990215525,
+      "message": "Determinism validated (5 identical runs)",
+      "details": {
+        "runs": 5,
+        "identical_results": true,
+        "candidate_identity": "person_A",
+        "state": "confident"
+      },
+      "error": null
+    },
+    {
+      "test_name": "negative_cases",
+      "passed": true,
+      "duration_ms": 0.6280000015976839,
+      "message": "Negative cases validated",
+      "details": {
+        "empty_evidence": true,
+        "all_unusable": true,
+        "single_marginal": true,
+        "conflicting_candidates": true,
+        "duplicate_evidence": true,
+        "out_of_order_reject": true,
+        "missing_timestamp": true,
+        "invalid_similarity": true,
+        "invalid_track_id": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "memory_safety",
+      "passed": true,
+      "duration_ms": 2.2151000011945143,
+      "message": "Memory safety validated",
+      "details": {
+        "max_samples_enforced": true,
+        "max_duration_enforced": true,
+        "multiple_tracks_bounded": true,
+        "clear_all_works": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "phase17_compatibility",
+      "passed": true,
+      "duration_ms": 106.65489999882993,
+      "message": "Phase 17 compatibility validated",
+      "details": {
+        "quality_consumption": "validated",
+        "provenance_chain": "preserved",
+        "good_eligible": true,
+        "marginal_not_eligible": true,
+        "metrics_reference": "preserved"
+      },
+      "error": null
+    },
+    {
+      "test_name": "offline_safety",
+      "passed": true,
+      "duration_ms": 3.1391000011353754,
+      "message": "Offline-only safety validated",
+      "details": {
+        "no_camera_imports": true,
+        "no_streaming_imports": true,
+        "no_attendance_logic": true,
+        "synthetic_only": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "config_serialization",
+      "passed": true,
+      "duration_ms": 0.10269999984302558,
+      "message": "Configuration serialization validated",
+      "details": {
+        "serialization": "validated",
+        "snapshot_in_hypothesis": true,
+        "all_fields": "present"
+      },
+      "error": null
+    },
+    {
+      "test_name": "full_pipeline_integration",
+      "passed": true,
+      "duration_ms": 56.39560000054189,
+      "message": "Full pipeline integration validated",
+      "details": {
+        "phase16_crop": "created",
+        "phase17_quality": "assessed",
+        "phase18_evidence": "created",
+        "phase18_hypothesis": "computed",
+        "provenance_chain": "intact"
+      },
+      "error": null
+    }
+  ],
+  "verdict": "PASS",
+  "time_contract": {
+    "status": "validated"
+  },
+  "evidence_contract": {
+    "status": "validated"
+  },
+  "window_policy": {
+    "status": "validated"
+  },
+  "quality_weighting": {
+    "status": "validated"
+  },
+  "candidate_aggregation": {
+    "status": "validated"
+  },
+  "temporal_consistency": {
+    "status": "validated"
+  },
+  "ambiguity": {
+    "status": "validated"
+  },
+  "deduplication": {
+    "status": "validated"
+  },
+  "out_of_order_handling": {
+    "status": "validated"
+  },
+  "track_isolation": {
+    "status": "validated"
+  },
+  "determinism": {
+    "status": "validated"
+  },
+  "memory_safety": {
+    "status": "validated"
+  },
+  "phase17_compatibility": {
+    "status": "validated"
+  },
+  "offline_safety": {
+    "status": "validated"
+  },
+  "limitations": [
+    "Synthetic data only - no production accuracy claims",
+    "Quality weights are engineering defaults, not calibrated",
+    "Hypothesis states are deterministic heuristics, not probabilities",
+    "No cross-camera fusion (Phase 20/21)",
+    "No attendance logic (Phase 22+)"
+  ],
+  "readiness_for_phase19": true
+}

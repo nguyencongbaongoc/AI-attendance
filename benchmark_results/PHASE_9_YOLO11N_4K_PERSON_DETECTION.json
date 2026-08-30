@@ -1,0 +1,649 @@
+{
+  "timestamp": "2026-08-18T20:22:09.422733",
+  "total_tests": 14,
+  "passed_tests": 14,
+  "failed_tests": 0,
+  "skipped_tests": 0,
+  "results": [
+    {
+      "test_name": "4k_source_contract",
+      "passed": true,
+      "duration_ms": 51.608599998871796,
+      "message": "4K source contract enforced (3840x2160)",
+      "details": {
+        "width": 3840,
+        "height": 2160,
+        "original_width": 3840,
+        "original_height": 2160
+      },
+      "error": null
+    },
+    {
+      "test_name": "yolo_640x640_preprocessing",
+      "passed": true,
+      "duration_ms": 305.9560999972746,
+      "message": "YOLO 640x640 letterbox preprocessing validated",
+      "details": {
+        "input_shape": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "scale_factor": 0.16666666666666666,
+        "padding": [
+          140,
+          140,
+          0,
+          0
+        ],
+        "resize_mode": "letterbox",
+        "normalization_scale": 0.00392156862745098,
+        "conversions": [
+          "bgr_to_rgb",
+          "letterbox_resize_2160x3840_to_640x640",
+          "uint8_to_float32",
+          "scale_0.00392156862745098",
+          "hwc_to_chw",
+          "add_batch_dim"
+        ]
+      },
+      "error": null
+    },
+    {
+      "test_name": "coordinate_restoration",
+      "passed": true,
+      "duration_ms": 96.24159999657422,
+      "message": "Coordinate restoration mathematically validated",
+      "details": {
+        "scale_factor": 0.16666666666666666,
+        "padding": [
+          140,
+          140,
+          0,
+          0
+        ],
+        "center_test_error": 0.0,
+        "top_left_test_error": 3.0517578125e-05,
+        "bottom_right_test_error": 0.0001220703125
+      },
+      "error": null
+    },
+    {
+      "test_name": "boundary_restoration",
+      "passed": true,
+      "duration_ms": 90.84100001200568,
+      "message": "Boundary restoration validated for all edges and corners",
+      "details": {
+        "max_restoration_error": 6.103515625e-05,
+        "boundary_tests": {
+          "top_edge": {
+            "original_bbox": [
+              1870,
+              0,
+              1970,
+              60
+            ],
+            "restored_bbox": [
+              1869.9999389648438,
+              0.0,
+              1970.0000610351562,
+              60.0
+            ],
+            "max_error": 6.103515625e-05
+          },
+          "bottom_edge": {
+            "original_bbox": [
+              1870,
+              2100,
+              1970,
+              2160
+            ],
+            "restored_bbox": [
+              1869.9999389648438,
+              2100.0,
+              1970.0000610351562,
+              2160.0
+            ],
+            "max_error": 6.103515625e-05
+          },
+          "left_edge": {
+            "original_bbox": [
+              0,
+              1030,
+              60,
+              1130
+            ],
+            "restored_bbox": [
+              0.0,
+              1029.9999389648438,
+              60.0,
+              1130.0000610351562
+            ],
+            "max_error": 6.103515625e-05
+          },
+          "right_edge": {
+            "original_bbox": [
+              3780,
+              1030,
+              3840,
+              1130
+            ],
+            "restored_bbox": [
+              3780.0,
+              1029.9999389648438,
+              3840.0,
+              1130.0000610351562
+            ],
+            "max_error": 6.103515625e-05
+          },
+          "top_left_corner": {
+            "original_bbox": [
+              0,
+              0,
+              60,
+              60
+            ],
+            "restored_bbox": [
+              0.0,
+              0.0,
+              60.0,
+              60.0
+            ],
+            "max_error": 0.0
+          },
+          "top_right_corner": {
+            "original_bbox": [
+              3780,
+              0,
+              3840,
+              60
+            ],
+            "restored_bbox": [
+              3780.0,
+              0.0,
+              3840.0,
+              60.0
+            ],
+            "max_error": 0.0
+          },
+          "bottom_left_corner": {
+            "original_bbox": [
+              0,
+              2100,
+              60,
+              2160
+            ],
+            "restored_bbox": [
+              0.0,
+              2100.0,
+              60.0,
+              2160.0
+            ],
+            "max_error": 0.0
+          },
+          "bottom_right_corner": {
+            "original_bbox": [
+              3780,
+              2100,
+              3840,
+              2160
+            ],
+            "restored_bbox": [
+              3780.0,
+              2100.0,
+              3840.0,
+              2160.0
+            ],
+            "max_error": 0.0
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "test_name": "person_only_filtering",
+      "passed": true,
+      "duration_ms": 0.4020999913336709,
+      "message": "Person-only contract enforced (class_id=0, class_name='person')",
+      "details": {
+        "valid_class_id": 0,
+        "valid_class_name": "person",
+        "invalid_class_rejected": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "detection_contract",
+      "passed": true,
+      "duration_ms": 99.63219999917783,
+      "message": "Detection contract with provenance validated",
+      "details": {
+        "required_fields_present": true,
+        "provenance_complete": true,
+        "serialization_works": true,
+        "model_sha256": "0ebbc80d4a7680d1..."
+      },
+      "error": null
+    },
+    {
+      "test_name": "original_frame_preservation",
+      "passed": true,
+      "duration_ms": 124.53970000206027,
+      "message": "CanonicalFrame preserved at 3840x2160 (no global resize)",
+      "details": {
+        "original_shape": [
+          2160,
+          3840,
+          3
+        ],
+        "preprocessed_shape": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "frame_unchanged": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "deterministic_inference",
+      "passed": true,
+      "duration_ms": 7384.826599998632,
+      "message": "Deterministic preprocessing validated",
+      "details": {
+        "preprocessing_deterministic": true,
+        "inference": {
+          "runs": 3,
+          "detection_counts": [
+            0,
+            0,
+            0
+          ],
+          "deterministic": true
+        }
+      },
+      "error": null
+    },
+    {
+      "test_name": "memory_safety",
+      "passed": true,
+      "duration_ms": 1727.516499988269,
+      "message": "Memory safety validated - no unbounded 4K accumulation",
+      "details": {
+        "frames_processed": 10,
+        "peak_memory_mb": 71.2,
+        "preprocessed_tensor_size_mb": 4.69,
+        "bounded": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "latency_measurement",
+      "passed": true,
+      "duration_ms": 2940.410499999416,
+      "message": "Latency measured for preprocessing, inference, restoration, total",
+      "details": {
+        "runs": 10,
+        "latency_stats": {
+          "preprocessing_ms": {
+            "mean": 33.609470003284514,
+            "median": 30.849999995552935,
+            "min": 24.06030001293402,
+            "max": 56.73640000168234,
+            "p95": 49.614025001937975
+          },
+          "inference_ms": {
+            "mean": 254.89997999975458,
+            "median": 245.3848500008462,
+            "min": 213.8476999971317,
+            "max": 316.3547000003746,
+            "p95": 315.9090199987986
+          },
+          "restoration_ms": {
+            "mean": 0.0017399986973032355,
+            "median": 0.0013000026228837669,
+            "min": 0.0009999930625781417,
+            "max": 0.0031999952625483274,
+            "p95": 0.003064994234591722
+          },
+          "total_ms": {
+            "mean": 288.5111900017364,
+            "median": 274.29409999604104,
+            "min": 240.69579999195412,
+            "max": 352.6166999945417,
+            "p95": 352.207020005153
+          }
+        },
+        "model_available": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "negative_inputs",
+      "passed": true,
+      "duration_ms": 11.869699999806471,
+      "message": "All 9 negative test cases rejected correctly",
+      "details": {
+        "rejected_cases": [
+          "non_4k_resolution_detected",
+          "nan_bbox_rejected",
+          "inf_bbox_rejected",
+          "invalid_class_rejected",
+          "invalid_confidence_rejected",
+          "invalid_coordinate_space_rejected",
+          "impossible_bbox_rejected",
+          "missing_model_id_rejected",
+          "missing_model_sha256_rejected"
+        ],
+        "count": 9
+      },
+      "error": null
+    },
+    {
+      "test_name": "cuda_inference",
+      "passed": true,
+      "duration_ms": 1002.7719000063371,
+      "message": "CUDA inference: available",
+      "details": {
+        "cuda_available": true,
+        "model_path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\yolo\\yolo11n.pt",
+        "model_exists": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "safety_verification",
+      "passed": true,
+      "duration_ms": 62.49440000101458,
+      "message": "Safety verification passed - no camera/streaming access",
+      "details": {
+        "files_checked": 4,
+        "patterns_checked": 5,
+        "violations": 0
+      },
+      "error": null
+    },
+    {
+      "test_name": "full_regression",
+      "passed": true,
+      "duration_ms": 90894.0794000082,
+      "message": "Regression: 503 passed, 0 failed, 5 skipped",
+      "details": {
+        "return_code": 0,
+        "passed": 503,
+        "failed": 0,
+        "skipped": 5,
+        "output_tail": "ase5Boundary::test_no_ffmpeg_streaming PASSED [ 96%]\ntests/unit/test_runtime_model_inference.py::TestPhase5Boundary::test_synthetic_input_only PASSED [ 96%]\ntests/unit/test_runtime_model_inference.py::TestLatencyStatistics::test_latency_statistics_calculated PASSED [ 96%]\ntests/unit/test_runtime_model_inference.py::TestLatencyStatistics::test_latency_p95_calculation PASSED [ 96%]\ntests/unit/test_runtime_model_inference.py::TestModelProviderVerification::test_cuda_provider_detection PASSED [ 97%]\ntests/unit/test_runtime_model_inference.py::TestModelProviderVerification::test_cpu_provider_always_available PASSED [ 97%]\ntests/unit/test_runtime_model_inference.py::TestModelOutputFinite::test_finite_output_passes PASSED [ 97%]\ntests/unit/test_runtime_model_inference.py::TestModelOutputFinite::test_non_finite_output_fails PASSED [ 97%]\ntests/unit/test_venv.py::TestVenvManager::test_init_with_project_root PASSED [ 97%]\ntests/unit/test_venv.py::TestVenvManager::test_venv_exists_false_when_missing PASSED [ 98%]\ntests/unit/test_venv.py::TestVenvManager::test_python_executable_fallback PASSED [ 98%]\ntests/unit/test_venv.py::TestVenvManager::test_pip_executable_fallback PASSED [ 98%]\ntests/unit/test_venv.py::TestVenvManager::test_create_venv_creates_directory PASSED [ 98%]\ntests/unit/test_venv.py::TestVenvManager::test_create_venv_idempotent PASSED [ 98%]\ntests/unit/test_venv.py::TestVenvManager::test_validate_venv_false_when_missing PASSED [ 99%]\ntests/unit/test_venv.py::TestVenvManager::test_validate_venv_true_when_exists PASSED [ 99%]\ntests/unit/test_venv.py::TestVenvManager::test_get_venv_info PASSED      [ 99%]\ntests/unit/test_venv.py::TestVenvManager::test_validate_dependencies_missing_file PASSED [ 99%]\ntests/unit/test_venv.py::TestVenvManager::test_validate_dependencies_empty_file PASSED [ 99%]\ntests/unit/test_venv.py::TestVenvManager::test_validate_dependencies_with_comments PASSED [100%]\n\n================== 503 passed, 5 skipped in 88.56s (0:01:28) ==================\n"
+      },
+      "error": null
+    }
+  ],
+  "verdict": "PASS",
+  "source_resolution": [
+    3840,
+    2160
+  ],
+  "model_input_resolution": [
+    640,
+    640
+  ],
+  "preprocessing_contract": {
+    "resize_mode": "letterbox",
+    "scale_factor": 0.16666666666666666,
+    "padding": [
+      140,
+      140,
+      0,
+      0
+    ],
+    "normalization_scale": 0.00392156862745098,
+    "target_shape": [
+      1,
+      3,
+      640,
+      640
+    ]
+  },
+  "coordinate_restoration": {
+    "formula": "bbox_original = (bbox_model - padding) / scale_factor",
+    "scale_factor": 0.16666666666666666,
+    "padding": [
+      140,
+      140,
+      0,
+      0
+    ],
+    "max_error_pixels": 0.0,
+    "validated": true
+  },
+  "boundary_results": {
+    "max_restoration_error": 6.103515625e-05,
+    "boundary_tests": {
+      "top_edge": {
+        "original_bbox": [
+          1870,
+          0,
+          1970,
+          60
+        ],
+        "restored_bbox": [
+          1869.9999389648438,
+          0.0,
+          1970.0000610351562,
+          60.0
+        ],
+        "max_error": 6.103515625e-05
+      },
+      "bottom_edge": {
+        "original_bbox": [
+          1870,
+          2100,
+          1970,
+          2160
+        ],
+        "restored_bbox": [
+          1869.9999389648438,
+          2100.0,
+          1970.0000610351562,
+          2160.0
+        ],
+        "max_error": 6.103515625e-05
+      },
+      "left_edge": {
+        "original_bbox": [
+          0,
+          1030,
+          60,
+          1130
+        ],
+        "restored_bbox": [
+          0.0,
+          1029.9999389648438,
+          60.0,
+          1130.0000610351562
+        ],
+        "max_error": 6.103515625e-05
+      },
+      "right_edge": {
+        "original_bbox": [
+          3780,
+          1030,
+          3840,
+          1130
+        ],
+        "restored_bbox": [
+          3780.0,
+          1029.9999389648438,
+          3840.0,
+          1130.0000610351562
+        ],
+        "max_error": 6.103515625e-05
+      },
+      "top_left_corner": {
+        "original_bbox": [
+          0,
+          0,
+          60,
+          60
+        ],
+        "restored_bbox": [
+          0.0,
+          0.0,
+          60.0,
+          60.0
+        ],
+        "max_error": 0.0
+      },
+      "top_right_corner": {
+        "original_bbox": [
+          3780,
+          0,
+          3840,
+          60
+        ],
+        "restored_bbox": [
+          3780.0,
+          0.0,
+          3840.0,
+          60.0
+        ],
+        "max_error": 0.0
+      },
+      "bottom_left_corner": {
+        "original_bbox": [
+          0,
+          2100,
+          60,
+          2160
+        ],
+        "restored_bbox": [
+          0.0,
+          2100.0,
+          60.0,
+          2160.0
+        ],
+        "max_error": 0.0
+      },
+      "bottom_right_corner": {
+        "original_bbox": [
+          3780,
+          2100,
+          3840,
+          2160
+        ],
+        "restored_bbox": [
+          3780.0,
+          2100.0,
+          3840.0,
+          2160.0
+        ],
+        "max_error": 0.0
+      }
+    }
+  },
+  "detection_results": {
+    "contract_validated": true,
+    "provenance_included": true,
+    "model_sha256": "0ebbc80d4a7680d1..."
+  },
+  "person_filtering": {
+    "valid_class_id": 0,
+    "valid_class_name": "person",
+    "invalid_class_rejected": true
+  },
+  "cpu_results": {
+    "inference_tested": true,
+    "provider": "CPUExecutionProvider"
+  },
+  "cuda_results": {
+    "inference_tested": true,
+    "provider": "CUDAExecutionProvider"
+  },
+  "latency": {
+    "runs": 10,
+    "latency_stats": {
+      "preprocessing_ms": {
+        "mean": 33.609470003284514,
+        "median": 30.849999995552935,
+        "min": 24.06030001293402,
+        "max": 56.73640000168234,
+        "p95": 49.614025001937975
+      },
+      "inference_ms": {
+        "mean": 254.89997999975458,
+        "median": 245.3848500008462,
+        "min": 213.8476999971317,
+        "max": 316.3547000003746,
+        "p95": 315.9090199987986
+      },
+      "restoration_ms": {
+        "mean": 0.0017399986973032355,
+        "median": 0.0013000026228837669,
+        "min": 0.0009999930625781417,
+        "max": 0.0031999952625483274,
+        "p95": 0.003064994234591722
+      },
+      "total_ms": {
+        "mean": 288.5111900017364,
+        "median": 274.29409999604104,
+        "min": 240.69579999195412,
+        "max": 352.6166999945417,
+        "p95": 352.207020005153
+      }
+    },
+    "model_available": true
+  },
+  "memory": {
+    "frames_processed": 10,
+    "peak_memory_mb": 71.2,
+    "preprocessed_tensor_size_mb": 4.69,
+    "bounded": true
+  },
+  "determinism": {
+    "preprocessing_deterministic": true,
+    "inference": {
+      "runs": 3,
+      "detection_counts": [
+        0,
+        0,
+        0
+      ],
+      "deterministic": true
+    }
+  },
+  "negative_tests": {
+    "rejected_cases": [
+      "non_4k_resolution_detected",
+      "nan_bbox_rejected",
+      "inf_bbox_rejected",
+      "invalid_class_rejected",
+      "invalid_confidence_rejected",
+      "invalid_coordinate_space_rejected",
+      "impossible_bbox_rejected",
+      "missing_model_id_rejected",
+      "missing_model_sha256_rejected"
+    ],
+    "count": 9
+  },
+  "regression_results": {
+    "return_code": 0,
+    "passed": 503,
+    "failed": 0,
+    "skipped": 5,
+    "output_tail": "ase5Boundary::test_no_ffmpeg_streaming PASSED [ 96%]\ntests/unit/test_runtime_model_inference.py::TestPhase5Boundary::test_synthetic_input_only PASSED [ 96%]\ntests/unit/test_runtime_model_inference.py::TestLatencyStatistics::test_latency_statistics_calculated PASSED [ 96%]\ntests/unit/test_runtime_model_inference.py::TestLatencyStatistics::test_latency_p95_calculation PASSED [ 96%]\ntests/unit/test_runtime_model_inference.py::TestModelProviderVerification::test_cuda_provider_detection PASSED [ 97%]\ntests/unit/test_runtime_model_inference.py::TestModelProviderVerification::test_cpu_provider_always_available PASSED [ 97%]\ntests/unit/test_runtime_model_inference.py::TestModelOutputFinite::test_finite_output_passes PASSED [ 97%]\ntests/unit/test_runtime_model_inference.py::TestModelOutputFinite::test_non_finite_output_fails PASSED [ 97%]\ntests/unit/test_venv.py::TestVenvManager::test_init_with_project_root PASSED [ 97%]\ntests/unit/test_venv.py::TestVenvManager::test_venv_exists_false_when_missing PASSED [ 98%]\ntests/unit/test_venv.py::TestVenvManager::test_python_executable_fallback PASSED [ 98%]\ntests/unit/test_venv.py::TestVenvManager::test_pip_executable_fallback PASSED [ 98%]\ntests/unit/test_venv.py::TestVenvManager::test_create_venv_creates_directory PASSED [ 98%]\ntests/unit/test_venv.py::TestVenvManager::test_create_venv_idempotent PASSED [ 98%]\ntests/unit/test_venv.py::TestVenvManager::test_validate_venv_false_when_missing PASSED [ 99%]\ntests/unit/test_venv.py::TestVenvManager::test_validate_venv_true_when_exists PASSED [ 99%]\ntests/unit/test_venv.py::TestVenvManager::test_get_venv_info PASSED      [ 99%]\ntests/unit/test_venv.py::TestVenvManager::test_validate_dependencies_missing_file PASSED [ 99%]\ntests/unit/test_venv.py::TestVenvManager::test_validate_dependencies_empty_file PASSED [ 99%]\ntests/unit/test_venv.py::TestVenvManager::test_validate_dependencies_with_comments PASSED [100%]\n\n================== 503 passed, 5 skipped in 88.56s (0:01:28) ==================\n"
+  },
+  "safety_results": {
+    "files_checked": 4,
+    "patterns_checked": 5,
+    "violations": 0
+  },
+  "limitations": [
+    "Synthetic noise input - no accuracy claims on real data",
+    "YOLO11n .pt format requires Ultralytics (not ONNX Runtime)",
+    "CUDA inference depends on GPU availability",
+    "Coordinate restoration validated mathematically, not on real persons"
+  ],
+  "readiness_for_phase10": true
+}

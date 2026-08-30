@@ -1,0 +1,85 @@
+{
+  "phase": "32",
+  "name": "RTMP_MEDIAMTX",
+  "timestamp": "2026-08-24T02:14:43.162502Z",
+  "verdict": "PASS",
+  "pytest_results": {
+    "contracts": {
+      "label": "Phase 32 Streaming Contracts",
+      "test_path": "tests/unit/test_streaming_contracts.py",
+      "exit_code": 0,
+      "passed": true,
+      "stdout": "============================= test session starts =============================\nplatform win32 -- Python 3.12.10, pytest-7.4.4, pluggy-1.6.0 -- C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\ncachedir: .pytest_cache\nrootdir: C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\nplugins: anyio-4.14.2, cov-4.1.0, mock-3.15.1\ncollecting ... collected 33 items\n\ntests/unit/test_streaming_contracts.py::TestRTMPPath::test_default_values PASSED [  3%]\ntests/unit/test_streaming_contracts.py::TestRTMPPath::test_custom_values PASSED [  6%]\ntests/unit/test_streaming_contracts.py::TestRTMPPath::test_to_url PASSED [  9%]\ntests/unit/test_streaming_contracts.py::TestRTMPPath::test_serialization_roundtrip PASSED [ 12%]\ntests/unit/test_streaming_contracts.py::TestRTSPPath::test_default_values PASSED [ 15%]\ntests/unit/test_streaming_contracts.py::TestRTSPPath::test_custom_values PASSED [ 18%]\ntests/unit/test_streaming_contracts.py::TestRTSPPath::test_to_url PASSED [ 21%]\ntests/unit/test_streaming_contracts.py::TestRTSPPath::test_serialization_roundtrip PASSED [ 24%]\ntests/unit/test_streaming_contracts.py::TestStreamMetadata::test_default_values PASSED [ 27%]\ntests/unit/test_streaming_contracts.py::TestStreamMetadata::test_is_4k_h264_30fps PASSED [ 30%]\ntests/unit/test_streaming_contracts.py::TestStreamMetadata::test_is_4k_h264_30fps_false_codec PASSED [ 33%]\ntests/unit/test_streaming_contracts.py::TestStreamMetadata::test_is_4k_h264_30fps_false_resolution PASSED [ 36%]\ntests/unit/test_streaming_contracts.py::TestStreamMetadata::test_is_4k_h264_30fps_false_fps PASSED [ 39%]\ntests/unit/test_streaming_contracts.py::TestStreamMetadata::test_serialization_roundtrip PASSED [ 42%]\ntests/unit/test_streaming_contracts.py::TestCameraStreamContract::test_valid_contract PASSED [ 45%]\ntests/unit/test_streaming_contracts.py::TestCameraStreamContract::test_get_rtmp_url PASSED [ 48%]\ntests/unit/test_streaming_contracts.py::TestCameraStreamContract::test_get_rtsp_url PASSED [ 51%]\ntests/unit/test_streaming_contracts.py::TestCameraStreamContract::test_validate_codec PASSED [ 54%]\ntests/unit/test_streaming_contracts.py::TestCameraStreamContract::test_validate_resolution PASSED [ 57%]\ntests/unit/test_streaming_contracts.py::TestCameraStreamContract::test_validate_fps PASSED [ 60%]\ntests/unit/test_streaming_contracts.py::TestCameraStreamContract::test_serialization_roundtrip PASSED [ 63%]\ntests/unit/test_streaming_contracts.py::TestCameraStreamContract::test_deterministic_ids PASSED [ 66%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_valid_contract PASSED [ 69%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_invalid_camera_id PASSED [ 72%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_invalid_rtmp_stream_key PASSED [ 75%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_invalid_rtsp_path PASSED [ 78%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_unsupported_codec PASSED [ 81%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_unsupported_resolution PASSED [ 84%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_unsupported_fps PASSED [ 87%]\ntests/unit/test_streaming_contracts.py::TestStreamHealthState::test_all_states_exist PASSED [ 90%]\ntests/unit/test_streaming_contracts.py::TestStreamHealthState::test_state_values PASSED [ 93%]\ntests/unit/test_streaming_contracts.py::TestStreamCodec::test_h264_supported PASSED [ 96%]\ntests/unit/test_streaming_contracts.py::TestStreamCodec::test_other_codecs_exist PASSED [100%]\n\n============================== warnings summary ===============================\ntests/unit/test_streaming_contracts.py: 16 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\streaming\\contracts.py:186: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/unit/test_streaming_contracts.py::TestCameraStreamContract::test_serialization_roundtrip\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\streaming\\contracts.py:214: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at=data.get(\"created_at\", datetime.utcnow().isoformat() + \"Z\"),\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================= 33 passed, 17 warnings in 0.40s =======================\n",
+      "stderr": "",
+      "duration": 0
+    },
+    "mediamtx": {
+      "label": "Phase 32 MediaMTX Configuration",
+      "test_path": "tests/unit/test_streaming_mediamtx.py",
+      "exit_code": 0,
+      "passed": true,
+      "stdout": "============================= test session starts =============================\nplatform win32 -- Python 3.12.10, pytest-7.4.4, pluggy-1.6.0 -- C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\ncachedir: .pytest_cache\nrootdir: C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\nplugins: anyio-4.14.2, cov-4.1.0, mock-3.15.1\ncollecting ... collected 23 items\n\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXPathConfig::test_default_values PASSED [  4%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXPathConfig::test_serialization_roundtrip PASSED [  8%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_create_default_config PASSED [ 13%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_cam1_path_exists PASSED [ 17%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_cam2_path_exists PASSED [ 21%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_rtmp_routes_to_expected_path PASSED [ 26%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_rtsp_routes_to_expected_path PASSED [ 30%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_no_duplicate_paths PASSED [ 34%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_no_duplicate_rtmp_keys PASSED [ 39%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_no_duplicate_rtsp_paths PASSED [ 43%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_custom_keys PASSED [ 47%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_to_yaml PASSED [ 52%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_serialization_roundtrip PASSED [ 56%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_valid_config PASSED [ 60%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_missing_cam1 PASSED [ 65%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_missing_cam2 PASSED [ 69%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_extra_camera PASSED [ 73%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_missing_rtmp_key PASSED [ 78%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_missing_rtsp_path PASSED [ 82%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_unsupported_codec PASSED [ 86%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_duplicate_rtmp_keys PASSED [ 91%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_duplicate_rtsp_paths PASSED [ 95%]\ntests/unit/test_streaming_mediamtx.py::TestDefaultConfigYAML::test_default_yaml_contains_required_fields PASSED [100%]\n\n============================= 23 passed in 0.37s ==============================\n",
+      "stderr": "",
+      "duration": 0
+    }
+  },
+  "acceptance_checks": {
+    "contract_validation": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    },
+    "mediamtx_config_validation": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    },
+    "cam1_validation": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    },
+    "cam2_validation": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    },
+    "isolation": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    },
+    "lifecycle": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    },
+    "reconnect": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    },
+    "h264_contract": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    },
+    "v2_ingestion": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    },
+    "negative_cases": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    },
+    "determinism": {
+      "verified": true,
+      "level": "OFFLINE_CONTRACT_VERIFIED"
+    }
+  },
+  "contract": {},
+  "mediamtx": {},
+  "cam1": {},
+  "cam2": {},
+  "isolation": {},
+  "lifecycle": {},
+  "reconnect": {},
+  "h264": {},
+  "v2_ingestion": {},
+  "negative_cases": {},
+  "determinism": {},
+  "known_limitations": [],
+  "runtime_verification_level": "OFFLINE_CONTRACT_ONLY"
+}

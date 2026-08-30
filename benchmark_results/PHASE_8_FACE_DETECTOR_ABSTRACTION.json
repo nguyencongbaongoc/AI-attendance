@@ -1,0 +1,156 @@
+{
+  "phase": "PHASE_8_FACE_DETECTOR_ABSTRACTION",
+  "timestamp": "2026-08-18T17:29:56.221703",
+  "files_created": [
+    "app/vision/detector_contract.py",
+    "app/vision/scrfd_adapter.py",
+    "app/vision/retinaface_adapter.py",
+    "app/vision/detector_factory.py",
+    "tests/unit/test_detector_contract.py"
+  ],
+  "files_modified": [
+    "app/vision/__init__.py"
+  ],
+  "face_detector_contract": {
+    "FaceDetectionContract": {
+      "fields": [
+        "bbox (Tuple[float, float, float, float])",
+        "confidence (float)",
+        "landmarks5 (List[Tuple[float, float]])",
+        "coordinate_space (str) - always \"original_frame\"",
+        "source_frame_id (str)",
+        "detector_model_id (str)",
+        "detector_model_version (str)",
+        "detector_model_sha256 (str)",
+        "provenance (DetectorProvenance)",
+        "detection_id (str)"
+      ],
+      "validation": [
+        "bbox coordinates must be finite",
+        "confidence must be in [0.0, 1.0]",
+        "exactly 5 landmarks required",
+        "landmark coordinates must be finite",
+        "coordinate_space must be \"original_frame\"",
+        "detector_model_id is required",
+        "detector_model_sha256 is required"
+      ],
+      "properties": [
+        "width",
+        "height",
+        "area",
+        "center"
+      ],
+      "methods": [
+        "to_dict()"
+      ]
+    },
+    "FaceDetectorInterface": {
+      "abstract_properties": [
+        "model_id (str)",
+        "model_version (str)",
+        "model_sha256 (str)",
+        "status (DetectorStatus)",
+        "preprocessing_contract (ModelPreprocessingContract)"
+      ],
+      "abstract_methods": [
+        "detect(frame: CanonicalFrame) -> List[FaceDetectionContract]",
+        "cleanup() -> None"
+      ],
+      "context_manager": "__enter__, __exit__"
+    },
+    "DetectorProvenance": {
+      "fields": [
+        "source_type, source_id, frame_index, timestamp",
+        "detector_model_id, detector_model_version, detector_model_sha256",
+        "detection_id"
+      ]
+    }
+  },
+  "scrfd_adapter": {
+    "status": "ACTIVE",
+    "model_id": "scrfd",
+    "input_size": "640x640",
+    "preprocessing_contract": "SCRFD_CONTRACT (640x640, RGB, LETTERBOX, float32)",
+    "preserves": [
+      "bbox (original frame coordinates)",
+      "confidence",
+      "5-point landmarks (original frame coordinates)",
+      "coordinate space (original_frame)",
+      "provenance (source frame, detector model identity)",
+      "model identity (model_id, version, sha256)"
+    ],
+    "model_registry_identity": "Preserved - uses existing ModelRegistry",
+    "sha256_verification": "Preserved - uses existing verify_sha256"
+  },
+  "retinaface_adapter": {
+    "status": "NOT_IMPLEMENTED",
+    "model_id": "retinaface",
+    "input_size": "TBD",
+    "behavior": "Explicitly raises RetinaFaceNotImplementedError on detect() and preprocessing_contract access",
+    "no_silent_fallback": true,
+    "future_implementation": "Will define its own preprocessing contract when implemented"
+  },
+  "preprocessing_contract": {
+    "scrfd": "640x640, RGB, LETTERBOX, float32, no normalization (NOT_VERIFIED)",
+    "retinaface": "Not yet defined - will be defined when implemented",
+    "1k3d68": "192x192, RGB, LETTERBOX, float32 (unchanged)",
+    "arcface": "112x112, RGB, CROP, float32 (unchanged)",
+    "model_specific": true,
+    "global_image_size_imposed": false
+  },
+  "downstream_independence": {
+    "verified": true,
+    "downstream_components": [
+      "FaceCrop (uses FaceDetectionContract.bbox, landmarks5, coordinate_space)",
+      "LandmarkDetector (uses FaceCrop)",
+      "QualityAssessor (uses FaceCrop, FaceDetectionContract.confidence, LandmarkResult)",
+      "FaceSample (uses FaceDetectionContract, FaceCrop, LandmarkResult, FaceQuality)"
+    ],
+    "no_scrfd_leaks": true,
+    "generic_contract_used": true
+  },
+  "test_results": {
+    "total_tests": 47,
+    "passed": 47,
+    "failed": 0,
+    "test_categories": [
+      "DetectorProvenance (2 tests)",
+      "FaceDetectionContract (11 tests)",
+      "DetectorModelId (3 tests)",
+      "DetectorStatus (3 tests)",
+      "SCRFDAdapter (6 tests)",
+      "RetinaFaceAdapter (6 tests)",
+      "DetectorFactory (5 tests)",
+      "DownstreamCompatibility (5 tests)",
+      "NegativeCases (6 tests)"
+    ]
+  },
+  "regression_results": {
+    "total_tests": 503,
+    "passed": 503,
+    "skipped": 5,
+    "failed": 0,
+    "no_new_regressions": true
+  },
+  "safety_results": {
+    "camera_access": false,
+    "mediamtx_started": false,
+    "rtsp_rtmp_accessed": false,
+    "persistent_workers": false,
+    "unbounded_queues": false,
+    "attendance_logic": false,
+    "in_out_logic": false,
+    "stranger_logic": false,
+    "model_weights_modified": false,
+    "all_passed": true
+  },
+  "known_phase_7r3_limitations": [
+    "SCRFD coordinate restoration has known issues (Phase 7R.3 frozen)",
+    "SCRFD CUDA stress/runtime stability not resolved",
+    "SCRFD production acceptance pending",
+    "These are NOT fixed in Phase 8 - Phase 8 only establishes the interface"
+  ],
+  "readiness_for_phase_9": true,
+  "detector_selection": "OPEN - SCRFD vs RetinaFace decision deferred to evidence-based A/B testing",
+  "final_verdict": "PASS"
+}

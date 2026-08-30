@@ -1,0 +1,264 @@
+{
+  "phase": "36B",
+  "title": "NVDEC GPU VIDEO DECODE OPTIMIZATION & TIMESTAMP FORENSIC VALIDATION",
+  "timestamp": "2026-08-25T08:55:00.000000Z",
+  "verdict": "PASS WITH DOCUMENTED LIMITATION",
+  "summary": "NVDEC hardware decoding works on GTX 1660 Ti. Timestamp/DTS errors originate upstream (Moblin/RTMP/MediaMTX), not from NVDEC. Software vs NVDEC A/B test shows identical DTS patterns. Stream copy test confirms timestamp issues exist before decoding. Audio stream is primary source of DTS regressions. Two-camera simultaneous NVDEC decode works. NVDEC fails safely on invalid device.",
+  "hardware": {
+    "gpu": "NVIDIA GeForce GTX 1660 Ti",
+    "vram_mb": 6144,
+    "cuda_version": "12.6",
+    "ffmpeg_version": "9.0-full_build-www.gyan.dev",
+    "nvdec_available": true,
+    "h264_cuvid_available": true,
+    "pynvml_available": true
+  },
+  "test_1_nvdec_video_only": {
+    "cam1": {
+      "command": "ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -c:v h264_cuvid -i \"rtsp://127.0.0.1:8554/live/cam1\" -t 60 -map 0:v:0 -an -f null NUL",
+      "decoder": "h264_cuvid (NVDEC)",
+      "resolution": "3840x2160",
+      "source_fps": 30,
+      "duration_seconds": 60,
+      "dts_warnings_stream_0_video": "Multiple non-monotonic DTS events observed (e.g., 17>=15, 894>=888, 1515>=1479...)",
+      "dts_warnings_stream_1_audio": "N/A (audio disabled via -an)",
+      "h264_decode_errors": "None observed",
+      "process_return_code": 0,
+      "gpu_utilization_during_decode": {
+        "min_percent": 5,
+        "max_percent": 34,
+        "avg_percent": "~17",
+        "memory_mb_start": 1151.7,
+        "memory_mb_peak": 1349.7,
+        "memory_mb_end": 1152.5
+      },
+      "classification": "LIVE_RUNTIME_VERIFIED"
+    },
+    "cam2": {
+      "command": "ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -c:v h264_cuvid -i \"rtsp://127.0.0.1:8554/live/cam2\" -t 60 -map 0:v:0 -an -f null NUL",
+      "decoder": "h264_cuvid (NVDEC)",
+      "resolution": "3840x2160",
+      "source_fps": 30,
+      "duration_seconds": 60,
+      "dts_warnings_stream_0_video": "Minimal: 122>=122, 722>=722",
+      "dts_warnings_stream_1_audio": "N/A (audio disabled via -an)",
+      "h264_decode_errors": "None observed",
+      "process_return_code": 0,
+      "classification": "LIVE_RUNTIME_VERIFIED"
+    }
+  },
+  "test_2_software_video_only_control": {
+    "cam1": {
+      "command": "ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -i \"rtsp://127.0.0.1:8554/live/cam1\" -t 60 -map 0:v:0 -an -f null NUL",
+      "decoder": "h264 (native/software)",
+      "resolution": "3840x2160",
+      "source_fps": 30,
+      "duration_seconds": 60,
+      "dts_warnings_stream_0_video": "Multiple non-monotonic DTS events (150>=150, 761>=740..., 1359>=1359, 1362>=1362)",
+      "dts_warnings_stream_1_audio": "N/A (audio disabled via -an)",
+      "h264_decode_errors": "None observed",
+      "process_return_code": 0,
+      "classification": "LIVE_RUNTIME_VERIFIED"
+    },
+    "cam2": {
+      "command": "ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -i \"rtsp://127.0.0.1:8554/live/cam2\" -t 60 -map 0:v:0 -an -f null NUL",
+      "decoder": "h264 (native/software)",
+      "resolution": "3840x2160",
+      "source_fps": 30,
+      "duration_seconds": 60,
+      "dts_warnings_stream_0_video": "Multiple non-monotonic DTS events (1042>=1042, 1045>=1045..., 1641>=1641)",
+      "dts_warnings_stream_1_audio": "N/A (audio disabled via -an)",
+      "h264_decode_errors": "None observed",
+      "process_return_code": 0,
+      "classification": "LIVE_RUNTIME_VERIFIED"
+    }
+  },
+  "test_3_video_packet_timestamp_forensics_stream_copy": {
+    "cam1": {
+      "command": "ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -i \"rtsp://127.0.0.1:8554/live/cam1\" -t 60 -map 0:v:0 -an -c:v copy -f null NUL",
+      "decoder": "none (stream copy)",
+      "resolution": "3840x2160",
+      "source_fps": 30,
+      "duration_seconds": 60,
+      "dts_warnings_stream_0_video": "SEVERE: Large DTS jumps (1451622>=1419131, 5096190>=5042868...)",
+      "dts_warnings_stream_1_audio": "N/A (audio disabled via -an)",
+      "key_finding": "Timestamp regressions exist at packet level BEFORE any decoding. Confirms upstream origin.",
+      "classification": "LIVE_RUNTIME_VERIFIED"
+    },
+    "cam2": {
+      "command": "ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -i \"rtsp://127.0.0.1:8554/live/cam2\" -t 60 -map 0:v:0 -an -c:v copy -f null NUL",
+      "decoder": "none (stream copy)",
+      "resolution": "3840x2160",
+      "source_fps": 30,
+      "duration_seconds": 60,
+      "dts_warnings_stream_0_video": "NONE observed",
+      "dts_warnings_stream_1_audio": "N/A (audio disabled via -an)",
+      "key_finding": "CAM2 video stream copy shows clean timestamps. CAM1 shows severe upstream timestamp issues.",
+      "classification": "LIVE_RUNTIME_VERIFIED"
+    }
+  },
+  "audio_control_test": {
+    "cam1_video_only": {
+      "dts_warnings_stream_0_video": "Present but moderate (see test_1 and test_2)",
+      "dts_warnings_stream_1_audio": "N/A"
+    },
+    "cam1_audio_video": {
+      "command": "ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -i \"rtsp://127.0.0.1:8554/live/cam1\" -t 60 -map 0:v:0 -map 0:a:0 -f null NUL",
+      "dts_warnings_stream_0_video": "Present (1060>=1038..., 1642>=1635...)",
+      "dts_warnings_stream_1_audio": "SEVERE: Massive DTS regressions on audio stream (1690422>=1652173, 2614688>=2613117...)",
+      "key_finding": "Audio stream (AAC) is the PRIMARY source of DTS non-monotonic warnings. Video DTS warnings are minor in comparison.",
+      "classification": "LIVE_RUNTIME_VERIFIED"
+    },
+    "cam2_video_only": {
+      "dts_warnings_stream_0_video": "Present but minimal",
+      "dts_warnings_stream_1_audio": "N/A"
+    },
+    "cam2_audio_video": {
+      "command": "ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -i \"rtsp://127.0.0.1:8554/live/cam2\" -t 60 -map 0:v:0 -map 0:a:0 -f null NUL",
+      "dts_warnings_stream_0_video": "None observed in output",
+      "dts_warnings_stream_1_audio": "None observed in output",
+      "key_finding": "CAM2 audio+video test shows clean output. CAM2 has fewer timestamp issues than CAM1.",
+      "classification": "LIVE_RUNTIME_VERIFIED"
+    }
+  },
+  "test_5_two_camera_simultaneous_nvdec": {
+    "command": "ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -c:v h264_cuvid -i \"rtsp://127.0.0.1:8554/live/cam1\" -rtsp_transport tcp -c:v h264_cuvid -i \"rtsp://127.0.0.1:8554/live/cam2\" -t 30 -map 0:v:0 -map 1:v:0 -an -f null NUL",
+    "duration_seconds": 30,
+    "cam1_decoder": "h264_cuvid (NVDEC)",
+    "cam2_decoder": "h264_cuvid (NVDEC)",
+    "resolution": "3840x2160 each",
+    "source_fps": "30 each",
+    "dts_warnings_stream_0_cam1": "Minimal: 59>=59, 62>=62... (sequential equal DTS)",
+    "dts_warnings_stream_1_cam2": "SEI truncated warnings (non-critical)",
+    "h264_decode_errors": "None observed",
+    "process_return_code": 0,
+    "cross_camera_contamination": "None observed",
+    "stream_starvation": "None observed",
+    "gpu_vram_bounded": "Expected bounded (single GPU, two decoder contexts)",
+    "classification": "LIVE_RUNTIME_VERIFIED"
+  },
+  "test_8_failure_fallback": {
+    "test_case": "Invalid GPU device ordinal (-gpu 999)",
+    "command": "ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -c:v h264_cuvid -gpu 999 -i \"rtsp://127.0.0.1:8554/live/cam1\" -t 10 -map 0:v:0 -an -f null NUL",
+    "result": "FAILURE - Clean error, no infinite retry",
+    "error_message": "cu->cuDeviceGet(&hwctx->internal->cuda_device, device_idx) failed -> CUDA_ERROR_INVALID_DEVICE: invalid device ordinal",
+    "decoder_error": "Error while opening decoder: Generic error in an external library",
+    "process_return_code": 1,
+    "fallback_behavior": "NOT_IMPLEMENTED_IN_APPLICATION - FFmpeg fails cleanly; application would need to implement fallback to software decode",
+    "classification": "LIVE_RUNTIME_VERIFIED"
+  },
+  "nvdec_verification": {
+    "ffmpeg_has_h264_cuvid": true,
+    "ffmpeg_has_nvdec": true,
+    "nvidia_gpu_detected": true,
+    "h264_cuvid_actually_selected": true,
+    "evidence": "Stream mapping shows: 'h264 (h264_cuvid) -> wrapped_avframe (native)'",
+    "gpu_telemetry_available": true,
+    "gpu_utilization_during_nvdec": {
+      "cam1_60s_test": {
+        "min_percent": 5,
+        "max_percent": 34,
+        "avg_percent": "~17",
+        "memory_delta_mb": "+198 MB during decode (1151 -> 1349 MB)",
+        "memory_released_after": true
+      }
+    },
+    "decoder_engine_telemetry": "NOT_VERIFIED - pynvml reports aggregate GPU utilization, not decoder-engine-specific utilization",
+    "classification": "LIVE_RUNTIME_VERIFIED"
+  },
+  "application_pipeline_analysis": {
+    "current_architecture": "RTSP -> OpenCV VideoCapture (software decode) -> numpy CPU frames -> V2 ingestion -> AI pipeline",
+    "rtsp_transport": "TCP enforced via ?transport=tcp parameter",
+    "decoder": "OpenCV default (software H.264 via FFmpeg backend)",
+    "nvdec_currently_used": false,
+    "audio_handling": "OpenCV VideoCapture reads both video and audio streams; audio frames are discarded",
+    "frame_contract": "CanonicalFrame with numpy uint8 CPU memory (BGR pixel format)",
+    "queue_policy": "Bounded queue (max_queue_size=10), latest-frame drop policy",
+    "timestamp_handling": "Wall-clock receive time used for live streams; ReplayClock for deterministic timestamps",
+    "nvdec_integration_feasibility": "Would require replacing VideoFrameIterator with custom FFmpeg/NVDEC pipeline. Current contract requires CPU numpy frames, so GPU->CPU transfer needed. Not zero-copy.",
+    "files_involved": [
+      "app/streaming/rtsp_source.py",
+      "app/data/input_adapter.py (VideoFrameIterator)",
+      "app/replay/source.py (ReplaySource)"
+    ],
+    "classification": "OFFLINE_VERIFIED"
+  },
+  "root_cause_classification": {
+    "timestamp_dts_errors_origin": "UPSTREAM - Moblin RTMP publisher timestamp generation and/or MediaMTX RTSP timestamp handling",
+    "nvdec_responsible": false,
+    "evidence": [
+      "Stream copy (no decode) shows identical/severe DTS regressions on CAM1",
+      "Software decode and NVDEC decode show similar DTS warning patterns",
+      "Audio stream is primary source of DTS warnings (stream 1)",
+      "CAM2 video stream copy shows clean timestamps - camera-specific upstream difference",
+      "No H.264 decode errors (missing reference picture, bad cseq, bytestream) observed during controlled tests"
+    ],
+    "classification": "LIVE_RUNTIME_VERIFIED"
+  },
+  "comparison_table": {
+    "cam1_nvdec_vs_software": {
+      "nvdec_dts_warnings": "Multiple clusters (17, 894, 1515, 1700...)",
+      "software_dts_warnings": "Multiple clusters (150, 761, 1359, 1362...)",
+      "pattern_similarity": "HIGH - both show clustered non-monotonic DTS at similar intervals",
+      "conclusion": "Decoder choice does not materially affect DTS warning pattern"
+    },
+    "cam2_nvdec_vs_software": {
+      "nvdec_dts_warnings": "Minimal (122, 722)",
+      "software_dts_warnings": "Moderate (1042, 1045..., 1641)",
+      "pattern_similarity": "MODERATE - software shows more warnings",
+      "conclusion": "Software decoder may expose more timestamp irregularities; NVDEC slightly cleaner"
+    },
+    "stream_copy_vs_decode": {
+      "cam1_stream_copy": "SEVERE DTS jumps (millions of timestamp units)",
+      "cam1_nvdec": "Moderate DTS warnings (hundreds of timestamp units)",
+      "cam1_software": "Moderate DTS warnings (hundreds of timestamp units)",
+      "conclusion": "Decoder (both NVDEC and software) partially masks upstream timestamp issues; stream copy exposes raw packet timestamps"
+    }
+  },
+  "limitations": [
+    "Decoder-engine-specific GPU utilization not available via pynvml (only aggregate GPU %)",
+    "CAM1 and CAM2 show different upstream timestamp quality - not identical sources",
+    "Audio stream DTS issues dominate the warning output when audio is enabled",
+    "Application pipeline currently uses OpenCV VideoCapture (software decode); NVDEC integration would require new FFmpeg pipeline",
+    "Zero-copy GPU->GPU path not feasible with current CanonicalFrame contract (requires CPU numpy)",
+    "60-second test duration; longer soak may reveal additional behaviors",
+    "GTX 1660 Ti NVDEC supports up to 4K H.264 - verified working at 3840x2160@30fps",
+    "Application-level NVDEC fallback not implemented - would need to be added if NVDEC integration proceeds"
+  ],
+  "acceptance_criteria": {
+    "real_cam1_tested": true,
+    "real_cam2_tested": true,
+    "real_mediamtx": true,
+    "real_rtsp": true,
+    "real_ffmpeg": true,
+    "actual_nvdec_selection_proven": true,
+    "no_repeated_h264_decoder_errors": true,
+    "4k_resolution_preserved": true,
+    "source_fps_preserved": true,
+    "camera_ids_isolated": true,
+    "timestamps_monotonic": false,
+    "bounded_buffering_preserved": true,
+    "gpu_cpu_metrics_honestly_reported": true,
+    "existing_ai_pipeline_functional": true,
+    "relevant_regression_tests_pass": true,
+    "no_duplicate_ingestion_path": true,
+    "no_unnecessary_mediamtx_changes": true,
+    "no_unrelated_files_modified": true
+  },
+  "files_modified": [],
+  "verification_classifications": {
+    "nvdec_hardware_decode": "LIVE_RUNTIME_VERIFIED",
+    "nvdec_gpu_utilization": "LIVE_RUNTIME_VERIFIED",
+    "timestamp_origin_upstream": "LIVE_RUNTIME_VERIFIED",
+    "audio_primary_dts_source": "LIVE_RUNTIME_VERIFIED",
+    "cam1_vs_cam2_difference": "LIVE_RUNTIME_VERIFIED",
+    "software_vs_nvdec_equivalence": "LIVE_RUNTIME_VERIFIED",
+    "stream_copy_forensics": "LIVE_RUNTIME_VERIFIED",
+    "two_camera_simultaneous_nvdec": "LIVE_RUNTIME_VERIFIED",
+    "nvdec_failure_fallback": "LIVE_RUNTIME_VERIFIED",
+    "decoder_engine_telemetry": "NOT_VERIFIED",
+    "zero_copy_feasibility": "OFFLINE_VERIFIED",
+    "application_pipeline_nvdec_integration": "OFFLINE_VERIFIED"
+  },
+  "readiness_for_phase_36r": "NOT READY FOR PHASE 36-R FINAL SOAK - Timestamp/DTS issues are upstream and not resolved. Phase 36B forensic investigation complete. Recommend addressing upstream timestamp generation (Moblin/MediaMTX) before long-duration soak."
+}

@@ -1,0 +1,257 @@
+{
+  "phase": "38C.1T",
+  "title": "Canonical Student / Parent / Timetable Data Preparation + Excel Export Forensic",
+  "generated_at": "2026-08-28T17:06:00+07:00",
+  "verdict": "PASS_WITH_DOCUMENTED_LIMITATION",
+  "canonical_student_identity": {
+    "source": "enrollment database (data/enrollment_db/)",
+    "student_id_format": "HS001, HS002, HS003",
+    "person_id_mapping": "student_id == person_id (canonical business identity)",
+    "embedding_reference": "embeddings.npy (9 embeddings, 512-dim, L2 normalized, ArcFace glintr100.onnx)",
+    "metadata_file": "embeddings.npy.metadata.json",
+    "canonical_path": "data/enrollment_db/",
+    "duplicate_databases": ["enrollment_db_1", "enrollment_db_2 (exact copies)"]
+  },
+  "enrollment_database": {
+    "canonical_path": "data/enrollment_db/",
+    "embedding_count": 9,
+    "embedding_dimension": 512,
+    "normalization": "L2",
+    "model": "glintr100.onnx (ArcFace)",
+    "model_sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+    "person_ids": ["HS001", "HS002", "HS003"],
+    "samples_per_person": 3,
+    "creation_timestamp": "2026-08-23T14:01:36.441284Z",
+    "schema_version": "1.0"
+  },
+  "student_id_mapping": {
+    "canonical_identity": "student_id (business identifier)",
+    "person_id": "maps 1:1 to student_id in current architecture",
+    "track_id": "runtime tracking identifier (per-camera, per-session) - NOT student_id",
+    "embedding_index": "array index in embeddings.npy - NOT student_id",
+    "face_id": "NOT used as primary identifier",
+    "global_observation": "preserves canonical student_id across cameras"
+  },
+  "parent_registry_schema": {
+    "tables": {
+      "parents": {
+        "columns": ["parent_id", "parent_name", "telegram_chat_id", "telegram_enabled", "notification_preferences", "created_at", "updated_at"],
+        "primary_key": "parent_id",
+        "notification_preferences_enum": ["ALL", "MORNING_ABSENCE_ONLY", "LONG_EXIT_ONLY", "MISSING_CHECKOUT_ONLY", "NONE"]
+      },
+      "student_parent_links": {
+        "columns": ["link_id", "student_id", "parent_id", "relationship", "is_primary", "created_at"],
+        "primary_key": "link_id",
+        "foreign_keys": ["parent_id -> parents.parent_id"],
+        "supports_many_to_many": true,
+        "primary_parent_designation": true
+      },
+      "link_codes": {
+        "columns": ["code", "student_id", "parent_id", "status", "created_at", "expires_at", "used_at", "used_by_chat_id"],
+        "primary_key": "code",
+        "code_format": "XXXX-XXXX (8 chars, alphanumeric, secrets.token_urlsafe)",
+        "expiry": "24 hours default",
+        "single_use": true,
+        "status_enum": ["ACTIVE", "USED", "EXPIRED", "REVOKED"]
+      }
+    },
+    "database": "SQLite with WAL mode disabled (PRAGMA journal_mode=DELETE) for Windows compatibility",
+    "path": "data/parent_registry.db"
+  },
+  "student_parent_relationship": {
+    "one_parent_multiple_students": true,
+    "multiple_parents_per_student": true,
+    "primary_contact_designation": true,
+    "notification_enabled_per_link": "via parent notification_preferences",
+    "routing": "student_id -> ParentRegistry.get_student_parents() -> parent.telegram_chat_id"
+  },
+  "telegram_bot_configuration": {
+    "token_location": "environment variable TELEGRAM_BOT_TOKEN",
+    "config_file": "app/config/settings.py (loads from env)",
+    "startup_validation": "app/bootstrap/startup_validation.py validates format (regex: ^\\d+:[A-Za-z0-9_-]{35,}$)",
+    "env_file_support": "Yes (.env supported via python-dotenv in settings)",
+    "git_excluded": true,
+    "never_in_excel": true,
+    "never_in_logs": true,
+    "single_project_bot": true,
+    "validation_endpoint": "/api/v1/health/system includes telegram config status"
+  },
+  "telegram_chat_id_mechanism": {
+    "routing_identifier": "telegram_chat_id (numeric or @username)",
+    "stored_in": "parents.telegram_chat_id",
+    "obtained_via": "secure link code flow: admin creates code -> parent opens bot -> /start <code> -> Telegram supplies chat_id -> backend validates code -> chat_id stored",
+    "username_not_equivalent": "telegram_username/profile_link is NOT chat_id and NOT sufficient for messaging",
+    "verification_required": "link code validation consumes code, records chat_id, marks status=USED",
+    "profile_link_insufficient": "telegram.me/username != deliverable destination"
+  },
+  "telegram_parent_linking": {
+    "existing_flow": "complete and implemented",
+    "steps": [
+      "Admin creates unique link code via ParentRegistry.create_link_code(student_id, parent_id, expires_in_hours=24)",
+      "Parent opens project Telegram bot",
+      "Parent sends /start <link_code>",
+      "Telegram Bot API delivers chat_id to webhook/polling",
+      "Backend validates link_code (active, not expired, not used)",
+      "student_id <-> parent_id <-> telegram_chat_id stored",
+      "Link code marked USED with used_at and used_by_chat_id"
+    ],
+    "security": {
+      "unique_non_guessable": "secrets.token_urlsafe(4) x 2",
+      "bounded_validity": "24h default",
+      "single_use": "consumed on validation",
+      "auditable": "created_at, used_at, used_by_chat_id tracked"
+    },
+    "missing_step": "none - flow is complete"
+  },
+  "administrative_excel_workbook": {
+    "template_path": "data/templates/student_parent_timetable_template.xlsx (to be created)",
+    "sheets_required": {
+      "STUDENTS": {
+        "required": true,
+        "columns": ["student_id", "student_name", "class_id", "person_id", "status"],
+        "notes": "person_id included only if enrollment metadata exposes it; NO embeddings; NO .npy data"
+      },
+      "PARENTS": {
+        "required": true,
+        "columns": ["parent_id", "parent_name", "relationship", "telegram_username", "telegram_profile_link", "telegram_chat_id", "notification_preferences", "link_status"],
+        "notes": "telegram_chat_id is routing identifier; username/profile_link supplementary only"
+      },
+      "STUDENT_PARENTS": {
+        "required": true,
+        "columns": ["student_id", "parent_id", "relationship", "primary_contact", "notification_enabled"],
+        "notes": "many-to-many preserved; do NOT collapse into single parent column"
+      },
+      "TIMETABLE": {
+        "required": true,
+        "columns": ["date", "day", "class_id", "student_id", "period", "start_time", "end_time", "subject", "session_type", "location", "expected_location", "outside_allowed"],
+        "notes": "uses ACTUAL Phase 37A/37D loader schema; session_type: CLASSROOM, BREAK, OUTSIDE_LESSON, LAB, OTHER; outside_allowed semantics preserved"
+      },
+      "TELEGRAM_CONFIG_GUIDE": {
+        "required": true,
+        "columns": ["parameter", "description", "example", "security_note"],
+        "notes": "MUST NEVER contain real bot token; documents TELEGRAM_BOT_TOKEN env var location"
+      }
+    },
+    "validation_rules": [
+      "student_id uniqueness",
+      "class_id validity",
+      "parent_id uniqueness",
+      "student-parent reference integrity",
+      "telegram_chat_id format validation (numeric or @username)",
+      "notification_preference enum validity",
+      "timetable student_id compatibility with enrollment",
+      "session_type enum validity",
+      "time format validity (HH:MM:SS)",
+      "date validity"
+    ],
+    "security": {
+      "telegram_bot_token": "NEVER in Excel",
+      "telegram_chat_id": "protected administrative data",
+      "no_embeddings": "NEVER store .npy binary data in Excel"
+    }
+  },
+  "timetable_schema": {
+    "source": "Phase 37A/37D TimetableLoader",
+    "loader": "app/attendance/timetable_loader.py",
+    "required_columns": ["student_id", "class_name", "day", "session_type", "entry_time", "exit_time"],
+    "optional_columns": ["session_id", "person_name", "subject", "location", "expected_location", "outside_allowed", "entry_window_start", "entry_window_end", "late_tolerance", "exit_window_start", "exit_window_end", "timetable_version"],
+    "session_types": ["CLASSROOM", "BREAK", "OUTSIDE_LESSON", "LAB", "OTHER", "MORNING", "AFTERNOON", "FULL_DAY", "EVENING"],
+    "semantic_mapping": {
+      "CLASSROOM": {"outside_allowed": false, "semantic_state": "EXPECTED_INSIDE"},
+      "BREAK": {"outside_allowed": true, "semantic_state": "EXPECTED_OUTSIDE"},
+      "OUTSIDE_LESSON": {"outside_allowed": true, "semantic_state": "EXPECTED_OUTSIDE"},
+      "LAB": {"outside_allowed": true, "semantic_state": "EXPECTED_OUTSIDE"},
+      "OTHER": {"outside_allowed": false, "semantic_state": "EXPECTED_INSIDE"}
+    },
+    "time_format": "seconds from midnight or HH:MM:SS",
+    "validation": "TimetableEntry.__post_init__ + TimetableLoader cross-entry validation"
+  },
+  "existing_ui_capability": {
+    "timetable_management": "frontend/src/views/TimetableManagement.vue",
+    "capabilities": {
+      "import_timetable": true,
+      "edit_timetable": true,
+      "save_timetable": true,
+      "edit_semantic_fields": true,
+      "validate_timetable": true,
+      "session_type_dropdown": ["CLASSROOM", "BREAK", "OUTSIDE_LESSON", "LAB", "OTHER", "FULL_DAY", "MORNING", "AFTERNOON"],
+      "semantic_fields": ["subject", "location", "expected_location", "outside_allowed"],
+      "excel_import": "UI exists (drag-drop + preview), backend API endpoint POST /api/v1/timetable/import"
+    },
+    "backend_api": ["GET /api/v1/timetable", "POST /api/v1/timetable", "PUT /api/v1/timetable/{id}", "DELETE /api/v1/timetable/{id}", "POST /api/v1/timetable/import"],
+    "policy_logic_in_frontend": false,
+    "reuse_recommendation": "USE existing UI - do not create second timetable UI"
+  },
+  "daily_excel_export": {
+    "implemented": true,
+    "status": "IMPLEMENTED",
+    "implementation_path": "app/attendance/daily_excel.py (DailyExcelExporter) + app/attendance/policy_engine/excel_integration.py (PolicyExcelExporter)",
+    "trigger": "manual via DailyExportRequest or scheduled",
+    "filename_convention": "attendance_YYYY-MM-DD.xlsx",
+    "storage_location": "request.output_path (configurable)",
+    "one_file_per_day": true,
+    "overwrites_historical": "only if same output_path used; typically date-based filename prevents overwrite",
+    "sheets": {
+      "DAILY_ATTENDANCE": "attendance records with IN/OUT times, duration, state",
+      "EXPECTED_SCHEDULE": "timetable-derived expected sessions with semantic fields",
+      "EVENTS": "chronological IN/OUT events",
+      "SUMMARY": "attendance state counts",
+      "PROVENANCE": "full traceability chain",
+      "POLICY_EVENTS": "policy events with evidence, state, idempotency key, semantic columns",
+      "NOTIFICATION_STATUS": "delivery status, attempts, errors, timestamps",
+      "POLICY_SUMMARY": "counts by type, state, student"
+    },
+    "includes_timetable_expectations": true,
+    "includes_policy_events": true,
+    "includes_telegram_notification_status": true,
+    "preserves_student_id": true,
+    "preserves_semantic_context": true,
+    "semantic_columns_in_policy_events": ["Session Type", "Subject", "Location", "Expected Location", "Outside Allowed", "Semantic State"],
+    "color_coding": "EXPECTED_OUTSIDE (green), EXPECTED_INSIDE (red)"
+  },
+  "security_findings": {
+    "telegram_bot_token": "environment variable only, never in source/git/logs/excel",
+    "telegram_chat_id": "stored in parent_registry.db, protected administrative data",
+    "link_codes": "24h expiry, single-use, non-guessable, auditable",
+    "sqlite_wal_disabled": "PRAGMA journal_mode=DELETE for Windows file locking safety",
+    "no_secrets_in_logs": "secret filtering in app.logging.logger",
+    "input_validation": "all API endpoints validated",
+    "sql_parameterization": "no string interpolation"
+  },
+  "files_created": [
+    "data/templates/student_parent_timetable_template.xlsx (template only, no real data)"
+  ],
+  "files_modified": [],
+  "tests_created": [
+    "tests/unit/test_admin_excel_template.py (validation tests)",
+    "tests/integration/test_phase38c1t_admin_excel.py (integration tests)"
+  ],
+  "exact_user_action_required": [
+    "1. Populate data/templates/student_parent_timetable_template.xlsx with real student/parent/timetable data",
+    "2. Set TELEGRAM_BOT_TOKEN environment variable for production",
+    "3. Configure TELEGRAM_LIVE_TEST=true and TELEGRAM_TEST_CHAT_ID for live testing",
+    "4. Place timetable Excel file in data/timetable/ for live operation",
+    "5. Run parent linking: admin creates link codes, parents use /start <code> in Telegram bot"
+  ],
+  "phase_38c2_prerequisites": [
+    "CAM1 and CAM2 RTSP streams active via MediaMTX",
+    "GPU with CUDA and models (SCRFD, ArcFace) available",
+    "TELEGRAM_BOT_TOKEN configured in environment",
+    "TELEGRAM_LIVE_TEST=true and TELEGRAM_TEST_CHAT_ID set",
+    "Timetable Excel file populated in data/timetable/",
+    "Enrollment database validated with real student data",
+    "Backend started with uvicorn app.main:app",
+    "Frontend built and served",
+    "Administrative Excel template populated with real data"
+  ],
+  "confirmations": {
+    "phase_38c2_not_started": true,
+    "phase_39_not_started": true,
+    "no_duplicate_subsystems": true,
+    "no_camera_architecture_changes": true,
+    "no_gpu_architecture_changes": true,
+    "no_fps_optimization": true,
+    "no_enrollment_db_modification": true,
+    "no_npy_regeneration": true
+  }
+}

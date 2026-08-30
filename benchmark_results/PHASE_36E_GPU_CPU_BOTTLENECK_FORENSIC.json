@@ -1,0 +1,2387 @@
+{
+  "timestamp": "2026-08-26T07:21:09.491362Z",
+  "duration_seconds": 20.28367853164673,
+  "frames_processed": 54,
+  "stage_timings": {
+    "rtsp_connection": {
+      "stage_name": "rtsp_connection",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "nvdec_decode": {
+      "stage_name": "nvdec_decode",
+      "count": 108,
+      "total_ms": 3917.37919987645,
+      "mean_ms": 36.27202962848565,
+      "median_ms": 35.5932499805931,
+      "p50_ms": 35.5932499805931,
+      "p95_ms": 41.62030997395049,
+      "p99_ms": 43.87181995844003,
+      "min_ms": 32.751600025221705,
+      "max_ms": 45.309499953873456,
+      "std_ms": 2.548953064492503
+    },
+    "gpu_to_cpu_transfer": {
+      "stage_name": "gpu_to_cpu_transfer",
+      "count": 108,
+      "total_ms": 3917.37919987645,
+      "mean_ms": 36.27202962848565,
+      "median_ms": 35.5932499805931,
+      "p50_ms": 35.5932499805931,
+      "p95_ms": 41.62030997395049,
+      "p99_ms": 43.87181995844003,
+      "min_ms": 32.751600025221705,
+      "max_ms": 45.309499953873456,
+      "std_ms": 2.548953064492503
+    },
+    "numpy_frombuffer": {
+      "stage_name": "numpy_frombuffer",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "bgr_to_rgb_conversion": {
+      "stage_name": "bgr_to_rgb_conversion",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "letterbox_resize": {
+      "stage_name": "letterbox_resize",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "uint8_to_float32": {
+      "stage_name": "uint8_to_float32",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "normalization": {
+      "stage_name": "normalization",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "hwc_to_chw_transpose": {
+      "stage_name": "hwc_to_chw_transpose",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "add_batch_dim": {
+      "stage_name": "add_batch_dim",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "cpu_to_gpu_transfer": {
+      "stage_name": "cpu_to_gpu_transfer",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "onnx_inference_scrfd": {
+      "stage_name": "onnx_inference_scrfd",
+      "count": 108,
+      "total_ms": 8100.927200051956,
+      "mean_ms": 75.00858518566626,
+      "median_ms": 59.88470002193935,
+      "p50_ms": 59.88470002193935,
+      "p95_ms": 111.94551003281956,
+      "p99_ms": 134.51588397787404,
+      "min_ms": 47.24699998041615,
+      "max_ms": 749.8159999959171,
+      "std_ms": 68.14192990742829
+    },
+    "onnx_inference_arcface": {
+      "stage_name": "onnx_inference_arcface",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "gpu_to_cpu_output_transfer": {
+      "stage_name": "gpu_to_cpu_output_transfer",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "postprocessing_nms": {
+      "stage_name": "postprocessing_nms",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "postprocessing_association": {
+      "stage_name": "postprocessing_association",
+      "count": 108,
+      "total_ms": 7.932000153232366,
+      "mean_ms": 0.07344444586326265,
+      "median_ms": 0.06215000757947564,
+      "p50_ms": 0.06215000757947564,
+      "p95_ms": 0.10910001583397387,
+      "p99_ms": 0.13461303955409665,
+      "min_ms": 0.03360002301633358,
+      "max_ms": 0.5711999838240445,
+      "std_ms": 0.05145701123106673
+    },
+    "postprocessing_tracking": {
+      "stage_name": "postprocessing_tracking",
+      "count": 108,
+      "total_ms": 3.06969991652295,
+      "mean_ms": 0.0284231473752125,
+      "median_ms": 0.025599991204217076,
+      "p50_ms": 0.025599991204217076,
+      "p95_ms": 0.04398498567752536,
+      "p99_ms": 0.0580470345448702,
+      "min_ms": 0.015600002370774746,
+      "max_ms": 0.06330001633614302,
+      "std_ms": 0.007647957429960358
+    },
+    "attendance_engine": {
+      "stage_name": "attendance_engine",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    },
+    "event_publishing": {
+      "stage_name": "event_publishing",
+      "count": 0,
+      "total_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "min_ms": 0.0,
+      "max_ms": 0.0,
+      "std_ms": 0.0
+    }
+  },
+  "memory_boundaries": [
+    {
+      "stage_name": "nvdec_output",
+      "data_type": "raw_frame",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "GPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 0.0,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 38.678000040818006,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 45.309499953873456,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 40.15270003583282,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 39.3974999897182,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 39.085299998987466,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 43.072499975096434,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 40.60000000754371,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 41.77059995708987,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 37.51840000040829,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 41.34120000526309,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 39.42550002830103,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 37.43119997670874,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 38.639299978967756,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 40.944700012914836,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 39.3597999936901,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 40.20909999962896,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 38.6834999662824,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 43.337900016922504,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 43.56120002921671,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.962099966127425,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.26119997352362,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.99740001279861,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.54509999230504,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.037600027862936,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.76999996928498,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 37.66269999323413,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.31570001319051,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.62690002238378,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.193300001788884,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.04409997165203,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.19799997936934,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.62640001857653,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 37.63450001133606,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.08990001864731,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.79980003228411,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.71659998083487,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.95149999111891,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.25360003206879,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.193400002550334,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.287699974607676,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.56699999514967,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.182999981567264,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.52439996181056,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.98830000171438,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.08690000651404,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.7182000298053,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.52190003776923,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.24219997739419,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.111800000071526,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.19199999189004,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.53070000978187,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 43.89519995311275,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.98679997958243,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.92600004049018,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.38909996859729,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.517600015737116,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.22329998668283,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.83680001227185,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.56710000662133,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.97199997259304,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.972699977923185,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.925400035921484,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.492800049018115,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.691000018734485,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.97719998611137,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.01040000608191,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.86469999188557,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.765299980994314,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.957999982405454,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.13019997626543,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.81769998325035,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 37.76870004367083,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.39079998154193,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.4564000046812,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.82759995292872,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.71680002985522,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 38.904499961063266,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.7242000172846,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.56549996230751,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.60330003872514,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.48449998581782,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.320799961686134,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.76309998566285,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 32.751600025221705,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.60739999031648,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.37639997759834,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.07120000338182,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.47800001595169,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.18989997589961,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.49500001827255,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.736899997573346,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.44320002058521,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.03720002481714,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.16490000765771,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 33.87220000149682,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.2662000330165,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 39.0317999990657,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.925199986901134,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 32.86940004909411,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.58690000884235,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 36.137300019618124,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.64139996888116,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.33769998466596,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.52310001011938,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.904299944173545,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.03830003319308,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 34.93289998732507,
+      "pinned_memory": false,
+      "async_transfer": false
+    },
+    {
+      "stage_name": "numpy_frombuffer",
+      "data_type": "numpy_array",
+      "shape": [
+        2160,
+        3840,
+        3
+      ],
+      "dtype": "uint8",
+      "location": "CPU",
+      "copy_occurred": true,
+      "copy_direction": "GPU->CPU",
+      "bytes_transferred": 24883200,
+      "transfer_time_ms": 35.163499996997416,
+      "pinned_memory": false,
+      "async_transfer": false
+    }
+  ],
+  "gpu_utilization": {
+    "mean": 16.57608695652174,
+    "max": 38.0,
+    "samples": [
+      2.0,
+      2.0,
+      2.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      9.0,
+      9.0,
+      9.0,
+      9.0,
+      9.0,
+      9.0,
+      9.0,
+      12.0,
+      12.0,
+      12.0,
+      12.0,
+      12.0,
+      12.0,
+      12.0,
+      12.0,
+      13.0,
+      13.0,
+      13.0,
+      13.0,
+      13.0,
+      13.0,
+      13.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      15.0,
+      14.0,
+      14.0,
+      14.0,
+      14.0,
+      14.0,
+      14.0,
+      14.0,
+      14.0,
+      24.0,
+      24.0,
+      24.0,
+      24.0,
+      24.0,
+      24.0,
+      24.0,
+      38.0,
+      38.0,
+      38.0,
+      38.0,
+      38.0,
+      38.0,
+      38.0,
+      19.0,
+      19.0,
+      19.0,
+      19.0,
+      19.0,
+      19.0,
+      19.0,
+      19.0,
+      20.0,
+      20.0,
+      20.0,
+      20.0,
+      20.0,
+      20.0,
+      20.0,
+      26.0,
+      26.0,
+      26.0,
+      26.0,
+      26.0,
+      26.0,
+      26.0
+    ]
+  },
+  "gpu_memory_mb": {
+    "mean": 2362.2185801630435,
+    "max": 2381.390625,
+    "samples": [
+      1977.0625,
+      2187.265625,
+      2271.265625,
+      2285.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2349.265625,
+      2363.265625,
+      2363.265625,
+      2363.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2381.390625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625,
+      2377.265625
+    ]
+  },
+  "cpu_utilization": {
+    "mean": 0.0,
+    "max": 0.0,
+    "samples": []
+  },
+  "fps": {
+    "source_fps": 1.1056177132464184,
+    "decode_fps": 1.1056177132464184,
+    "ingestion_fps": 1.1056177132464184,
+    "ai_processing_fps": 2.6622389975146197,
+    "output_fps": 2.6622389975146197,
+    "metrics_sampling_fps": 0.0
+  },
+  "nvdec": {
+    "active": true,
+    "gpu_device": 0
+  },
+  "onnx_runtime": {
+    "providers": [
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "cuda_provider_used": true,
+    "io_binding_used": false
+  },
+  "gpu_cpu_gpu_roundtrip": {
+    "detected": false,
+    "bytes_per_frame": 0,
+    "transfer_time_ms": 0.0
+  },
+  "preprocessing_4k": {
+    "total_cost_ms": 17.869300034362823,
+    "breakdown": {
+      "bgr_to_rgb_ms": 13.254899997264147,
+      "letterbox_resize_ms": 2.639700018335134,
+      "uint8_to_float32_ms": 1.9178999937139452,
+      "normalization_scale_ms": 0.001700012944638729,
+      "normalization_mean_std_ms": 0.000300002284348011,
+      "hwc_to_chw_ms": 0.017200014553964138,
+      "add_batch_dim_ms": 0.03759999526664615,
+      "total_ms": 17.869300034362823
+    }
+  },
+  "bottleneck_classification": [
+    "ONNX_RUNTIME",
+    "GPU_TO_CPU_TRANSFER",
+    "GPU_UNDERUTILIZED",
+    "BATCH_SIZE_ONE"
+  ],
+  "bottleneck_evidence": {
+    "onnx_inference_scrfd_ms": 75.00858518566626,
+    "gpu_to_cpu_transfer_ms": 36.27202962848565,
+    "gpu_utilization_mean": 16.57608695652174,
+    "ai_processing_fps": 2.6622389975146197
+  },
+  "ab_comparison": {
+    "current": {
+      "fps": 2.6622389975146197,
+      "gpu_utilization": 16.57608695652174,
+      "cpu_utilization": 0.0,
+      "total_latency_ms": 147.65451203587602,
+      "gpu_cpu_transfer_ms": 36.27202962848565,
+      "cpu_gpu_transfer_ms": 0.0,
+      "preprocessing_ms": 0.0
+    },
+    "gpu_resident_estimate": {
+      "fps": 8.978072479498344,
+      "total_latency_ms": 111.38248240739037,
+      "estimated_gpu_preprocessing_ms": 0.0,
+      "estimated_savings_ms": 36.27202962848565,
+      "speedup_factor": 3.3723765927401645
+    },
+    "io_binding_estimate": {
+      "description": "ONNX Runtime I/O Binding with device tensors",
+      "expected_input_transfer_elimination": true,
+      "expected_output_transfer_elimination": true,
+      "estimated_latency_reduction_ms": 36.27202962848565
+    }
+  },
+  "accuracy_verified": false,
+  "accuracy_notes": "CPU detections: 11, GPU detections: 11, Match: False",
+  "limitations": []
+}

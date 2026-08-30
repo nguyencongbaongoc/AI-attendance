@@ -1,0 +1,487 @@
+{
+  "timestamp": "2026-08-20T20:52:55.507900",
+  "total_tests": 15,
+  "passed_tests": 15,
+  "failed_tests": 0,
+  "skipped_tests": 0,
+  "results": [
+    {
+      "test_name": "crop_contract",
+      "passed": true,
+      "duration_ms": 0.06709998706355691,
+      "message": "Crop contract and provenance validated",
+      "details": {
+        "padding_policies": "validated",
+        "provenance_serialization": "validated",
+        "contract_serialization": "validated"
+      },
+      "error": null
+    },
+    {
+      "test_name": "bbox_restoration",
+      "passed": true,
+      "duration_ms": 0.17409998690709472,
+      "message": "Bbox restoration (Phase 9 formula) validated",
+      "details": {
+        "phase9_formula_reused": true,
+        "center_test_passed": true,
+        "boundary_clipping_passed": true,
+        "face_to_person_crop_passed": true,
+        "face_to_original_passed": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "dynamic_person_crop",
+      "passed": true,
+      "duration_ms": 134.97220000135712,
+      "message": "Dynamic person crop from ORIGINAL_FRAME validated",
+      "details": {
+        "center_person_crop": "130x130",
+        "small_person_crop": "26x52",
+        "edge_clipping": "validated",
+        "source_is_original_frame": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "face_detection_input",
+      "passed": true,
+      "duration_ms": 3.397899999981746,
+      "message": "Face detection input coordinate restoration validated",
+      "details": {
+        "person_crop_size": "200x400",
+        "scrfd_scale_factor": 1.6,
+        "restoration_accuracy": "validated",
+        "coordinate_space_tracking": "explicit"
+      },
+      "error": null
+    },
+    {
+      "test_name": "dynamic_face_crop",
+      "passed": true,
+      "duration_ms": 131.6549000039231,
+      "message": "Dynamic face crop from ORIGINAL_FRAME validated",
+      "details": {
+        "center_face_crop": "140x140",
+        "edge_face_crop": "48x140",
+        "source_is_original_frame": true,
+        "padding_applied": "20% ratio"
+      },
+      "error": null
+    },
+    {
+      "test_name": "padding_behavior",
+      "passed": true,
+      "duration_ms": 54.8296999768354,
+      "message": "Padding behavior (pixels and ratio) validated",
+      "details": {
+        "absolute_padding": "validated",
+        "ratio_padding": "validated",
+        "boundary_clipping": "validated"
+      },
+      "error": null
+    },
+    {
+      "test_name": "small_face_handling",
+      "passed": true,
+      "duration_ms": 52.542899997206405,
+      "message": "Small face handling validated - crops preserved, not rejected",
+      "details": {
+        "person_crop_preserved": true,
+        "tiny_face_crop_preserved": true,
+        "multiple_people_independent": true,
+        "no_person_rejection": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "boundary_cases",
+      "passed": true,
+      "duration_ms": 64.71999999484979,
+      "message": "All boundary cases handled correctly (no crash, valid clipped crops)",
+      "details": {
+        "person_boundary_tests": 8,
+        "face_boundary_tests": 3,
+        "all_clipped_correctly": true,
+        "results": {
+          "top_edge": {
+            "original_bbox": [
+              1870.0,
+              10.0,
+              1970.0,
+              60.0
+            ],
+            "crop_bbox": [
+              1855.0,
+              2.0,
+              1985.0,
+              68.0
+            ],
+            "crop_size": [
+              130,
+              66
+            ]
+          },
+          "bottom_edge": {
+            "original_bbox": [
+              1870.0,
+              2100.0,
+              1970.0,
+              2150.0
+            ],
+            "crop_bbox": [
+              1855.0,
+              2092.0,
+              1985.0,
+              2158.0
+            ],
+            "crop_size": [
+              130,
+              66
+            ]
+          },
+          "left_edge": {
+            "original_bbox": [
+              10.0,
+              1030.0,
+              60.0,
+              1130.0
+            ],
+            "crop_bbox": [
+              2.0,
+              1015.0,
+              68.0,
+              1145.0
+            ],
+            "crop_size": [
+              66,
+              130
+            ]
+          },
+          "right_edge": {
+            "original_bbox": [
+              3780.0,
+              1030.0,
+              3830.0,
+              1130.0
+            ],
+            "crop_bbox": [
+              3772.0,
+              1015.0,
+              3838.0,
+              1145.0
+            ],
+            "crop_size": [
+              66,
+              130
+            ]
+          },
+          "top_left_corner": {
+            "original_bbox": [
+              10.0,
+              10.0,
+              60.0,
+              60.0
+            ],
+            "crop_bbox": [
+              2.0,
+              2.0,
+              68.0,
+              68.0
+            ],
+            "crop_size": [
+              66,
+              66
+            ]
+          },
+          "top_right_corner": {
+            "original_bbox": [
+              3780.0,
+              10.0,
+              3830.0,
+              60.0
+            ],
+            "crop_bbox": [
+              3772.0,
+              2.0,
+              3838.0,
+              68.0
+            ],
+            "crop_size": [
+              66,
+              66
+            ]
+          },
+          "bottom_left_corner": {
+            "original_bbox": [
+              10.0,
+              2100.0,
+              60.0,
+              2150.0
+            ],
+            "crop_bbox": [
+              2.0,
+              2092.0,
+              68.0,
+              2158.0
+            ],
+            "crop_size": [
+              66,
+              66
+            ]
+          },
+          "bottom_right_corner": {
+            "original_bbox": [
+              3780.0,
+              2100.0,
+              3830.0,
+              2150.0
+            ],
+            "crop_bbox": [
+              3772.0,
+              2092.0,
+              3838.0,
+              2158.0
+            ],
+            "crop_size": [
+              66,
+              66
+            ]
+          },
+          "face_top_edge": {
+            "original_bbox": [
+              100.0,
+              0.0,
+              200.0,
+              50.0
+            ],
+            "crop_bbox": [
+              80.0,
+              0.0,
+              220.0,
+              60.0
+            ],
+            "crop_size": [
+              140,
+              60
+            ]
+          },
+          "face_right_edge": {
+            "original_bbox": [
+              3800.0,
+              100.0,
+              3840.0,
+              200.0
+            ],
+            "crop_bbox": [
+              3792.0,
+              80.0,
+              3840.0,
+              220.0
+            ],
+            "crop_size": [
+              48,
+              140
+            ]
+          },
+          "face_corner": {
+            "original_bbox": [
+              3800.0,
+              0.0,
+              3840.0,
+              50.0
+            ],
+            "crop_bbox": [
+              3792.0,
+              0.0,
+              3840.0,
+              60.0
+            ],
+            "crop_size": [
+              48,
+              60
+            ]
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "test_name": "multiple_people",
+      "passed": true,
+      "duration_ms": 141.3501000206452,
+      "message": "Multiple people receive independent dynamic crops",
+      "details": {
+        "num_people": 3,
+        "all_crops_valid": true,
+        "order_independent": true,
+        "provenance_preserved": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "4k_source_preservation",
+      "passed": true,
+      "duration_ms": 140.21689997753128,
+      "message": "4K source preservation proven - crops come from ORIGINAL_FRAME, not 640x640 tensor",
+      "details": {
+        "exact_pixel_match": true,
+        "original_frame_unchanged": true,
+        "padded_crop_center_matches": true,
+        "no_640x640_tensor_used": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "determinism",
+      "passed": true,
+      "duration_ms": 135.38559997687116,
+      "message": "Deterministic behavior validated across repeated runs",
+      "details": {
+        "crop_runs": 5,
+        "bbox_compute_runs": 10,
+        "all_identical": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "memory_safety",
+      "passed": true,
+      "duration_ms": 464.3522000114899,
+      "message": "Memory safety validated - no unbounded accumulation",
+      "details": {
+        "frames_processed": 20,
+        "person_crop_estimate_kb": 234.375,
+        "face_crop_estimate_kb": 36.75,
+        "explicit_release_tested": true,
+        "no_persistent_queues": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "phase15_compatibility",
+      "passed": true,
+      "duration_ms": 136.0759999952279,
+      "message": "Phase 15 compatibility validated - output feeds pose/alignment/ArcFace",
+      "details": {
+        "crop_format": "HWC RGB numpy array",
+        "provenance_complete": true,
+        "bbox_in_original": true,
+        "serialization_works": true,
+        "suitable_for_arcface_resize": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "negative_geometry",
+      "passed": true,
+      "duration_ms": 58.41789999976754,
+      "message": "All negative geometry cases rejected correctly",
+      "details": {
+        "rejected_cases": [
+          "zero_width_bbox",
+          "zero_height_bbox",
+          "negative_x1",
+          "negative_y1",
+          "nan_coordinate",
+          "inf_coordinate",
+          "bbox_exceeds_frame"
+        ],
+        "count": 7,
+        "safe_validator_works": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "safety_offline_only",
+      "passed": true,
+      "duration_ms": 5.13219999265857,
+      "message": "Safety verified - no camera/streaming/attendance code in adaptive_crop.py",
+      "details": {
+        "files_checked": 1,
+        "patterns_checked": 11,
+        "violations": 0
+      },
+      "error": null
+    }
+  ],
+  "verdict": "PASS",
+  "source_resolution": [
+    3840,
+    2160
+  ],
+  "model_input_resolution": [
+    640,
+    640
+  ],
+  "crop_contract": {
+    "person_padding": {
+      "pad_pixels": null,
+      "pad_ratio": 0.15
+    },
+    "face_padding": {
+      "pad_pixels": null,
+      "pad_ratio": 0.2
+    },
+    "min_person_crop_width": 32,
+    "min_person_crop_height": 32,
+    "min_face_crop_width": 16,
+    "min_face_crop_height": 16,
+    "min_person_for_face_detection": 48
+  },
+  "bbox_restoration": {
+    "formula": "bbox_original = (bbox_model - padding) / scale_factor",
+    "phase9_reused": true
+  },
+  "dynamic_person_crop": {
+    "source": "ORIGINAL_FRAME",
+    "padding": "15% ratio",
+    "dynamic_sizing": true
+  },
+  "dynamic_face_crop": {
+    "source": "ORIGINAL_FRAME",
+    "padding": "20% ratio",
+    "preferred_path": true
+  },
+  "boundary_handling": {
+    "all_edges_tested": true,
+    "corners_tested": true,
+    "clipping_works": true
+  },
+  "original_frame_proof": {
+    "exact_pixel_match": true,
+    "no_640x640_tensor_used": true
+  },
+  "provenance": {
+    "full_chain_tracked": true,
+    "serialization_works": true
+  },
+  "determinism": {
+    "crop_deterministic": true,
+    "bbox_compute_deterministic": true
+  },
+  "memory_safety": {
+    "bounded": true,
+    "no_accumulation": true,
+    "explicit_release": true
+  },
+  "phase15_compatibility": {
+    "output_feeds_phase15": true,
+    "arcface_ready": true
+  },
+  "negative_tests": {
+    "all_rejected": true,
+    "count": 7
+  },
+  "safety_results": {
+    "offline_only": true,
+    "no_camera_access": true
+  },
+  "limitations": [
+    "Synthetic noise input - no accuracy claims on real data",
+    "Face detection on person crop uses simulated coordinates",
+    "Phase 15 integration tested conceptually, not end-to-end"
+  ],
+  "readiness_for_phase17": true
+}

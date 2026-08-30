@@ -1,0 +1,53 @@
+{
+  "phase": "40D",
+  "title": "Realtime + UX Integration",
+  "timestamp": "2026-08-29T04:10:00Z",
+  "realtime_architecture": {
+    "websocket_client": "HealthWebSocketClient in figma/src/services/api.ts",
+    "sse_client": "HealthSSEClient in figma/src/services/api.ts",
+    "hooks": "useHealthWebSocket, useHealthSSE, useHealthRealtime in figma/src/hooks/useHealth.ts",
+    "features": [
+      "Automatic reconnect with exponential backoff (max 5 attempts, 1s-30s delay)",
+      "Sequence number tracking for event ordering",
+      "Heartbeat/ping-pong every 10 seconds",
+      "Stale connection detection (30s threshold)",
+      "Sync request on reconnect",
+      "Acknowledgment mechanism",
+      "Subscription support for event filtering"
+    ],
+    "fallback": "SSE automatically used if WebSocket fails or as configured preference"
+  },
+  "ux_integration": {
+    "loading_states": "Per-component loading states via useUIStore (cameras, attendance, events, search, replay, provenance, enrollment, timetable)",
+    "error_states": "Per-component error states via useUIStore with clearError function",
+    "empty_states": "Implemented in PersonSearch, TimetableManagement, ParentTelegram, ExcelExport",
+    "reconnect_handling": "Real-time connection status shown in top nav bar and SystemHealth page",
+    "offline_behavior": "UI remains functional with cached data, shows 'Real-time Disconnected' status",
+    "graceful_degradation": [
+      "Camera unavailable: Shows 'No Signal' overlay on CameraCard",
+      "Telegram unavailable: Shows 'Not Linked' status, queue stats show error",
+      "Backend temporarily unavailable: Polling continues, WebSocket reconnects automatically",
+      "No timetable exists: Empty state with 'Add Entry' CTA",
+      "No attendance exists: Shows 'No live events' message",
+      "No parent linked: Shows 'Not Linked' with 'Link' button"
+    ]
+  },
+  "components_with_realtime": [
+    "CommandCenter (dashboard) - live camera health, system status, event stream",
+    "SystemHealth - detailed camera metrics, GPU status, queue metrics, alerts",
+    "PersonSearch - could subscribe to attendance events for live updates",
+    "PersonDetail - could show real-time appearance updates"
+  ],
+  "connection_status_ui": {
+    "top_nav": "Shows 'Real-time Connected'/'Real-time Disconnected' with status dot",
+    "bottom_bar": "Shows 'WS: Connected'/'WS: Disconnected'",
+    "system_health_page": "Detailed connection status with sync/disconnect buttons"
+  },
+  "testing_scenarios": [
+    "Backend restart: WebSocket reconnects automatically, syncs state",
+    "Network interruption: Exponential backoff reconnect, max 5 attempts",
+    "Tab background/foreground: Heartbeat maintains connection",
+    "Multiple tabs: Each gets independent connection with unique connection_id",
+    "SSE fallback: Works when WebSocket unavailable (corporate firewalls)"
+  ]
+}

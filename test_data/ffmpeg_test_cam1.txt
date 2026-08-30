@@ -1,0 +1,32 @@
+ffmpeg version 9.0-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers
+  built with gcc 16.1.0 (Rev2, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-cairo --enable-fontconfig --enable-iconv --enable-gnutls --enable-lcms2 --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-libsnappy --enable-zlib --enable-librist --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-sdl2 --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libdavs2 --enable-libopenjpeg --enable-libquirc --enable-libuavs3d --enable-libxevd --enable-libzvbi --enable-liboapv --enable-libqrencode --enable-librav1e --enable-libsvtav1 --enable-libvvenc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxeve --enable-libxvid --enable-libaom --enable-libjxl --enable-libsvtjpegxs --enable-libvpx --enable-mediafoundation --enable-libass --enable-frei0r --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-liblensfun --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-vulkan --enable-libplacebo --enable-opencl --enable-libcdio --enable-openal --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc --enable-libcodec2 --enable-libilbc --enable-libgsm --enable-liblc3 --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint --enable-whisper
+  libavutil      61.  1.100 / 61.  1.100
+  libavcodec     63.  1.100 / 63.  1.100
+  libavformat    63.  1.100 / 63.  1.100
+  libavdevice    63.  1.100 / 63.  1.100
+  libavfilter    12.  1.100 / 12.  1.100
+  libswscale     10.  1.100 / 10.  1.100
+  libswresample   7.  1.100 /  7.  1.100
+Input #0, rtsp, from 'rtsp://127.0.0.1:8554/live/cam1':
+  Metadata:
+    title           :  
+  Duration: N/A, start: 0.108125, bitrate: N/A
+  Stream #0:0: Video: h264 (Main), yuvj420p(pc, progressive), 3840x2160, 30 tbr, 90k tbn, start 0.175278
+  Stream #0:1: Audio: aac (LC), 48000 Hz, mono, fltp, start 0.108125
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> wrapped_avframe (native))
+  Stream #0:1 -> #0:1 (aac (native) -> pcm_s16le (native))
+Press [q] to stop, [?] for help
+Output #0, null, to 'pipe:':
+  Metadata:
+    title           :  
+    encoder         : Lavf63.1.100
+  Stream #0:0: Video: wrapped_avframe, yuvj420p(pc, progressive), 3840x2160, q=2-31, 200 kb/s, 30 fps, 30 tbn
+    Metadata:
+      encoder         : Lavc63.1.100 wrapped_avframe
+  Stream #0:1: Audio: pcm_s16le, 48000 Hz, mono, s16, 768 kb/s
+    Metadata:
+      encoder         : Lavc63.1.100 pcm_s16le
+frame=    3 fps=0.0 q=-0.0 size=N/A time=00:00:01.08 bitrate=N/A speed=2.12x elapsed=0:00:00.51    frame=   47 fps= 46 q=-0.0 size=N/A time=00:00:02.62 bitrate=N/A speed=2.56x elapsed=0:00:01.02    frame=   63 fps= 41 q=-0.0 size=N/A time=00:00:03.05 bitrate=N/A speed=1.97x elapsed=0:00:01.54    frame=   78 fps= 38 q=-0.0 size=N/A time=00:00:03.58 bitrate=N/A speed=1.74x elapsed=0:00:02.05    frame=   93 fps= 36 q=-0.0 size=N/A time=00:00:04.07 bitrate=N/A speed=1.58x elapsed=0:00:02.57    frame=  109 fps= 35 q=-0.0 size=N/A time=00:00:04.65 bitrate=N/A speed=1.51x elapsed=0:00:03.08    [out#0/null @ 000001e22ab7a540] video:51KiB audio:469KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=  124 fps= 34 q=-0.0 Lsize=N/A time=00:00:05.00 bitrate=N/A speed=1.36x elapsed=0:00:03.68    

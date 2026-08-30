@@ -1,0 +1,109 @@
+{
+  "phase": "35A",
+  "name": "CONTRACT_IMPORT_TIMESTAMP_REPAIR",
+  "timestamp": "2026-08-24T17:21:19.034000Z",
+  "verdict": "PASS WITH DOCUMENTED LIMITATION",
+  "summary": {
+    "total_pytest_suites": 11,
+    "pytest_passed": 11,
+    "pytest_failed": 0,
+    "total_acceptance_checks": 12,
+    "checks_verified": 11,
+    "checks_not_verified": 1,
+    "live_runtime_verified_count": 7,
+    "offline_verified_count": 4,
+    "not_verified_count": 1,
+    "total_duration_seconds": 85.70
+  },
+  "root_causes": {
+    "immediate_event": "Phase 35 script used non-existent EventType enum and incorrect ImmediateEvent constructor fields (timestamp vs event_timestamp, payload field). Fixed by using ImmediateEventType enum and correct constructor fields.",
+    "backpressure": "Same EventType issue plus incorrect ImmediateEvent construction. Fixed by using ImmediateEventType.RAW_IN and proper constructor.",
+    "determinism_idempotency": "Missing import for AttendanceDecisionContext from app.attendance.engine. Fixed by adding import.",
+    "timestamp_fps_precision": "CAM1 reported 90000 FPS due to RTSP source using frame_index/FPS fallback instead of wall-clock timestamps for live streams. Fixed RTSPSource to use wall-clock receive time for live streams.",
+    "replay": "Phase 35 script referenced non-existent VideoEvidenceCapture and VideoEvidenceConfig classes. Fixed by using canonical VideoEvidenceRetriever, VideoSourceInfo, VideoSegmentRequest, VideoSegmentResult classes.",
+    "real_failure_recovery": "Requires controlled RTMP publisher stop/restart which could disrupt live infrastructure. Not performed to avoid damaging MediaMTX configuration."
+  },
+  "files_changed": [
+    "scripts/phase35_realtime_e2e.py",
+    "scripts/phase35_realtime_performance.py",
+    "app/streaming/rtsp_source.py"
+  ],
+  "contract_api_repairs": {
+    "immediate_event": "Fixed EventType -> ImmediateEventType enum usage, added required direction, identity_certainty, source_raw_event_id fields, changed timestamp to event_timestamp",
+    "backpressure": "Fixed EventType -> ImmediateEventType enum usage, corrected ImmediateEvent constructor",
+    "determinism_idempotency": "Added AttendanceDecisionContext import from app.attendance.engine",
+    "replay": "Fixed imports to use canonical VideoEvidenceRetriever, VideoSourceInfo, VideoSegmentRequest, VideoSegmentResult"
+  },
+  "timestamp_fps_repair": {
+    "problem": "CAM1 reported 90000 FPS due to timestamp precision issue - RTSP source used frame_index/FPS fallback (1/30 = 0.033s) but frame_index was not incrementing properly, causing near-zero intervals",
+    "solution": "Modified RTSPSource.get_next_frame() to use wall-clock receive time for live streams, initializing _start_time on first frame and computing live_timestamp = frame_receive_time - _start_time",
+    "result": "CAM1 now reports ~4.6-5.1 FPS (realistic for live stream processing), CAM2 reports ~4.7-5.1 FPS. Both cameras now use same measurement semantics (wall-clock based). Frame continuity and timestamp monotonicity now verified."
+  },
+  "replay_repair_status": "Fixed imports to use canonical Phase 27 video evidence classes. VideoEvidenceRetriever now available and verified.",
+  "backpressure_repair_status": "Verified DROP_OLDEST policy works correctly with bounded queues, history, and deduplication cache.",
+  "determinism_idempotency_repair_status": "AttendanceDecisionContext import fixed. Attendance engine idempotency verified - same inputs produce same decision_id.",
+  "real_cam1_cam2_measurements": {
+    "cam1": {
+      "frames_received": 30,
+      "duration_seconds": 8.24,
+      "observed_fps": 4.63,
+      "inference_latency_mean_ms": 197.01,
+      "frame_interval_mean": 0.219,
+      "frame_continuity": true,
+      "timestamp_monotonicity": true,
+      "camera_id_integrity": true
+    },
+    "cam2": {
+      "frames_received": 30,
+      "duration_seconds": 8.20,
+      "observed_fps": 4.74,
+      "inference_latency_mean_ms": 192.59,
+      "frame_interval_mean": 0.214,
+      "frame_continuity": true,
+      "timestamp_monotonicity": true,
+      "camera_id_integrity": true
+    },
+    "simultaneous_operation": true
+  },
+  "live_verification_classification": {
+    "LIVE_RUNTIME_VERIFIED": [
+      "performance_baseline",
+      "performance_invariants",
+      "attendance",
+      "immediate_event",
+      "replay",
+      "backpressure",
+      "determinism_idempotency"
+    ],
+    "OFFLINE_VERIFIED": [
+      "cross_camera",
+      "in_out_events",
+      "live_ui",
+      "recovery"
+    ],
+    "NOT_VERIFIED": [
+      "real_failure_recovery"
+    ]
+  },
+  "regression_results": {
+    "phase_32_streaming_contracts": "PASS",
+    "phase_32_mediamtx_config": "PASS",
+    "phase_33_health_events": "PASS",
+    "phase_33_health_monitor": "PASS",
+    "phase_31_offline_full_e2e": "PASS",
+    "phase_23_integration": "PASS",
+    "phase_24_integration": "PASS",
+    "phase_27_replay": "PASS",
+    "phase_29_integration": "PASS",
+    "phase_30a_deliverables": "PASS",
+    "attendance_integration": "PASS"
+  },
+  "remaining_not_verified_items": [
+    {
+      "item": "real_failure_recovery",
+      "reason": "Requires controlled RTMP publisher stop/restart which could disrupt live infrastructure. Not performed to avoid damaging MediaMTX configuration.",
+      "note": "Health monitor failure isolation and recovery verified offline (see recovery check)"
+    }
+  ],
+  "phase_36_readiness": "READY"
+}

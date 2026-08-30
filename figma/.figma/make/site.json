@@ -1,0 +1,10 @@
+{
+  "description": "This AI Attendance Command Center streamlines multi-camera attendance tracking for educational institutions, enhancing operational efficiency and accuracy.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "phase": "38C.1T.2",
+  "title": "Telegram Token Configuration Forensic",
+  "timestamp": "2026-08-28T17:56:00+07:00",
+  "repository_root": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance",
+  "canonical_token_variable": "TELEGRAM_BOT_TOKEN",
+  "configuration_mechanism": "Environment variable (primary) with .env file support via pydantic-settings",
+  "exact_configuration_path": "app/config/settings.py -> Settings.telegram.bot_token",
+  "code_locations": {
+    "settings_definition": "app/config/settings.py:207-228 (TelegramConfig class)",
+    "settings_loading": "app/config/settings.py:318-399 (Settings class with BaseSettings)",
+    "startup_validation": "app/bootstrap/startup_validation.py:266-304 (_validate_telegram method)",
+    "telegram_bot_init": "app/attendance/policy_engine/telegram_bot.py:208-237 (TelegramBot.__init__)",
+    "token_validation": "app/attendance/policy_engine/telegram_bot.py:42-69 (validate_bot_token function)",
+    "factory_creation": "app/attendance/policy_engine/factory.py:246-247 (create_telegram_bot call)",
+    "main_app_startup": "app/main.py:28-45 (lifespan loads settings)"
+  },
+  "token_flow_trace": [
+    "1. Environment variable TELEGRAM_BOT_TOKEN (or .env file)",
+    "2. pydantic-settings BaseSettings loads via SettingsConfigDict(env_file='.env')",
+    "3. Settings.telegram.bot_token populated",
+    "4. StartupValidator._validate_telegram() checks settings.telegram.bot_token",
+    "5. TelegramBot.__init__() uses bot_token or os.environ.get('TELEGRAM_BOT_TOKEN')",
+    "6. TelegramBot passed to NotificationQueue and TelegramWorker",
+    "7. TelegramWorker sends notifications via TelegramBot.send_message()"
+  ],
+  "env_file_support": {
+    "supported": true,
+    "required": false,
+    "mechanism": "pydantic-settings BaseSettings with SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')",
+    "note": ".env file is optional; environment variables take precedence"
+  },
+  "existing_config_files": {
+    ".env": "NOT_FOUND",
+    "config.yaml": "NOT_FOUND",
+    "config.yml": "NOT_FOUND",
+    "settings.yaml": "NOT_FOUND",
+    "settings.yml": "NOT_FOUND",
+    "system.yaml": "NOT_FOUND",
+    "config.json": "NOT_FOUND",
+    "settings.json": "NOT_FOUND"
+  },
+  "startup_validation": {
+    "location": "app/bootstrap/startup_validation.py:266-304",
+    "behavior": "Warns if TELEGRAM_BOT_TOKEN not configured (notifications disabled), validates format if present",
+    "strict_mode": "Available via strict parameter, defaults to False (warn only)"
+  },
+  "windows_configuration": {
+    "method": "Environment variable",
+    "scope_options": [
+      "Process environment variable (set in terminal session)",
+      "User environment variable (System Properties -> Environment Variables -> User variables)",
+      "System environment variable (System Properties -> Environment Variables -> System variables)"
+    ],
+    "recommended": "User environment variable for persistence across sessions",
+    "powershell_command": "$env:TELEGRAM_BOT_TOKEN='your_token_here'  # temporary\n[Environment]::SetEnvironmentVariable('TELEGRAM_BOT_TOKEN', 'your_token_here', 'User')  # persistent",
+    "cmd_command": "set TELEGRAM_BOT_TOKEN=your_token_here  # temporary\nsetx TELEGRAM_BOT_TOKEN your_token_here  # persistent (user scope)"
+  },
+  "git_security": {
+    "gitignore_protects_env": true,
+    "gitignore_entries": [
+      ".env",
+      ".env.local",
+      ".env.*.local"
+    ],
+    "secrets_in_repo": false,
+    "token_in_logs_protected": true,
+    "security_config": "app/config/settings.py:306-315 (SecurityConfig.no_secrets_in_logs=true, token_env_only=true)"
+  },
+  "live_test_requirements": {
+    "TELEGRAM_LIVE_TEST": "Environment variable (boolean, default false)",
+    "TELEGRAM_TEST_CHAT_ID": "Environment variable (required when live_test=true)",
+    "validation": "app/bootstrap/startup_validation.py:291-304, app/attendance/policy_engine/telegram_bot.py:280-325",
+    "behavior": "Only sends test messages when both enabled and chat_id matches configured test chat"
+  },
+  "new_files_required": false,
+  "user_action_required": "Set TELEGRAM_BOT_TOKEN environment variable (and optionally TELEGRAM_LIVE_TEST=true + TELEGRAM_TEST_CHAT_ID for testing)",
+  "phase_38c2_status": "NOT_STARTED",
+  "phase_39_status": "NOT_STARTED"
+}

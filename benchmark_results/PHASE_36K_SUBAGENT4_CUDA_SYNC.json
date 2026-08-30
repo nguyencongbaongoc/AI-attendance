@@ -1,0 +1,54 @@
+{
+  "sync_analysis": {
+    "implicit_sync_numpy": {
+      "mean": 0.9545020000132354,
+      "p50": 1.1033999999199295,
+      "p95": 1.6560000003664754,
+      "p99": 3.539599999839993,
+      "max": 3.539599999839993,
+      "count": 100
+    },
+    "total_frame": {
+      "mean": 41.73943399998279,
+      "p50": 34.123499999623164,
+      "p95": 77.96710000002349,
+      "p99": 90.13520000007702,
+      "max": 90.13520000007702,
+      "count": 50
+    }
+  },
+  "pipeline_pattern": "CPU_BOUND_SEQUENTIAL",
+  "bottlenecks": [
+    "CPU work dominates - GPU waiting for CPU"
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "issue": "Pipeline is strictly sequential - no GPU/CPU overlap",
+      "current": "GPU preprocess → GPU infer → CPU parse → CPU decode → CPU NMS",
+      "recommended": "Use CUDA streams to overlap preprocessing of frame N+1 with inference of frame N",
+      "impact": "Could reduce effective latency by 30-50%"
+    },
+    {
+      "priority": "HIGH",
+      "issue": "Multiple implicit synchronizations via .numpy() calls",
+      "current": "9 output tensors each call .numpy() separately",
+      "recommended": "Batch output transfer or use OrtValue.to_numpy() once",
+      "impact": "Reduce sync overhead"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "SCRFD decoding on CPU is major bottleneck (19.5ms mean)",
+      "current": "Pure Python/NumPy anchor generation and bbox decoding",
+      "recommended": "Move anchor generation to GPU or use TensorRT for fused postprocessing",
+      "impact": "Could reduce CPU postprocessing by 10-15ms"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "First frame has massive sync overhead (393ms GPU inference)",
+      "current": "Cold start includes CUDA context initialization, kernel compilation",
+      "recommended": "Pre-warm with dummy inferences at startup",
+      "impact": "Eliminate first-frame penalty"
+    }
+  ]
+}

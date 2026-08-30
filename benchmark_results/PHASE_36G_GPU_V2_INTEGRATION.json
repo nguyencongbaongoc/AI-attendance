@@ -1,0 +1,5388 @@
+{
+  "phase": "36G",
+  "timestamp": "2026-08-26T13:01:53",
+  "mode": "OFFLINE",
+  "baseline_architecture": {
+    "description": "CPU frame -> NumPy/OpenCV preprocessing -> CPU tensor -> CPU->GPU -> ONNX Runtime CUDA -> GPU->CPU output",
+    "preprocessing_ms": 76.5632553344282,
+    "inference_ms": 0,
+    "full_pipeline_ms": 76.5632553344282,
+    "fps": 13.061095634348373
+  },
+  "integrated_architecture": {
+    "description": "GPU-resident input -> GPU preprocessing (PyTorch CUDA) -> GPU tensor -> ONNX Runtime CUDA + I/O Binding -> GPU-resident output -> CPU parse",
+    "preprocessing_ms": 0,
+    "inference_ms": 0,
+    "full_pipeline_ms": 79.11977700074203,
+    "fps": 12.63906494567877
+  },
+  "benchmarks": {
+    "480x640": {
+      "cpu": {
+        "name": "CPU_Canonical_480x640",
+        "count": 300,
+        "mean_ms": 76.5632553344282,
+        "median_ms": 72.34499999321997,
+        "p50_ms": 72.34499999321997,
+        "p95_ms": 115.24818495672662,
+        "p99_ms": 117.8359679755522,
+        "min_ms": 54.72259997623041,
+        "max_ms": 149.55209998879582,
+        "std_ms": 17.846198706772277,
+        "fps": 13.061095634348373,
+        "metadata": {}
+      },
+      "gpu": {
+        "name": "GPU_Integrated_480x640",
+        "count": 300,
+        "mean_ms": 79.11977700074203,
+        "median_ms": 71.74624997423962,
+        "p50_ms": 71.74624997423962,
+        "p95_ms": 114.8165649996372,
+        "p99_ms": 119.51265496900305,
+        "min_ms": 66.09369994839653,
+        "max_ms": 129.57560003269464,
+        "std_ms": 16.567983543364445,
+        "fps": 12.63906494567877,
+        "metadata": {}
+      },
+      "speedup_factor": 0.9676879566244246
+    },
+    "3840x2160_4k": {
+      "cpu": {
+        "name": "CPU_Canonical_4K",
+        "count": 10,
+        "mean_ms": 69.23449001042172,
+        "median_ms": 61.81055001798086,
+        "p50_ms": 61.81055001798086,
+        "p95_ms": 104.106880017207,
+        "p99_ms": 104.49265600007493,
+        "min_ms": 57.99100000876933,
+        "max_ms": 104.58909999579191,
+        "std_ms": 17.481305960979956,
+        "fps": 14.443668175348328,
+        "metadata": {}
+      },
+      "gpu": {
+        "name": "GPU_Integrated_4K",
+        "count": 10,
+        "mean_ms": 55.293350003194064,
+        "median_ms": 46.12060001818463,
+        "p50_ms": 46.12060001818463,
+        "p95_ms": 96.46769000974017,
+        "p99_ms": 99.1020980157191,
+        "min_ms": 42.47879999456927,
+        "max_ms": 99.76070001721382,
+        "std_ms": 20.577822475083074,
+        "fps": 18.085357460566854,
+        "metadata": {}
+      },
+      "speedup_factor": 1.2521305004385217
+    }
+  },
+  "accuracy_parity": {
+    "test_frames": 10,
+    "total_cpu_detections": 855,
+    "total_gpu_detections": 855,
+    "detection_count_match": true,
+    "bbox_max_diff": 0.0,
+    "confidence_max_diff": 0.0,
+    "landmarks_max_diff": 0.0,
+    "parity_passed": true,
+    "tolerance": 0.0001,
+    "per_frame": [
+      {
+        "cpu_count": 87,
+        "gpu_count": 87,
+        "count_match": true,
+        "bbox_max_diff": 0.0,
+        "confidence_max_diff": 0.0,
+        "landmarks_max_diff": 0.0,
+        "parity_passed": true,
+        "details": [
+          {
+            "cpu_confidence": 0.9840664863586426,
+            "gpu_confidence": 0.9840664863586426,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9806577563285828,
+            "gpu_confidence": 0.9806577563285828,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9244482517242432,
+            "gpu_confidence": 0.9244482517242432,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9165021181106567,
+            "gpu_confidence": 0.9165021181106567,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.910496175289154,
+            "gpu_confidence": 0.910496175289154,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8937821984291077,
+            "gpu_confidence": 0.8937821984291077,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8897119164466858,
+            "gpu_confidence": 0.8897119164466858,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8792394399642944,
+            "gpu_confidence": 0.8792394399642944,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8647199869155884,
+            "gpu_confidence": 0.8647199869155884,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8548790216445923,
+            "gpu_confidence": 0.8548790216445923,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8315664529800415,
+            "gpu_confidence": 0.8315664529800415,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8315253257751465,
+            "gpu_confidence": 0.8315253257751465,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8288220167160034,
+            "gpu_confidence": 0.8288220167160034,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8275578618049622,
+            "gpu_confidence": 0.8275578618049622,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8191045522689819,
+            "gpu_confidence": 0.8191045522689819,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8033024072647095,
+            "gpu_confidence": 0.8033024072647095,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7839149236679077,
+            "gpu_confidence": 0.7839149236679077,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7804783582687378,
+            "gpu_confidence": 0.7804783582687378,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7793576717376709,
+            "gpu_confidence": 0.7793576717376709,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7609853744506836,
+            "gpu_confidence": 0.7609853744506836,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.754269540309906,
+            "gpu_confidence": 0.754269540309906,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7418274879455566,
+            "gpu_confidence": 0.7418274879455566,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7401960492134094,
+            "gpu_confidence": 0.7401960492134094,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7386412620544434,
+            "gpu_confidence": 0.7386412620544434,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7325301170349121,
+            "gpu_confidence": 0.7325301170349121,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.732257068157196,
+            "gpu_confidence": 0.732257068157196,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7302485108375549,
+            "gpu_confidence": 0.7302485108375549,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7262170314788818,
+            "gpu_confidence": 0.7262170314788818,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7257988452911377,
+            "gpu_confidence": 0.7257988452911377,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7236413955688477,
+            "gpu_confidence": 0.7236413955688477,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7104559540748596,
+            "gpu_confidence": 0.7104559540748596,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7092282176017761,
+            "gpu_confidence": 0.7092282176017761,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7075738310813904,
+            "gpu_confidence": 0.7075738310813904,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7062468528747559,
+            "gpu_confidence": 0.7062468528747559,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7035180330276489,
+            "gpu_confidence": 0.7035180330276489,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7033966183662415,
+            "gpu_confidence": 0.7033966183662415,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7004317045211792,
+            "gpu_confidence": 0.7004317045211792,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6996447443962097,
+            "gpu_confidence": 0.6996447443962097,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6921308040618896,
+            "gpu_confidence": 0.6921308040618896,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6903555989265442,
+            "gpu_confidence": 0.6903555989265442,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6876290440559387,
+            "gpu_confidence": 0.6876290440559387,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6866074204444885,
+            "gpu_confidence": 0.6866074204444885,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6837864518165588,
+            "gpu_confidence": 0.6837864518165588,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6807610392570496,
+            "gpu_confidence": 0.6807610392570496,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6803750991821289,
+            "gpu_confidence": 0.6803750991821289,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.679348349571228,
+            "gpu_confidence": 0.679348349571228,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6648340225219727,
+            "gpu_confidence": 0.6648340225219727,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6612028479576111,
+            "gpu_confidence": 0.6612028479576111,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6557334661483765,
+            "gpu_confidence": 0.6557334661483765,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6551936268806458,
+            "gpu_confidence": 0.6551936268806458,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.651288628578186,
+            "gpu_confidence": 0.651288628578186,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6512038111686707,
+            "gpu_confidence": 0.6512038111686707,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6479812264442444,
+            "gpu_confidence": 0.6479812264442444,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6464769244194031,
+            "gpu_confidence": 0.6464769244194031,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6460919380187988,
+            "gpu_confidence": 0.6460919380187988,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.644372820854187,
+            "gpu_confidence": 0.644372820854187,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6416563987731934,
+            "gpu_confidence": 0.6416563987731934,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6391371488571167,
+            "gpu_confidence": 0.6391371488571167,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6344872713088989,
+            "gpu_confidence": 0.6344872713088989,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6332265138626099,
+            "gpu_confidence": 0.6332265138626099,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.631644606590271,
+            "gpu_confidence": 0.631644606590271,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.629306435585022,
+            "gpu_confidence": 0.629306435585022,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6277269124984741,
+            "gpu_confidence": 0.6277269124984741,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6204282641410828,
+            "gpu_confidence": 0.6204282641410828,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.619349479675293,
+            "gpu_confidence": 0.619349479675293,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6178446412086487,
+            "gpu_confidence": 0.6178446412086487,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6156890988349915,
+            "gpu_confidence": 0.6156890988349915,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6142327189445496,
+            "gpu_confidence": 0.6142327189445496,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6000055074691772,
+            "gpu_confidence": 0.6000055074691772,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5997519493103027,
+            "gpu_confidence": 0.5997519493103027,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5970394015312195,
+            "gpu_confidence": 0.5970394015312195,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5970208048820496,
+            "gpu_confidence": 0.5970208048820496,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5947626829147339,
+            "gpu_confidence": 0.5947626829147339,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5942093729972839,
+            "gpu_confidence": 0.5942093729972839,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5894434452056885,
+            "gpu_confidence": 0.5894434452056885,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5851900577545166,
+            "gpu_confidence": 0.5851900577545166,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5835974216461182,
+            "gpu_confidence": 0.5835974216461182,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5819175839424133,
+            "gpu_confidence": 0.5819175839424133,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5783364772796631,
+            "gpu_confidence": 0.5783364772796631,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5736000537872314,
+            "gpu_confidence": 0.5736000537872314,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5726352334022522,
+            "gpu_confidence": 0.5726352334022522,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5682014226913452,
+            "gpu_confidence": 0.5682014226913452,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5672399997711182,
+            "gpu_confidence": 0.5672399997711182,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5654680728912354,
+            "gpu_confidence": 0.5654680728912354,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5534780621528625,
+            "gpu_confidence": 0.5534780621528625,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5517158508300781,
+            "gpu_confidence": 0.5517158508300781,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5511346459388733,
+            "gpu_confidence": 0.5511346459388733,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          }
+        ]
+      },
+      {
+        "cpu_count": 88,
+        "gpu_count": 88,
+        "count_match": true,
+        "bbox_max_diff": 0.0,
+        "confidence_max_diff": 0.0,
+        "landmarks_max_diff": 0.0,
+        "parity_passed": true,
+        "details": [
+          {
+            "cpu_confidence": 0.9727945923805237,
+            "gpu_confidence": 0.9727945923805237,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9429399967193604,
+            "gpu_confidence": 0.9429399967193604,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.937492311000824,
+            "gpu_confidence": 0.937492311000824,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9268712997436523,
+            "gpu_confidence": 0.9268712997436523,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8935491442680359,
+            "gpu_confidence": 0.8935491442680359,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8747832775115967,
+            "gpu_confidence": 0.8747832775115967,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8722586035728455,
+            "gpu_confidence": 0.8722586035728455,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.827835202217102,
+            "gpu_confidence": 0.827835202217102,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8183595538139343,
+            "gpu_confidence": 0.8183595538139343,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.816899299621582,
+            "gpu_confidence": 0.816899299621582,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8157041668891907,
+            "gpu_confidence": 0.8157041668891907,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8117116689682007,
+            "gpu_confidence": 0.8117116689682007,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8082331418991089,
+            "gpu_confidence": 0.8082331418991089,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8074435591697693,
+            "gpu_confidence": 0.8074435591697693,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8064042329788208,
+            "gpu_confidence": 0.8064042329788208,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7972161173820496,
+            "gpu_confidence": 0.7972161173820496,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7940744161605835,
+            "gpu_confidence": 0.7940744161605835,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7867692112922668,
+            "gpu_confidence": 0.7867692112922668,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7761303782463074,
+            "gpu_confidence": 0.7761303782463074,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7756884098052979,
+            "gpu_confidence": 0.7756884098052979,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7719406485557556,
+            "gpu_confidence": 0.7719406485557556,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7705512642860413,
+            "gpu_confidence": 0.7705512642860413,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7632865309715271,
+            "gpu_confidence": 0.7632865309715271,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7614101767539978,
+            "gpu_confidence": 0.7614101767539978,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7550591826438904,
+            "gpu_confidence": 0.7550591826438904,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7540281414985657,
+            "gpu_confidence": 0.7540281414985657,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7472163438796997,
+            "gpu_confidence": 0.7472163438796997,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7463313937187195,
+            "gpu_confidence": 0.7463313937187195,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7426484227180481,
+            "gpu_confidence": 0.7426484227180481,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7414522171020508,
+            "gpu_confidence": 0.7414522171020508,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7375312447547913,
+            "gpu_confidence": 0.7375312447547913,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7316499352455139,
+            "gpu_confidence": 0.7316499352455139,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7279579639434814,
+            "gpu_confidence": 0.7279579639434814,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7247048616409302,
+            "gpu_confidence": 0.7247048616409302,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7229728102684021,
+            "gpu_confidence": 0.7229728102684021,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7182819843292236,
+            "gpu_confidence": 0.7182819843292236,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7163265943527222,
+            "gpu_confidence": 0.7163265943527222,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7151006460189819,
+            "gpu_confidence": 0.7151006460189819,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7087368965148926,
+            "gpu_confidence": 0.7087368965148926,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7013382315635681,
+            "gpu_confidence": 0.7013382315635681,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6980279684066772,
+            "gpu_confidence": 0.6980279684066772,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.696668803691864,
+            "gpu_confidence": 0.696668803691864,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6839689016342163,
+            "gpu_confidence": 0.6839689016342163,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.67461758852005,
+            "gpu_confidence": 0.67461758852005,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6725530624389648,
+            "gpu_confidence": 0.6725530624389648,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6720419526100159,
+            "gpu_confidence": 0.6720419526100159,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6674849987030029,
+            "gpu_confidence": 0.6674849987030029,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6652387976646423,
+            "gpu_confidence": 0.6652387976646423,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.663640022277832,
+            "gpu_confidence": 0.663640022277832,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6635315418243408,
+            "gpu_confidence": 0.6635315418243408,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6577253341674805,
+            "gpu_confidence": 0.6577253341674805,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6576361656188965,
+            "gpu_confidence": 0.6576361656188965,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6522601246833801,
+            "gpu_confidence": 0.6522601246833801,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6448441743850708,
+            "gpu_confidence": 0.6448441743850708,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.629633367061615,
+            "gpu_confidence": 0.629633367061615,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6245648264884949,
+            "gpu_confidence": 0.6245648264884949,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.624514102935791,
+            "gpu_confidence": 0.624514102935791,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6240889430046082,
+            "gpu_confidence": 0.6240889430046082,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6224012970924377,
+            "gpu_confidence": 0.6224012970924377,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.621574878692627,
+            "gpu_confidence": 0.621574878692627,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6135693192481995,
+            "gpu_confidence": 0.6135693192481995,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6113325953483582,
+            "gpu_confidence": 0.6113325953483582,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6086914539337158,
+            "gpu_confidence": 0.6086914539337158,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6082437038421631,
+            "gpu_confidence": 0.6082437038421631,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.606593668460846,
+            "gpu_confidence": 0.606593668460846,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6043081879615784,
+            "gpu_confidence": 0.6043081879615784,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6034588813781738,
+            "gpu_confidence": 0.6034588813781738,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.602616548538208,
+            "gpu_confidence": 0.602616548538208,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5966522693634033,
+            "gpu_confidence": 0.5966522693634033,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5948442816734314,
+            "gpu_confidence": 0.5948442816734314,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5937252044677734,
+            "gpu_confidence": 0.5937252044677734,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5921691656112671,
+            "gpu_confidence": 0.5921691656112671,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.590598464012146,
+            "gpu_confidence": 0.590598464012146,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5854719281196594,
+            "gpu_confidence": 0.5854719281196594,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5833673477172852,
+            "gpu_confidence": 0.5833673477172852,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5784415602684021,
+            "gpu_confidence": 0.5784415602684021,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5694602131843567,
+            "gpu_confidence": 0.5694602131843567,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5694364309310913,
+            "gpu_confidence": 0.5694364309310913,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5680420994758606,
+            "gpu_confidence": 0.5680420994758606,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5672667026519775,
+            "gpu_confidence": 0.5672667026519775,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5657919049263,
+            "gpu_confidence": 0.5657919049263,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5654981136322021,
+            "gpu_confidence": 0.5654981136322021,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5651553869247437,
+            "gpu_confidence": 0.5651553869247437,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5647322535514832,
+            "gpu_confidence": 0.5647322535514832,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5628249049186707,
+            "gpu_confidence": 0.5628249049186707,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5625183582305908,
+            "gpu_confidence": 0.5625183582305908,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5585378408432007,
+            "gpu_confidence": 0.5585378408432007,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5518067479133606,
+            "gpu_confidence": 0.5518067479133606,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          }
+        ]
+      },
+      {
+        "cpu_count": 78,
+        "gpu_count": 78,
+        "count_match": true,
+        "bbox_max_diff": 0.0,
+        "confidence_max_diff": 0.0,
+        "landmarks_max_diff": 0.0,
+        "parity_passed": true,
+        "details": [
+          {
+            "cpu_confidence": 0.9555438756942749,
+            "gpu_confidence": 0.9555438756942749,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9427708387374878,
+            "gpu_confidence": 0.9427708387374878,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.925940990447998,
+            "gpu_confidence": 0.925940990447998,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9251972436904907,
+            "gpu_confidence": 0.9251972436904907,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9222931861877441,
+            "gpu_confidence": 0.9222931861877441,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9066742062568665,
+            "gpu_confidence": 0.9066742062568665,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8944721221923828,
+            "gpu_confidence": 0.8944721221923828,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8933984637260437,
+            "gpu_confidence": 0.8933984637260437,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8854707479476929,
+            "gpu_confidence": 0.8854707479476929,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8616728782653809,
+            "gpu_confidence": 0.8616728782653809,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8610061407089233,
+            "gpu_confidence": 0.8610061407089233,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8522652387619019,
+            "gpu_confidence": 0.8522652387619019,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.851068377494812,
+            "gpu_confidence": 0.851068377494812,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8436549305915833,
+            "gpu_confidence": 0.8436549305915833,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8409718871116638,
+            "gpu_confidence": 0.8409718871116638,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8163498640060425,
+            "gpu_confidence": 0.8163498640060425,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8122810125350952,
+            "gpu_confidence": 0.8122810125350952,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8096982836723328,
+            "gpu_confidence": 0.8096982836723328,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7821880578994751,
+            "gpu_confidence": 0.7821880578994751,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7650989294052124,
+            "gpu_confidence": 0.7650989294052124,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7589293718338013,
+            "gpu_confidence": 0.7589293718338013,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7481067180633545,
+            "gpu_confidence": 0.7481067180633545,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.738906979560852,
+            "gpu_confidence": 0.738906979560852,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.736979067325592,
+            "gpu_confidence": 0.736979067325592,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7352274060249329,
+            "gpu_confidence": 0.7352274060249329,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7318668365478516,
+            "gpu_confidence": 0.7318668365478516,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7168223857879639,
+            "gpu_confidence": 0.7168223857879639,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7158428430557251,
+            "gpu_confidence": 0.7158428430557251,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7121464014053345,
+            "gpu_confidence": 0.7121464014053345,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7108494639396667,
+            "gpu_confidence": 0.7108494639396667,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7099812626838684,
+            "gpu_confidence": 0.7099812626838684,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7079533338546753,
+            "gpu_confidence": 0.7079533338546753,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6968882083892822,
+            "gpu_confidence": 0.6968882083892822,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6937874555587769,
+            "gpu_confidence": 0.6937874555587769,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6929957866668701,
+            "gpu_confidence": 0.6929957866668701,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6862332224845886,
+            "gpu_confidence": 0.6862332224845886,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6862019300460815,
+            "gpu_confidence": 0.6862019300460815,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6805329918861389,
+            "gpu_confidence": 0.6805329918861389,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6797139644622803,
+            "gpu_confidence": 0.6797139644622803,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6769979000091553,
+            "gpu_confidence": 0.6769979000091553,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6760225296020508,
+            "gpu_confidence": 0.6760225296020508,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6735954880714417,
+            "gpu_confidence": 0.6735954880714417,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6718264222145081,
+            "gpu_confidence": 0.6718264222145081,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6657392978668213,
+            "gpu_confidence": 0.6657392978668213,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.659758448600769,
+            "gpu_confidence": 0.659758448600769,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6505060791969299,
+            "gpu_confidence": 0.6505060791969299,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6411904096603394,
+            "gpu_confidence": 0.6411904096603394,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6339004635810852,
+            "gpu_confidence": 0.6339004635810852,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6334609389305115,
+            "gpu_confidence": 0.6334609389305115,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6291757822036743,
+            "gpu_confidence": 0.6291757822036743,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6268322467803955,
+            "gpu_confidence": 0.6268322467803955,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6230268478393555,
+            "gpu_confidence": 0.6230268478393555,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6220317482948303,
+            "gpu_confidence": 0.6220317482948303,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.620363175868988,
+            "gpu_confidence": 0.620363175868988,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6178380250930786,
+            "gpu_confidence": 0.6178380250930786,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6147875785827637,
+            "gpu_confidence": 0.6147875785827637,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6097806692123413,
+            "gpu_confidence": 0.6097806692123413,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6001806259155273,
+            "gpu_confidence": 0.6001806259155273,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5990279912948608,
+            "gpu_confidence": 0.5990279912948608,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5975664854049683,
+            "gpu_confidence": 0.5975664854049683,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5960165858268738,
+            "gpu_confidence": 0.5960165858268738,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5954967141151428,
+            "gpu_confidence": 0.5954967141151428,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5785164833068848,
+            "gpu_confidence": 0.5785164833068848,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5762837529182434,
+            "gpu_confidence": 0.5762837529182434,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.569888174533844,
+            "gpu_confidence": 0.569888174533844,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5691275596618652,
+            "gpu_confidence": 0.5691275596618652,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5690025687217712,
+            "gpu_confidence": 0.5690025687217712,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5685100555419922,
+            "gpu_confidence": 0.5685100555419922,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.568403959274292,
+            "gpu_confidence": 0.568403959274292,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5682711005210876,
+            "gpu_confidence": 0.5682711005210876,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5674135684967041,
+            "gpu_confidence": 0.5674135684967041,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.566066324710846,
+            "gpu_confidence": 0.566066324710846,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5646568536758423,
+            "gpu_confidence": 0.5646568536758423,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5573900938034058,
+            "gpu_confidence": 0.5573900938034058,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5568620562553406,
+            "gpu_confidence": 0.5568620562553406,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5526368618011475,
+            "gpu_confidence": 0.5526368618011475,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5514426827430725,
+            "gpu_confidence": 0.5514426827430725,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5500451922416687,
+            "gpu_confidence": 0.5500451922416687,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          }
+        ]
+      },
+      {
+        "cpu_count": 93,
+        "gpu_count": 93,
+        "count_match": true,
+        "bbox_max_diff": 0.0,
+        "confidence_max_diff": 0.0,
+        "landmarks_max_diff": 0.0,
+        "parity_passed": true,
+        "details": [
+          {
+            "cpu_confidence": 0.9653457999229431,
+            "gpu_confidence": 0.9653457999229431,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.946256697177887,
+            "gpu_confidence": 0.946256697177887,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9387092590332031,
+            "gpu_confidence": 0.9387092590332031,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9030225276947021,
+            "gpu_confidence": 0.9030225276947021,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8925722241401672,
+            "gpu_confidence": 0.8925722241401672,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8696140646934509,
+            "gpu_confidence": 0.8696140646934509,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.865386962890625,
+            "gpu_confidence": 0.865386962890625,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.863315761089325,
+            "gpu_confidence": 0.863315761089325,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8632436990737915,
+            "gpu_confidence": 0.8632436990737915,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8527289032936096,
+            "gpu_confidence": 0.8527289032936096,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8512450456619263,
+            "gpu_confidence": 0.8512450456619263,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.846216082572937,
+            "gpu_confidence": 0.846216082572937,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.845206618309021,
+            "gpu_confidence": 0.845206618309021,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8440430760383606,
+            "gpu_confidence": 0.8440430760383606,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8173307776451111,
+            "gpu_confidence": 0.8173307776451111,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8147812485694885,
+            "gpu_confidence": 0.8147812485694885,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.813888669013977,
+            "gpu_confidence": 0.813888669013977,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8101191520690918,
+            "gpu_confidence": 0.8101191520690918,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8078572750091553,
+            "gpu_confidence": 0.8078572750091553,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8070262670516968,
+            "gpu_confidence": 0.8070262670516968,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8030608296394348,
+            "gpu_confidence": 0.8030608296394348,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7874763607978821,
+            "gpu_confidence": 0.7874763607978821,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7807173728942871,
+            "gpu_confidence": 0.7807173728942871,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7805209755897522,
+            "gpu_confidence": 0.7805209755897522,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7698437571525574,
+            "gpu_confidence": 0.7698437571525574,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7639832496643066,
+            "gpu_confidence": 0.7639832496643066,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7602314949035645,
+            "gpu_confidence": 0.7602314949035645,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7571235299110413,
+            "gpu_confidence": 0.7571235299110413,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.747255802154541,
+            "gpu_confidence": 0.747255802154541,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7398063540458679,
+            "gpu_confidence": 0.7398063540458679,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7377032041549683,
+            "gpu_confidence": 0.7377032041549683,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.73638516664505,
+            "gpu_confidence": 0.73638516664505,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7362492680549622,
+            "gpu_confidence": 0.7362492680549622,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.733545184135437,
+            "gpu_confidence": 0.733545184135437,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7331509590148926,
+            "gpu_confidence": 0.7331509590148926,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7277193665504456,
+            "gpu_confidence": 0.7277193665504456,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7175418734550476,
+            "gpu_confidence": 0.7175418734550476,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7156000137329102,
+            "gpu_confidence": 0.7156000137329102,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7105191349983215,
+            "gpu_confidence": 0.7105191349983215,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7056257128715515,
+            "gpu_confidence": 0.7056257128715515,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7049106359481812,
+            "gpu_confidence": 0.7049106359481812,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7011216878890991,
+            "gpu_confidence": 0.7011216878890991,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.694319486618042,
+            "gpu_confidence": 0.694319486618042,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6922242641448975,
+            "gpu_confidence": 0.6922242641448975,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6781057715415955,
+            "gpu_confidence": 0.6781057715415955,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6739674806594849,
+            "gpu_confidence": 0.6739674806594849,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6731979846954346,
+            "gpu_confidence": 0.6731979846954346,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6669628024101257,
+            "gpu_confidence": 0.6669628024101257,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6651967167854309,
+            "gpu_confidence": 0.6651967167854309,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6648201942443848,
+            "gpu_confidence": 0.6648201942443848,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6610031723976135,
+            "gpu_confidence": 0.6610031723976135,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6596011519432068,
+            "gpu_confidence": 0.6596011519432068,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6525276899337769,
+            "gpu_confidence": 0.6525276899337769,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6507107615470886,
+            "gpu_confidence": 0.6507107615470886,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6493774652481079,
+            "gpu_confidence": 0.6493774652481079,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6430238485336304,
+            "gpu_confidence": 0.6430238485336304,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6425032019615173,
+            "gpu_confidence": 0.6425032019615173,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6421206593513489,
+            "gpu_confidence": 0.6421206593513489,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.638617217540741,
+            "gpu_confidence": 0.638617217540741,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.63503497838974,
+            "gpu_confidence": 0.63503497838974,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.62952721118927,
+            "gpu_confidence": 0.62952721118927,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6196114420890808,
+            "gpu_confidence": 0.6196114420890808,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6170322895050049,
+            "gpu_confidence": 0.6170322895050049,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6167178153991699,
+            "gpu_confidence": 0.6167178153991699,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6162822842597961,
+            "gpu_confidence": 0.6162822842597961,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6144979000091553,
+            "gpu_confidence": 0.6144979000091553,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6112532019615173,
+            "gpu_confidence": 0.6112532019615173,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6109187006950378,
+            "gpu_confidence": 0.6109187006950378,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6004053950309753,
+            "gpu_confidence": 0.6004053950309753,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5992981791496277,
+            "gpu_confidence": 0.5992981791496277,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5991759896278381,
+            "gpu_confidence": 0.5991759896278381,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5983154773712158,
+            "gpu_confidence": 0.5983154773712158,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5967903137207031,
+            "gpu_confidence": 0.5967903137207031,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5845921635627747,
+            "gpu_confidence": 0.5845921635627747,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5832353830337524,
+            "gpu_confidence": 0.5832353830337524,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5817089080810547,
+            "gpu_confidence": 0.5817089080810547,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5814325213432312,
+            "gpu_confidence": 0.5814325213432312,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5792189836502075,
+            "gpu_confidence": 0.5792189836502075,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5787214636802673,
+            "gpu_confidence": 0.5787214636802673,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5740267038345337,
+            "gpu_confidence": 0.5740267038345337,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5724101066589355,
+            "gpu_confidence": 0.5724101066589355,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5682438611984253,
+            "gpu_confidence": 0.5682438611984253,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5676367282867432,
+            "gpu_confidence": 0.5676367282867432,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5646394491195679,
+            "gpu_confidence": 0.5646394491195679,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5602201819419861,
+            "gpu_confidence": 0.5602201819419861,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5585047006607056,
+            "gpu_confidence": 0.5585047006607056,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.557058572769165,
+            "gpu_confidence": 0.557058572769165,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5563530325889587,
+            "gpu_confidence": 0.5563530325889587,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5552706122398376,
+            "gpu_confidence": 0.5552706122398376,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5547209978103638,
+            "gpu_confidence": 0.5547209978103638,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5540577173233032,
+            "gpu_confidence": 0.5540577173233032,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5524991750717163,
+            "gpu_confidence": 0.5524991750717163,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5517755150794983,
+            "gpu_confidence": 0.5517755150794983,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          }
+        ]
+      },
+      {
+        "cpu_count": 81,
+        "gpu_count": 81,
+        "count_match": true,
+        "bbox_max_diff": 0.0,
+        "confidence_max_diff": 0.0,
+        "landmarks_max_diff": 0.0,
+        "parity_passed": true,
+        "details": [
+          {
+            "cpu_confidence": 0.9185094237327576,
+            "gpu_confidence": 0.9185094237327576,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8771207332611084,
+            "gpu_confidence": 0.8771207332611084,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8568941354751587,
+            "gpu_confidence": 0.8568941354751587,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8437318205833435,
+            "gpu_confidence": 0.8437318205833435,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.840995728969574,
+            "gpu_confidence": 0.840995728969574,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8364629745483398,
+            "gpu_confidence": 0.8364629745483398,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8339335918426514,
+            "gpu_confidence": 0.8339335918426514,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8135985732078552,
+            "gpu_confidence": 0.8135985732078552,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8048914670944214,
+            "gpu_confidence": 0.8048914670944214,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8006710410118103,
+            "gpu_confidence": 0.8006710410118103,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7849882245063782,
+            "gpu_confidence": 0.7849882245063782,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7843825221061707,
+            "gpu_confidence": 0.7843825221061707,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7752099633216858,
+            "gpu_confidence": 0.7752099633216858,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7739113569259644,
+            "gpu_confidence": 0.7739113569259644,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7622159719467163,
+            "gpu_confidence": 0.7622159719467163,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7476686239242554,
+            "gpu_confidence": 0.7476686239242554,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7263940572738647,
+            "gpu_confidence": 0.7263940572738647,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7198470830917358,
+            "gpu_confidence": 0.7198470830917358,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7091602683067322,
+            "gpu_confidence": 0.7091602683067322,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7057980298995972,
+            "gpu_confidence": 0.7057980298995972,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7037147879600525,
+            "gpu_confidence": 0.7037147879600525,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7010539174079895,
+            "gpu_confidence": 0.7010539174079895,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7008360624313354,
+            "gpu_confidence": 0.7008360624313354,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7002437710762024,
+            "gpu_confidence": 0.7002437710762024,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6932418942451477,
+            "gpu_confidence": 0.6932418942451477,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6930289268493652,
+            "gpu_confidence": 0.6930289268493652,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.689204216003418,
+            "gpu_confidence": 0.689204216003418,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6784178614616394,
+            "gpu_confidence": 0.6784178614616394,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6771712303161621,
+            "gpu_confidence": 0.6771712303161621,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6667593717575073,
+            "gpu_confidence": 0.6667593717575073,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6663157939910889,
+            "gpu_confidence": 0.6663157939910889,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6647191047668457,
+            "gpu_confidence": 0.6647191047668457,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6603154540061951,
+            "gpu_confidence": 0.6603154540061951,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6483631730079651,
+            "gpu_confidence": 0.6483631730079651,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6411338448524475,
+            "gpu_confidence": 0.6411338448524475,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6369110345840454,
+            "gpu_confidence": 0.6369110345840454,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6367347836494446,
+            "gpu_confidence": 0.6367347836494446,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6289314031600952,
+            "gpu_confidence": 0.6289314031600952,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.624559760093689,
+            "gpu_confidence": 0.624559760093689,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6240960359573364,
+            "gpu_confidence": 0.6240960359573364,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6239175796508789,
+            "gpu_confidence": 0.6239175796508789,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.618908166885376,
+            "gpu_confidence": 0.618908166885376,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6182029247283936,
+            "gpu_confidence": 0.6182029247283936,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6120440363883972,
+            "gpu_confidence": 0.6120440363883972,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.610587477684021,
+            "gpu_confidence": 0.610587477684021,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6097776293754578,
+            "gpu_confidence": 0.6097776293754578,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6015702486038208,
+            "gpu_confidence": 0.6015702486038208,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5964498519897461,
+            "gpu_confidence": 0.5964498519897461,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5956556797027588,
+            "gpu_confidence": 0.5956556797027588,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5943784713745117,
+            "gpu_confidence": 0.5943784713745117,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5921179056167603,
+            "gpu_confidence": 0.5921179056167603,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5919005274772644,
+            "gpu_confidence": 0.5919005274772644,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5903393030166626,
+            "gpu_confidence": 0.5903393030166626,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5897135734558105,
+            "gpu_confidence": 0.5897135734558105,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5889440178871155,
+            "gpu_confidence": 0.5889440178871155,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5848893523216248,
+            "gpu_confidence": 0.5848893523216248,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5843402743339539,
+            "gpu_confidence": 0.5843402743339539,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5831717848777771,
+            "gpu_confidence": 0.5831717848777771,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5815979242324829,
+            "gpu_confidence": 0.5815979242324829,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5811654329299927,
+            "gpu_confidence": 0.5811654329299927,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5783401131629944,
+            "gpu_confidence": 0.5783401131629944,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5754220485687256,
+            "gpu_confidence": 0.5754220485687256,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.575228750705719,
+            "gpu_confidence": 0.575228750705719,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5741822719573975,
+            "gpu_confidence": 0.5741822719573975,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5700913667678833,
+            "gpu_confidence": 0.5700913667678833,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5657868981361389,
+            "gpu_confidence": 0.5657868981361389,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5652185678482056,
+            "gpu_confidence": 0.5652185678482056,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5652143955230713,
+            "gpu_confidence": 0.5652143955230713,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5648398995399475,
+            "gpu_confidence": 0.5648398995399475,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5642800331115723,
+            "gpu_confidence": 0.5642800331115723,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5641438364982605,
+            "gpu_confidence": 0.5641438364982605,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5640280842781067,
+            "gpu_confidence": 0.5640280842781067,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5635915994644165,
+            "gpu_confidence": 0.5635915994644165,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5571696758270264,
+            "gpu_confidence": 0.5571696758270264,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5569574236869812,
+            "gpu_confidence": 0.5569574236869812,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5559520125389099,
+            "gpu_confidence": 0.5559520125389099,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5556052327156067,
+            "gpu_confidence": 0.5556052327156067,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5550373196601868,
+            "gpu_confidence": 0.5550373196601868,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5530836582183838,
+            "gpu_confidence": 0.5530836582183838,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5527777671813965,
+            "gpu_confidence": 0.5527777671813965,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5503667593002319,
+            "gpu_confidence": 0.5503667593002319,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          }
+        ]
+      },
+      {
+        "cpu_count": 93,
+        "gpu_count": 93,
+        "count_match": true,
+        "bbox_max_diff": 0.0,
+        "confidence_max_diff": 0.0,
+        "landmarks_max_diff": 0.0,
+        "parity_passed": true,
+        "details": [
+          {
+            "cpu_confidence": 0.9742465019226074,
+            "gpu_confidence": 0.9742465019226074,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9617848992347717,
+            "gpu_confidence": 0.9617848992347717,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9018369913101196,
+            "gpu_confidence": 0.9018369913101196,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8755655884742737,
+            "gpu_confidence": 0.8755655884742737,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8750022649765015,
+            "gpu_confidence": 0.8750022649765015,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8663574457168579,
+            "gpu_confidence": 0.8663574457168579,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8662376999855042,
+            "gpu_confidence": 0.8662376999855042,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8601366877555847,
+            "gpu_confidence": 0.8601366877555847,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8432462811470032,
+            "gpu_confidence": 0.8432462811470032,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8314221501350403,
+            "gpu_confidence": 0.8314221501350403,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8253524899482727,
+            "gpu_confidence": 0.8253524899482727,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8249773383140564,
+            "gpu_confidence": 0.8249773383140564,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8241251707077026,
+            "gpu_confidence": 0.8241251707077026,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8133335113525391,
+            "gpu_confidence": 0.8133335113525391,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8104386925697327,
+            "gpu_confidence": 0.8104386925697327,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8102163076400757,
+            "gpu_confidence": 0.8102163076400757,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8077841997146606,
+            "gpu_confidence": 0.8077841997146606,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7954131364822388,
+            "gpu_confidence": 0.7954131364822388,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7795488238334656,
+            "gpu_confidence": 0.7795488238334656,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7713265419006348,
+            "gpu_confidence": 0.7713265419006348,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7680772542953491,
+            "gpu_confidence": 0.7680772542953491,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7589608430862427,
+            "gpu_confidence": 0.7589608430862427,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7589465975761414,
+            "gpu_confidence": 0.7589465975761414,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7548210024833679,
+            "gpu_confidence": 0.7548210024833679,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7548150420188904,
+            "gpu_confidence": 0.7548150420188904,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7466073632240295,
+            "gpu_confidence": 0.7466073632240295,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7407185435295105,
+            "gpu_confidence": 0.7407185435295105,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7292608022689819,
+            "gpu_confidence": 0.7292608022689819,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7274454832077026,
+            "gpu_confidence": 0.7274454832077026,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7241116166114807,
+            "gpu_confidence": 0.7241116166114807,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7226152420043945,
+            "gpu_confidence": 0.7226152420043945,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7176873683929443,
+            "gpu_confidence": 0.7176873683929443,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7163727283477783,
+            "gpu_confidence": 0.7163727283477783,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7054524421691895,
+            "gpu_confidence": 0.7054524421691895,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7040399312973022,
+            "gpu_confidence": 0.7040399312973022,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6959792971611023,
+            "gpu_confidence": 0.6959792971611023,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.695551872253418,
+            "gpu_confidence": 0.695551872253418,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6948531270027161,
+            "gpu_confidence": 0.6948531270027161,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.69352787733078,
+            "gpu_confidence": 0.69352787733078,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6907587051391602,
+            "gpu_confidence": 0.6907587051391602,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6881486773490906,
+            "gpu_confidence": 0.6881486773490906,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6869356036186218,
+            "gpu_confidence": 0.6869356036186218,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6823979020118713,
+            "gpu_confidence": 0.6823979020118713,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6798996925354004,
+            "gpu_confidence": 0.6798996925354004,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6784420609474182,
+            "gpu_confidence": 0.6784420609474182,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6774783730506897,
+            "gpu_confidence": 0.6774783730506897,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6756632328033447,
+            "gpu_confidence": 0.6756632328033447,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6688560247421265,
+            "gpu_confidence": 0.6688560247421265,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6677383184432983,
+            "gpu_confidence": 0.6677383184432983,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6666438579559326,
+            "gpu_confidence": 0.6666438579559326,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6626675724983215,
+            "gpu_confidence": 0.6626675724983215,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6609900593757629,
+            "gpu_confidence": 0.6609900593757629,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6584118008613586,
+            "gpu_confidence": 0.6584118008613586,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6572904586791992,
+            "gpu_confidence": 0.6572904586791992,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.655143678188324,
+            "gpu_confidence": 0.655143678188324,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6502898335456848,
+            "gpu_confidence": 0.6502898335456848,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.648564875125885,
+            "gpu_confidence": 0.648564875125885,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6451985239982605,
+            "gpu_confidence": 0.6451985239982605,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6440876126289368,
+            "gpu_confidence": 0.6440876126289368,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6426716446876526,
+            "gpu_confidence": 0.6426716446876526,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6416448950767517,
+            "gpu_confidence": 0.6416448950767517,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6397929191589355,
+            "gpu_confidence": 0.6397929191589355,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6343623399734497,
+            "gpu_confidence": 0.6343623399734497,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6342273354530334,
+            "gpu_confidence": 0.6342273354530334,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6334841251373291,
+            "gpu_confidence": 0.6334841251373291,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6318779587745667,
+            "gpu_confidence": 0.6318779587745667,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6303584575653076,
+            "gpu_confidence": 0.6303584575653076,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6277819275856018,
+            "gpu_confidence": 0.6277819275856018,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6271923780441284,
+            "gpu_confidence": 0.6271923780441284,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6264923810958862,
+            "gpu_confidence": 0.6264923810958862,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6261124014854431,
+            "gpu_confidence": 0.6261124014854431,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6240068674087524,
+            "gpu_confidence": 0.6240068674087524,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6184316873550415,
+            "gpu_confidence": 0.6184316873550415,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6122367978096008,
+            "gpu_confidence": 0.6122367978096008,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6090338230133057,
+            "gpu_confidence": 0.6090338230133057,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6047885417938232,
+            "gpu_confidence": 0.6047885417938232,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6043030023574829,
+            "gpu_confidence": 0.6043030023574829,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6016092896461487,
+            "gpu_confidence": 0.6016092896461487,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5955063700675964,
+            "gpu_confidence": 0.5955063700675964,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5953702330589294,
+            "gpu_confidence": 0.5953702330589294,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5953083038330078,
+            "gpu_confidence": 0.5953083038330078,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5950484871864319,
+            "gpu_confidence": 0.5950484871864319,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5911755561828613,
+            "gpu_confidence": 0.5911755561828613,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5872640013694763,
+            "gpu_confidence": 0.5872640013694763,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5777456760406494,
+            "gpu_confidence": 0.5777456760406494,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5746592283248901,
+            "gpu_confidence": 0.5746592283248901,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5743383169174194,
+            "gpu_confidence": 0.5743383169174194,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5658875703811646,
+            "gpu_confidence": 0.5658875703811646,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5654913187026978,
+            "gpu_confidence": 0.5654913187026978,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5597137808799744,
+            "gpu_confidence": 0.5597137808799744,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5585544109344482,
+            "gpu_confidence": 0.5585544109344482,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5570908188819885,
+            "gpu_confidence": 0.5570908188819885,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5521355271339417,
+            "gpu_confidence": 0.5521355271339417,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          }
+        ]
+      },
+      {
+        "cpu_count": 84,
+        "gpu_count": 84,
+        "count_match": true,
+        "bbox_max_diff": 0.0,
+        "confidence_max_diff": 0.0,
+        "landmarks_max_diff": 0.0,
+        "parity_passed": true,
+        "details": [
+          {
+            "cpu_confidence": 0.9009243249893188,
+            "gpu_confidence": 0.9009243249893188,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8972384333610535,
+            "gpu_confidence": 0.8972384333610535,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8739646673202515,
+            "gpu_confidence": 0.8739646673202515,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8457210063934326,
+            "gpu_confidence": 0.8457210063934326,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.835940957069397,
+            "gpu_confidence": 0.835940957069397,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8171155452728271,
+            "gpu_confidence": 0.8171155452728271,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8156304359436035,
+            "gpu_confidence": 0.8156304359436035,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.807376503944397,
+            "gpu_confidence": 0.807376503944397,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7989652156829834,
+            "gpu_confidence": 0.7989652156829834,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7881066799163818,
+            "gpu_confidence": 0.7881066799163818,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7782381772994995,
+            "gpu_confidence": 0.7782381772994995,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7644096612930298,
+            "gpu_confidence": 0.7644096612930298,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7637485265731812,
+            "gpu_confidence": 0.7637485265731812,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7545639872550964,
+            "gpu_confidence": 0.7545639872550964,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7545315027236938,
+            "gpu_confidence": 0.7545315027236938,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7484655976295471,
+            "gpu_confidence": 0.7484655976295471,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7436301708221436,
+            "gpu_confidence": 0.7436301708221436,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7412121891975403,
+            "gpu_confidence": 0.7412121891975403,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7316309809684753,
+            "gpu_confidence": 0.7316309809684753,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7308615446090698,
+            "gpu_confidence": 0.7308615446090698,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7229230403900146,
+            "gpu_confidence": 0.7229230403900146,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7168166041374207,
+            "gpu_confidence": 0.7168166041374207,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7145724892616272,
+            "gpu_confidence": 0.7145724892616272,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7130043506622314,
+            "gpu_confidence": 0.7130043506622314,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7106066346168518,
+            "gpu_confidence": 0.7106066346168518,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7078813314437866,
+            "gpu_confidence": 0.7078813314437866,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7027579545974731,
+            "gpu_confidence": 0.7027579545974731,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7024388909339905,
+            "gpu_confidence": 0.7024388909339905,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7021737098693848,
+            "gpu_confidence": 0.7021737098693848,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6999873518943787,
+            "gpu_confidence": 0.6999873518943787,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6975772380828857,
+            "gpu_confidence": 0.6975772380828857,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6965696215629578,
+            "gpu_confidence": 0.6965696215629578,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.689267635345459,
+            "gpu_confidence": 0.689267635345459,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6888996362686157,
+            "gpu_confidence": 0.6888996362686157,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6816609501838684,
+            "gpu_confidence": 0.6816609501838684,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6744310259819031,
+            "gpu_confidence": 0.6744310259819031,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6744162440299988,
+            "gpu_confidence": 0.6744162440299988,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6709702610969543,
+            "gpu_confidence": 0.6709702610969543,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6649198532104492,
+            "gpu_confidence": 0.6649198532104492,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6647460460662842,
+            "gpu_confidence": 0.6647460460662842,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6635201573371887,
+            "gpu_confidence": 0.6635201573371887,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6569612622261047,
+            "gpu_confidence": 0.6569612622261047,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6538857817649841,
+            "gpu_confidence": 0.6538857817649841,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6530932784080505,
+            "gpu_confidence": 0.6530932784080505,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.652489960193634,
+            "gpu_confidence": 0.652489960193634,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6349227428436279,
+            "gpu_confidence": 0.6349227428436279,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6348450779914856,
+            "gpu_confidence": 0.6348450779914856,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6335467100143433,
+            "gpu_confidence": 0.6335467100143433,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6307420134544373,
+            "gpu_confidence": 0.6307420134544373,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6258377432823181,
+            "gpu_confidence": 0.6258377432823181,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6241977214813232,
+            "gpu_confidence": 0.6241977214813232,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6221383213996887,
+            "gpu_confidence": 0.6221383213996887,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6217243075370789,
+            "gpu_confidence": 0.6217243075370789,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6175512075424194,
+            "gpu_confidence": 0.6175512075424194,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6172192096710205,
+            "gpu_confidence": 0.6172192096710205,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6128976941108704,
+            "gpu_confidence": 0.6128976941108704,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6120596528053284,
+            "gpu_confidence": 0.6120596528053284,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6112455725669861,
+            "gpu_confidence": 0.6112455725669861,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6051545739173889,
+            "gpu_confidence": 0.6051545739173889,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.604222297668457,
+            "gpu_confidence": 0.604222297668457,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6026781797409058,
+            "gpu_confidence": 0.6026781797409058,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5924434065818787,
+            "gpu_confidence": 0.5924434065818787,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5899522304534912,
+            "gpu_confidence": 0.5899522304534912,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5892844796180725,
+            "gpu_confidence": 0.5892844796180725,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5789503455162048,
+            "gpu_confidence": 0.5789503455162048,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5784581303596497,
+            "gpu_confidence": 0.5784581303596497,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5783257484436035,
+            "gpu_confidence": 0.5783257484436035,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5764778852462769,
+            "gpu_confidence": 0.5764778852462769,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5748991966247559,
+            "gpu_confidence": 0.5748991966247559,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5710338354110718,
+            "gpu_confidence": 0.5710338354110718,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5680589079856873,
+            "gpu_confidence": 0.5680589079856873,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5669978260993958,
+            "gpu_confidence": 0.5669978260993958,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5663087964057922,
+            "gpu_confidence": 0.5663087964057922,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5642721056938171,
+            "gpu_confidence": 0.5642721056938171,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5640990138053894,
+            "gpu_confidence": 0.5640990138053894,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5619813799858093,
+            "gpu_confidence": 0.5619813799858093,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5612257122993469,
+            "gpu_confidence": 0.5612257122993469,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5603793263435364,
+            "gpu_confidence": 0.5603793263435364,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5595196485519409,
+            "gpu_confidence": 0.5595196485519409,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5584003925323486,
+            "gpu_confidence": 0.5584003925323486,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5569528937339783,
+            "gpu_confidence": 0.5569528937339783,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5559579133987427,
+            "gpu_confidence": 0.5559579133987427,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5537764430046082,
+            "gpu_confidence": 0.5537764430046082,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5510579347610474,
+            "gpu_confidence": 0.5510579347610474,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          }
+        ]
+      },
+      {
+        "cpu_count": 82,
+        "gpu_count": 82,
+        "count_match": true,
+        "bbox_max_diff": 0.0,
+        "confidence_max_diff": 0.0,
+        "landmarks_max_diff": 0.0,
+        "parity_passed": true,
+        "details": [
+          {
+            "cpu_confidence": 0.9341879487037659,
+            "gpu_confidence": 0.9341879487037659,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8729801774024963,
+            "gpu_confidence": 0.8729801774024963,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8661214709281921,
+            "gpu_confidence": 0.8661214709281921,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8422462344169617,
+            "gpu_confidence": 0.8422462344169617,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8416369557380676,
+            "gpu_confidence": 0.8416369557380676,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8355667591094971,
+            "gpu_confidence": 0.8355667591094971,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.82930588722229,
+            "gpu_confidence": 0.82930588722229,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8271098732948303,
+            "gpu_confidence": 0.8271098732948303,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8193239569664001,
+            "gpu_confidence": 0.8193239569664001,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8136956095695496,
+            "gpu_confidence": 0.8136956095695496,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7772552967071533,
+            "gpu_confidence": 0.7772552967071533,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7690973877906799,
+            "gpu_confidence": 0.7690973877906799,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7642266750335693,
+            "gpu_confidence": 0.7642266750335693,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7601227760314941,
+            "gpu_confidence": 0.7601227760314941,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7499480247497559,
+            "gpu_confidence": 0.7499480247497559,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7498657703399658,
+            "gpu_confidence": 0.7498657703399658,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7483115196228027,
+            "gpu_confidence": 0.7483115196228027,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7454319596290588,
+            "gpu_confidence": 0.7454319596290588,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7452400326728821,
+            "gpu_confidence": 0.7452400326728821,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7367737293243408,
+            "gpu_confidence": 0.7367737293243408,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7318539619445801,
+            "gpu_confidence": 0.7318539619445801,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7099559903144836,
+            "gpu_confidence": 0.7099559903144836,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7073546051979065,
+            "gpu_confidence": 0.7073546051979065,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7056875228881836,
+            "gpu_confidence": 0.7056875228881836,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6974421143531799,
+            "gpu_confidence": 0.6974421143531799,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.696382999420166,
+            "gpu_confidence": 0.696382999420166,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.69300776720047,
+            "gpu_confidence": 0.69300776720047,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6913388967514038,
+            "gpu_confidence": 0.6913388967514038,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6827672123908997,
+            "gpu_confidence": 0.6827672123908997,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6803373098373413,
+            "gpu_confidence": 0.6803373098373413,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.68027263879776,
+            "gpu_confidence": 0.68027263879776,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6768175363540649,
+            "gpu_confidence": 0.6768175363540649,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6766127347946167,
+            "gpu_confidence": 0.6766127347946167,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6737418174743652,
+            "gpu_confidence": 0.6737418174743652,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.669713020324707,
+            "gpu_confidence": 0.669713020324707,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6687868237495422,
+            "gpu_confidence": 0.6687868237495422,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6644406318664551,
+            "gpu_confidence": 0.6644406318664551,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6636590361595154,
+            "gpu_confidence": 0.6636590361595154,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6525972485542297,
+            "gpu_confidence": 0.6525972485542297,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6486637592315674,
+            "gpu_confidence": 0.6486637592315674,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.640447199344635,
+            "gpu_confidence": 0.640447199344635,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6393296122550964,
+            "gpu_confidence": 0.6393296122550964,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6372281908988953,
+            "gpu_confidence": 0.6372281908988953,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6337375044822693,
+            "gpu_confidence": 0.6337375044822693,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6269485354423523,
+            "gpu_confidence": 0.6269485354423523,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6212336421012878,
+            "gpu_confidence": 0.6212336421012878,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6211998462677002,
+            "gpu_confidence": 0.6211998462677002,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6177847981452942,
+            "gpu_confidence": 0.6177847981452942,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6166993379592896,
+            "gpu_confidence": 0.6166993379592896,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6142463684082031,
+            "gpu_confidence": 0.6142463684082031,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6132017970085144,
+            "gpu_confidence": 0.6132017970085144,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6117660999298096,
+            "gpu_confidence": 0.6117660999298096,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6072493195533752,
+            "gpu_confidence": 0.6072493195533752,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6055399775505066,
+            "gpu_confidence": 0.6055399775505066,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6055135726928711,
+            "gpu_confidence": 0.6055135726928711,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6043405532836914,
+            "gpu_confidence": 0.6043405532836914,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6039379239082336,
+            "gpu_confidence": 0.6039379239082336,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6014602184295654,
+            "gpu_confidence": 0.6014602184295654,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6012933254241943,
+            "gpu_confidence": 0.6012933254241943,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6001625657081604,
+            "gpu_confidence": 0.6001625657081604,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5960245728492737,
+            "gpu_confidence": 0.5960245728492737,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5939155220985413,
+            "gpu_confidence": 0.5939155220985413,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5932487845420837,
+            "gpu_confidence": 0.5932487845420837,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5887986421585083,
+            "gpu_confidence": 0.5887986421585083,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5886143445968628,
+            "gpu_confidence": 0.5886143445968628,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5842819809913635,
+            "gpu_confidence": 0.5842819809913635,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5819198489189148,
+            "gpu_confidence": 0.5819198489189148,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5752881169319153,
+            "gpu_confidence": 0.5752881169319153,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5749436616897583,
+            "gpu_confidence": 0.5749436616897583,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.570767343044281,
+            "gpu_confidence": 0.570767343044281,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5701631903648376,
+            "gpu_confidence": 0.5701631903648376,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5692223906517029,
+            "gpu_confidence": 0.5692223906517029,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5655879378318787,
+            "gpu_confidence": 0.5655879378318787,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5652531385421753,
+            "gpu_confidence": 0.5652531385421753,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5618859529495239,
+            "gpu_confidence": 0.5618859529495239,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5601035952568054,
+            "gpu_confidence": 0.5601035952568054,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5582801699638367,
+            "gpu_confidence": 0.5582801699638367,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5575697422027588,
+            "gpu_confidence": 0.5575697422027588,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.556496798992157,
+            "gpu_confidence": 0.556496798992157,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5526330471038818,
+            "gpu_confidence": 0.5526330471038818,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5506498217582703,
+            "gpu_confidence": 0.5506498217582703,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5504378080368042,
+            "gpu_confidence": 0.5504378080368042,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          }
+        ]
+      },
+      {
+        "cpu_count": 80,
+        "gpu_count": 80,
+        "count_match": true,
+        "bbox_max_diff": 0.0,
+        "confidence_max_diff": 0.0,
+        "landmarks_max_diff": 0.0,
+        "parity_passed": true,
+        "details": [
+          {
+            "cpu_confidence": 0.9732002019882202,
+            "gpu_confidence": 0.9732002019882202,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8891332149505615,
+            "gpu_confidence": 0.8891332149505615,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8840484023094177,
+            "gpu_confidence": 0.8840484023094177,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8582721948623657,
+            "gpu_confidence": 0.8582721948623657,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8529782891273499,
+            "gpu_confidence": 0.8529782891273499,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8467073440551758,
+            "gpu_confidence": 0.8467073440551758,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8443248271942139,
+            "gpu_confidence": 0.8443248271942139,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8408686518669128,
+            "gpu_confidence": 0.8408686518669128,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8393243551254272,
+            "gpu_confidence": 0.8393243551254272,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8263596892356873,
+            "gpu_confidence": 0.8263596892356873,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8227269649505615,
+            "gpu_confidence": 0.8227269649505615,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8107268214225769,
+            "gpu_confidence": 0.8107268214225769,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7920619249343872,
+            "gpu_confidence": 0.7920619249343872,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7783466577529907,
+            "gpu_confidence": 0.7783466577529907,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7704570889472961,
+            "gpu_confidence": 0.7704570889472961,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7683495283126831,
+            "gpu_confidence": 0.7683495283126831,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7629590630531311,
+            "gpu_confidence": 0.7629590630531311,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7620348930358887,
+            "gpu_confidence": 0.7620348930358887,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7572651505470276,
+            "gpu_confidence": 0.7572651505470276,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.75311678647995,
+            "gpu_confidence": 0.75311678647995,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7512205839157104,
+            "gpu_confidence": 0.7512205839157104,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7505903840065002,
+            "gpu_confidence": 0.7505903840065002,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.741875410079956,
+            "gpu_confidence": 0.741875410079956,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7410672903060913,
+            "gpu_confidence": 0.7410672903060913,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7396551370620728,
+            "gpu_confidence": 0.7396551370620728,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7365960478782654,
+            "gpu_confidence": 0.7365960478782654,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7357731461524963,
+            "gpu_confidence": 0.7357731461524963,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7245906591415405,
+            "gpu_confidence": 0.7245906591415405,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.72114497423172,
+            "gpu_confidence": 0.72114497423172,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7185769081115723,
+            "gpu_confidence": 0.7185769081115723,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7139842510223389,
+            "gpu_confidence": 0.7139842510223389,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7133910655975342,
+            "gpu_confidence": 0.7133910655975342,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7123047113418579,
+            "gpu_confidence": 0.7123047113418579,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7106692790985107,
+            "gpu_confidence": 0.7106692790985107,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7054218053817749,
+            "gpu_confidence": 0.7054218053817749,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7044687867164612,
+            "gpu_confidence": 0.7044687867164612,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7039459347724915,
+            "gpu_confidence": 0.7039459347724915,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6988930702209473,
+            "gpu_confidence": 0.6988930702209473,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6971769332885742,
+            "gpu_confidence": 0.6971769332885742,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6842468976974487,
+            "gpu_confidence": 0.6842468976974487,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6792262196540833,
+            "gpu_confidence": 0.6792262196540833,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6739047169685364,
+            "gpu_confidence": 0.6739047169685364,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6735302805900574,
+            "gpu_confidence": 0.6735302805900574,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6720877885818481,
+            "gpu_confidence": 0.6720877885818481,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6649657487869263,
+            "gpu_confidence": 0.6649657487869263,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6610349416732788,
+            "gpu_confidence": 0.6610349416732788,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.65938800573349,
+            "gpu_confidence": 0.65938800573349,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6573649644851685,
+            "gpu_confidence": 0.6573649644851685,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6558930277824402,
+            "gpu_confidence": 0.6558930277824402,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6535744071006775,
+            "gpu_confidence": 0.6535744071006775,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6531248688697815,
+            "gpu_confidence": 0.6531248688697815,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6510764360427856,
+            "gpu_confidence": 0.6510764360427856,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6478331685066223,
+            "gpu_confidence": 0.6478331685066223,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6426299810409546,
+            "gpu_confidence": 0.6426299810409546,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6421682834625244,
+            "gpu_confidence": 0.6421682834625244,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6395188570022583,
+            "gpu_confidence": 0.6395188570022583,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6387238502502441,
+            "gpu_confidence": 0.6387238502502441,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6359876394271851,
+            "gpu_confidence": 0.6359876394271851,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6281074285507202,
+            "gpu_confidence": 0.6281074285507202,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6221829652786255,
+            "gpu_confidence": 0.6221829652786255,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6170199513435364,
+            "gpu_confidence": 0.6170199513435364,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6157966256141663,
+            "gpu_confidence": 0.6157966256141663,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6139062643051147,
+            "gpu_confidence": 0.6139062643051147,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6130002737045288,
+            "gpu_confidence": 0.6130002737045288,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6072189211845398,
+            "gpu_confidence": 0.6072189211845398,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.605221152305603,
+            "gpu_confidence": 0.605221152305603,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6022135019302368,
+            "gpu_confidence": 0.6022135019302368,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6016025543212891,
+            "gpu_confidence": 0.6016025543212891,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5993697047233582,
+            "gpu_confidence": 0.5993697047233582,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5986093878746033,
+            "gpu_confidence": 0.5986093878746033,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5930260419845581,
+            "gpu_confidence": 0.5930260419845581,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5798248648643494,
+            "gpu_confidence": 0.5798248648643494,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5787283778190613,
+            "gpu_confidence": 0.5787283778190613,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5756882429122925,
+            "gpu_confidence": 0.5756882429122925,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.571476399898529,
+            "gpu_confidence": 0.571476399898529,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5705466866493225,
+            "gpu_confidence": 0.5705466866493225,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5703780651092529,
+            "gpu_confidence": 0.5703780651092529,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5647774338722229,
+            "gpu_confidence": 0.5647774338722229,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5639578700065613,
+            "gpu_confidence": 0.5639578700065613,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5502963662147522,
+            "gpu_confidence": 0.5502963662147522,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          }
+        ]
+      },
+      {
+        "cpu_count": 89,
+        "gpu_count": 89,
+        "count_match": true,
+        "bbox_max_diff": 0.0,
+        "confidence_max_diff": 0.0,
+        "landmarks_max_diff": 0.0,
+        "parity_passed": true,
+        "details": [
+          {
+            "cpu_confidence": 0.976362407207489,
+            "gpu_confidence": 0.976362407207489,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9196414351463318,
+            "gpu_confidence": 0.9196414351463318,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.9022025465965271,
+            "gpu_confidence": 0.9022025465965271,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.898590087890625,
+            "gpu_confidence": 0.898590087890625,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8929058909416199,
+            "gpu_confidence": 0.8929058909416199,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8919726610183716,
+            "gpu_confidence": 0.8919726610183716,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8846601843833923,
+            "gpu_confidence": 0.8846601843833923,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8756855726242065,
+            "gpu_confidence": 0.8756855726242065,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8754127025604248,
+            "gpu_confidence": 0.8754127025604248,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8594849109649658,
+            "gpu_confidence": 0.8594849109649658,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.849827766418457,
+            "gpu_confidence": 0.849827766418457,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8376359939575195,
+            "gpu_confidence": 0.8376359939575195,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8330090641975403,
+            "gpu_confidence": 0.8330090641975403,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8253782391548157,
+            "gpu_confidence": 0.8253782391548157,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8236820697784424,
+            "gpu_confidence": 0.8236820697784424,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.821591854095459,
+            "gpu_confidence": 0.821591854095459,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.8197706937789917,
+            "gpu_confidence": 0.8197706937789917,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.791730523109436,
+            "gpu_confidence": 0.791730523109436,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.786695122718811,
+            "gpu_confidence": 0.786695122718811,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7845774292945862,
+            "gpu_confidence": 0.7845774292945862,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7832229733467102,
+            "gpu_confidence": 0.7832229733467102,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7736750841140747,
+            "gpu_confidence": 0.7736750841140747,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7732877731323242,
+            "gpu_confidence": 0.7732877731323242,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7687987685203552,
+            "gpu_confidence": 0.7687987685203552,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7655704021453857,
+            "gpu_confidence": 0.7655704021453857,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7655031085014343,
+            "gpu_confidence": 0.7655031085014343,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7594437599182129,
+            "gpu_confidence": 0.7594437599182129,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7594019770622253,
+            "gpu_confidence": 0.7594019770622253,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7541906833648682,
+            "gpu_confidence": 0.7541906833648682,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7469866871833801,
+            "gpu_confidence": 0.7469866871833801,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7410985231399536,
+            "gpu_confidence": 0.7410985231399536,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7374247312545776,
+            "gpu_confidence": 0.7374247312545776,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7357348203659058,
+            "gpu_confidence": 0.7357348203659058,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7323676347732544,
+            "gpu_confidence": 0.7323676347732544,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7274971604347229,
+            "gpu_confidence": 0.7274971604347229,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.71648108959198,
+            "gpu_confidence": 0.71648108959198,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7148837447166443,
+            "gpu_confidence": 0.7148837447166443,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.7114715576171875,
+            "gpu_confidence": 0.7114715576171875,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.708100438117981,
+            "gpu_confidence": 0.708100438117981,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6999920606613159,
+            "gpu_confidence": 0.6999920606613159,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6987226009368896,
+            "gpu_confidence": 0.6987226009368896,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6985533833503723,
+            "gpu_confidence": 0.6985533833503723,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6965783834457397,
+            "gpu_confidence": 0.6965783834457397,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6959592700004578,
+            "gpu_confidence": 0.6959592700004578,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6829657554626465,
+            "gpu_confidence": 0.6829657554626465,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6642693877220154,
+            "gpu_confidence": 0.6642693877220154,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6629642248153687,
+            "gpu_confidence": 0.6629642248153687,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6585217714309692,
+            "gpu_confidence": 0.6585217714309692,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6566844582557678,
+            "gpu_confidence": 0.6566844582557678,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6553568243980408,
+            "gpu_confidence": 0.6553568243980408,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.652410626411438,
+            "gpu_confidence": 0.652410626411438,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6504209041595459,
+            "gpu_confidence": 0.6504209041595459,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6472110748291016,
+            "gpu_confidence": 0.6472110748291016,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6390033960342407,
+            "gpu_confidence": 0.6390033960342407,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6386606097221375,
+            "gpu_confidence": 0.6386606097221375,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6386412978172302,
+            "gpu_confidence": 0.6386412978172302,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6327085494995117,
+            "gpu_confidence": 0.6327085494995117,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6317972540855408,
+            "gpu_confidence": 0.6317972540855408,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6294080018997192,
+            "gpu_confidence": 0.6294080018997192,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6271440982818604,
+            "gpu_confidence": 0.6271440982818604,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6224367022514343,
+            "gpu_confidence": 0.6224367022514343,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6186472773551941,
+            "gpu_confidence": 0.6186472773551941,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6173181533813477,
+            "gpu_confidence": 0.6173181533813477,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6104326844215393,
+            "gpu_confidence": 0.6104326844215393,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6073867678642273,
+            "gpu_confidence": 0.6073867678642273,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6060206890106201,
+            "gpu_confidence": 0.6060206890106201,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6056655049324036,
+            "gpu_confidence": 0.6056655049324036,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6056118011474609,
+            "gpu_confidence": 0.6056118011474609,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6054565906524658,
+            "gpu_confidence": 0.6054565906524658,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.6053059697151184,
+            "gpu_confidence": 0.6053059697151184,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5993880033493042,
+            "gpu_confidence": 0.5993880033493042,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5944265723228455,
+            "gpu_confidence": 0.5944265723228455,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5925745368003845,
+            "gpu_confidence": 0.5925745368003845,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5873634219169617,
+            "gpu_confidence": 0.5873634219169617,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.586866557598114,
+            "gpu_confidence": 0.586866557598114,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5852136015892029,
+            "gpu_confidence": 0.5852136015892029,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5849693417549133,
+            "gpu_confidence": 0.5849693417549133,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5805003643035889,
+            "gpu_confidence": 0.5805003643035889,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5802608132362366,
+            "gpu_confidence": 0.5802608132362366,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5800265073776245,
+            "gpu_confidence": 0.5800265073776245,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5774213671684265,
+            "gpu_confidence": 0.5774213671684265,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5766588449478149,
+            "gpu_confidence": 0.5766588449478149,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5744772553443909,
+            "gpu_confidence": 0.5744772553443909,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.569844663143158,
+            "gpu_confidence": 0.569844663143158,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5697435736656189,
+            "gpu_confidence": 0.5697435736656189,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5607801079750061,
+            "gpu_confidence": 0.5607801079750061,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.558264434337616,
+            "gpu_confidence": 0.558264434337616,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5550684332847595,
+            "gpu_confidence": 0.5550684332847595,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          },
+          {
+            "cpu_confidence": 0.5518172383308411,
+            "gpu_confidence": 0.5518172383308411,
+            "bbox_diff": 0.0,
+            "kps_diff": 0.0
+          }
+        ]
+      }
+    ]
+  },
+  "fallback_verification": {
+    "cpu_only_providers": true,
+    "invalid_device_handled": true,
+    "no_silent_fallback": true
+  },
+  "memory_boundaries": {
+    "input_frame": "CPU (numpy, BGR, uint8, HWC)",
+    "gpu_upload": "GPU (PyTorch CUDA, BGR, uint8, HWC) - ONCE",
+    "preprocessing": "GPU (PyTorch CUDA, all ops)",
+    "ort_input": "GPU (OrtValue, float32, NCHW)",
+    "ort_inference": "GPU (CUDAExecutionProvider)",
+    "ort_output": "GPU (OrtValue, float32)",
+    "parsing": "CPU (numpy) - MINIMAL transfer for output parsing only",
+    "final_output": "CPU (FaceDetection list) - canonical contract",
+    "gpu_to_cpu_full_frame_eliminated": true,
+    "cpu_to_gpu_full_frame_eliminated": true,
+    "initial_frame_upload_only": true
+  },
+  "io_binding_verification": {
+    "cuda_execution_provider": true,
+    "io_binding_used": true,
+    "input_ortvalue_on_gpu": true,
+    "output_ortvalues_on_gpu": true,
+    "fallback_to_cpu_on_failure": true,
+    "silent_cpu_fallback_prevented": true
+  },
+  "gpu_memory": {
+    "note": "Requires nvidia-smi sampling during sustained load - NOT_VERIFIED"
+  },
+  "limitations": [
+    "GPU utilization measurement requires nvidia-smi sampling during sustained load - NOT_VERIFIED",
+    "CUDA stream/async investigation not completed - NOT_VERIFIED",
+    "CUDA Graph not implemented - NOT_VERIFIED",
+    "Batching not investigated - NOT_VERIFIED",
+    "Live camera integration not tested - NOT_VERIFIED (by design, OFFLINE only)"
+  ],
+  "files_modified": [
+    "app/vision/gpu_face_detector.py (NEW)",
+    "scripts/phase36g_gpu_v2_integration_benchmark.py (NEW)"
+  ],
+  "final_verdict": {
+    "overall": "PASS",
+    "gpu_path_integrated": true,
+    "cpu_fallback_works": true,
+    "accuracy_parity_verified": true,
+    "io_binding_verified": true,
+    "gpu_residency_verified": true,
+    "no_unintended_roundtrip": true,
+    "4k_offline_test_completed": true,
+    "regression_suite_pass": "PENDING",
+    "no_production_regression": "PENDING"
+  }
+}

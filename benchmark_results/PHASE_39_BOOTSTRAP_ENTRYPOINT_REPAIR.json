@@ -1,0 +1,125 @@
+{
+  "phase": "PHASE_39_BOOTSTRAP_ENTRYPOINT_REPAIR",
+  "timestamp": "2026-08-28T16:39:00Z",
+  "status": "PASS",
+  "summary": {
+    "failure_cause": "bootstrap.bat referenced non-existent bootstrap.py in repository root",
+    "canonical_entrypoint": "app.bootstrap.startup_validation",
+    "canonical_command": "%VENV_PYTHON% -m app.bootstrap.startup_validation",
+    "old_invalid_entrypoint": "bootstrap.py",
+    "python_executable": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Scripts\\python.exe",
+    "python_version": "3.12.10",
+    "uvicorn_started_by": "bootstrap.bat (separate step, not by bootstrap validation)",
+    "uvicorn_command": "%VENV_PYTHON% -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "mediamtx_behavior": "manual startup only, not auto-launched",
+    "duplicate_bootstrap_created": false,
+    "duplicate_uvicorn_created": false,
+    "duplicate_mediamtx_created": false
+  },
+  "startup_chain": [
+    {
+      "step": "bootstrap_launcher",
+      "file": "bootstrap.bat",
+      "description": "Windows batch launcher"
+    },
+    {
+      "step": "canonical_python_entrypoint",
+      "file": "app/bootstrap/startup_validation.py",
+      "command": "-m app.bootstrap.startup_validation",
+      "function": "run_startup_validation()"
+    },
+    {
+      "step": "configuration",
+      "file": "app/config/settings.py",
+      "function": "load_settings()"
+    },
+    {
+      "step": "startup_validation",
+      "file": "app/bootstrap/startup_validation.py",
+      "function": "StartupValidator.run_all_validations()"
+    },
+    {
+      "step": "fastapi_app_factory",
+      "file": "app/main.py",
+      "function": "create_app()"
+    },
+    {
+      "step": "uvicorn_server",
+      "file": "bootstrap.bat",
+      "command": "-m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    },
+    {
+      "step": "api_readiness",
+      "file": "app/api/health.py",
+      "endpoint": "/api/v1/health/system"
+    }
+  ],
+  "tests_performed": [
+    {
+      "test": "bootstrap_validation",
+      "command": ".venv\\Scripts\\python.exe -m app.bootstrap.startup_validation",
+      "result": "PASS",
+      "exit_code": 0,
+      "details": "27 pass, 3 warn, 1 skip, 0 fail"
+    },
+    {
+      "test": "python_executable_path",
+      "command": ".venv\\Scripts\\python.exe -c \"import sys; print(sys.executable)\"",
+      "result": "PASS",
+      "output": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Scripts\\python.exe"
+    },
+    {
+      "test": "python_version",
+      "command": ".venv\\Scripts\\python.exe --version",
+      "result": "PASS",
+      "output": "Python 3.12.10"
+    },
+    {
+      "test": "fastapi_startup",
+      "command": ".venv\\Scripts\\python.exe -m app.main",
+      "result": "PASS",
+      "details": "Uvicorn started on 0.0.0.0:8000"
+    },
+    {
+      "test": "api_health",
+      "command": "GET http://localhost:8000/api/v1/health/system",
+      "result": "PASS",
+      "http_status": 200,
+      "overall_status": "unhealthy",
+      "note": "unhealthy due to no cameras connected (expected in test environment)"
+    },
+    {
+      "test": "clean_shutdown",
+      "result": "PASS",
+      "details": "Uvicorn process terminated cleanly"
+    },
+    {
+      "test": "second_startup",
+      "result": "PASS",
+      "details": "Server restarted and health endpoint responded"
+    }
+  ],
+  "files_modified": [
+    {
+      "file": "bootstrap.bat",
+      "changes": [
+        "Line 84: Replaced '\"%VENV_PYTHON%\" bootstrap.py' with '\"%VENV_PYTHON%\" -m app.bootstrap.startup_validation'",
+        "Line 5: Updated REM comment to reference app.bootstrap.startup_validation"
+      ]
+    }
+  ],
+  "files_created": [
+    "benchmark_results/PHASE_39_BOOTSTRAP_ENTRYPOINT_REPAIR.md",
+    "benchmark_results/PHASE_39_BOOTSTRAP_ENTRYPOINT_REPAIR.json"
+  ],
+  "invariants_preserved": [
+    "embeddings.npy",
+    "enrollment database",
+    "timetable data",
+    "attendance database",
+    "Telegram token",
+    "camera architecture",
+    "MediaMTX architecture",
+    "GPU architecture"
+  ]
+}

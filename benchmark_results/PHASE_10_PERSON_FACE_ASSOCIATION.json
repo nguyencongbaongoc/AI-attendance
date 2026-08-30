@@ -1,0 +1,163 @@
+{
+  "phase": 10,
+  "name": "Person ↔ Face Association",
+  "status": "PASS",
+  "timestamp": "2026-08-19T17:44:00+07:00",
+  "test_results": {
+    "total_tests": 568,
+    "passed": 563,
+    "skipped": 5,
+    "failed": 0,
+    "errors": 0,
+    "duration_seconds": 71.39
+  },
+  "association_unit_tests": {
+    "total": 60,
+    "passed": 60,
+    "failed": 0
+  },
+  "safety_verification": {
+    "camera_access": false,
+    "mediamtx_started": false,
+    "rtsp_access": false,
+    "rtmp_access": false,
+    "live_ffmpeg_streaming": false,
+    "persistent_workers": false,
+    "unbounded_queues": false,
+    "tracking_implemented": false,
+    "arcface_used": false,
+    "k13d68_used": false,
+    "identity_matching": false,
+    "in_out_logic": false,
+    "attendance_logic": false,
+    "schedule_logic": false,
+    "excel_export": false,
+    "stranger_logic": false,
+    "model_weights_modified": false
+  },
+  "components": {
+    "source_files": [
+      "app/vision/association.py",
+      "app/vision/association_contract.py",
+      "app/vision/association_geometry.py"
+    ],
+    "test_files": [
+      "tests/unit/test_association.py"
+    ],
+    "lines_of_code": {
+      "association.py": 484,
+      "association_contract.py": 338,
+      "association_geometry.py": 457,
+      "test_association.py": 1301
+    }
+  },
+  "contracts": {
+    "PersonFaceAssociation": {
+      "fields": [
+        "association_id",
+        "source_frame_id",
+        "frame_index",
+        "person_detection_id",
+        "person_bbox",
+        "person_confidence",
+        "person_model_id",
+        "person_model_sha256",
+        "face_detection_id",
+        "face_bbox",
+        "face_confidence",
+        "face_landmarks5",
+        "face_model_id",
+        "face_model_sha256",
+        "association_status",
+        "association_score",
+        "geometry_reason",
+        "coordinate_space",
+        "person_provenance",
+        "face_provenance"
+      ],
+      "coordinate_space": "original_frame",
+      "frame_resolution": "3840x2160"
+    },
+    "AssociationStatus": [
+      "ASSOCIATED",
+      "UNASSOCIATED_FACE",
+      "UNASSOCIATED_PERSON",
+      "AMBIGUOUS"
+    ],
+    "AssociationScore": {
+      "components": [
+        "containment_score",
+        "intersection_ratio",
+        "iou_score",
+        "distance_score",
+        "area_ratio_score",
+        "total_score"
+      ],
+      "default_weights": [0.3, 0.25, 0.2, 0.15, 0.1]
+    }
+  },
+  "geometry_primitives": [
+    "bbox_area",
+    "bbox_intersection",
+    "intersection_area",
+    "iou",
+    "intersection_over_face",
+    "face_center_in_person",
+    "face_center_distance_to_person",
+    "bbox_containment",
+    "clip_bbox_to_frame",
+    "validate_bbox_4k",
+    "validate_coordinate_space"
+  ],
+  "test_categories": {
+    "geometry_primitives": 10,
+    "association_scoring": 4,
+    "contract_validation": 5,
+    "coordinate_space_validation": 5,
+    "one_person_one_face": 3,
+    "multiple_persons_faces": 3,
+    "multiple_faces_in_person": 1,
+    "overlapping_persons": 1,
+    "partial_face_outside": 2,
+    "edge_cases": 8,
+    "global_assignment": 2,
+    "unmatched_detections": 2,
+    "provenance": 1,
+    "determinism": 2,
+    "invalid_input_rejection": 4,
+    "memory_safety": 1,
+    "safety_boundary": 1,
+    "association_result": 2,
+    "configuration": 2,
+    "no_identity": 2
+  },
+  "phase_boundary_compliance": {
+    "does_not_implement": [
+      "ArcFace identity recognition",
+      "1K3D68 landmark detection",
+      "Attendance logic",
+      "IN/OUT line crossing",
+      "Schedule management",
+      "Excel export",
+      "Camera/RTSP/RTMP streaming",
+      "MediaMTX",
+      "Tracking (Kalman, DeepSort, ByteTrack)",
+      "Database or API",
+      "UI"
+    ]
+  },
+  "acceptance_criteria": {
+    "all_unit_tests_pass": true,
+    "full_regression_pass": true,
+    "safety_boundary_verified": true,
+    "no_camera_streaming_access": true,
+    "no_identity_tracking_dependencies": true,
+    "memory_bounded": true,
+    "deterministic": true,
+    "model_independent_contracts": true,
+    "original_frame_coordinates_enforced": true,
+    "provenance_preserved": true
+  },
+  "verdict": "PASS",
+  "ready_for_phase_11": true
+}

@@ -1,0 +1,80 @@
+{
+  "database_loaded": true,
+  "matching_tests": [
+    {
+      "image": "data\\enrollment_test\\HS001\\img_001.jpg",
+      "expected_person": "HS001",
+      "matched_person": null,
+      "similarity": 0.9999999403953552,
+      "status": "AMBIGUOUS",
+      "match": false
+    },
+    {
+      "image": "data\\enrollment_test\\HS001\\img_002.jpg",
+      "expected_person": "HS001",
+      "matched_person": null,
+      "similarity": 0.9999999403953552,
+      "status": "AMBIGUOUS",
+      "match": false
+    },
+    {
+      "image": "data\\enrollment_test\\HS001\\img_003.jpg",
+      "expected_person": "HS001",
+      "matched_person": null,
+      "similarity": 0.9999999403953552,
+      "status": "AMBIGUOUS",
+      "match": false
+    },
+    {
+      "image": "data\\enrollment_test\\HS002\\img_001.jpg",
+      "expected_person": "HS002",
+      "matched_person": null,
+      "similarity": 0.9999999403953552,
+      "status": "AMBIGUOUS",
+      "match": false
+    },
+    {
+      "image": "data\\enrollment_test\\HS002\\img_002.jpg",
+      "expected_person": "HS002",
+      "matched_person": null,
+      "similarity": 0.9999999403953552,
+      "status": "AMBIGUOUS",
+      "match": false
+    },
+    {
+      "image": "data\\enrollment_test\\HS002\\img_003.jpg",
+      "expected_person": "HS002",
+      "matched_person": null,
+      "similarity": 0.9999999403953552,
+      "status": "AMBIGUOUS",
+      "match": false
+    },
+    {
+      "image": "data\\enrollment_test\\HS003\\img_001.jpg",
+      "expected_person": "HS003",
+      "matched_person": null,
+      "similarity": 0.9999999403953552,
+      "status": "AMBIGUOUS",
+      "match": false
+    },
+    {
+      "image": "data\\enrollment_test\\HS003\\img_002.jpg",
+      "expected_person": "HS003",
+      "matched_person": null,
+      "similarity": 0.9999999403953552,
+      "status": "AMBIGUOUS",
+      "match": false
+    },
+    {
+      "image": "data\\enrollment_test\\HS003\\img_003.jpg",
+      "expected_person": "HS003",
+      "matched_person": null,
+      "similarity": 0.9999999403953552,
+      "status": "AMBIGUOUS",
+      "match": false
+    }
+  ],
+  "overall_pass": false,
+  "correct_matches": 0,
+  "total_tests": 9
+}

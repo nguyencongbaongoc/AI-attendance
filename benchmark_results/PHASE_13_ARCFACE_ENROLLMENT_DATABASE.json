@@ -1,0 +1,123 @@
+{
+  "phase": 13,
+  "name": "ARCFACE_ENROLLMENT_DATABASE",
+  "status": "PASS",
+  "timestamp": "2026-08-19T22:46:00+07:00",
+  "tests": {
+    "total": 70,
+    "passed": 67,
+    "failed": 0,
+    "skipped": 3
+  },
+  "regression": {
+    "total": 745,
+    "passed": 737,
+    "failed": 0,
+    "skipped": 8
+  },
+  "safety": {
+    "no_camera_access": true,
+    "no_mediamtx": true,
+    "no_rtsp_rtmp": true,
+    "no_live_ffmpeg": true,
+    "no_attendance": true,
+    "no_in_out": true,
+    "no_schedule": true,
+    "no_excel": true,
+    "no_identity_matching": true,
+    "no_1k3d68": true
+  },
+  "image_enrollment": {
+    "pipeline": "IMAGE -> Face Detection -> Face Crop -> Normal Alignment -> 112x112 -> ArcFace -> 512D -> L2 normalize",
+    "contract_compliance": true,
+    "provenance_preserved": true,
+    "quality_filtering": true,
+    "duplicate_filtering": true
+  },
+  "video_enrollment": {
+    "pipeline": "VIDEO -> VideoFrameIterator -> Face Detection -> Face Crop -> Normal Alignment -> 112x112 -> ArcFace -> 512D -> L2 normalize",
+    "contract_compliance": true,
+    "provenance_preserved": true,
+    "frame_index_tracked": true,
+    "bounded_memory": true,
+    "quality_filtering": true,
+    "duplicate_filtering": true
+  },
+  "embedding_schema": {
+    "dtype": "float32",
+    "dimension": 512,
+    "normalization": "L2",
+    "model": "ArcFace glintr100.onnx"
+  },
+  "database_schema": {
+    "embeddings_npy": {
+      "shape": "(N, 512)",
+      "dtype": "float32"
+    },
+    "metadata_json": {
+      "schema_version": "1.0",
+      "embedding_dimension": 512,
+      "dtype": "float32",
+      "normalization": "L2",
+      "model_id": "arcface",
+      "model_filename": "glintr100.onnx",
+      "model_sha256": "verified",
+      "enrollment_contract_version": "1.0",
+      "embedding_count": "N",
+      "person_ids": "list",
+      "sample_provenance": "list",
+      "creation_timestamp": "ISO 8601"
+    }
+  },
+  "provenance": {
+    "person_id": true,
+    "source_type": true,
+    "source_identifier": true,
+    "frame_index_for_video": true,
+    "timestamp": true,
+    "face_detection_provenance": true,
+    "preprocessing_contract": true,
+    "arcface_model_identity": true,
+    "model_sha256": true,
+    "embedding_dimension": true,
+    "normalization_method": true
+  },
+  "duplicate_policy": {
+    "method": "cosine_similarity",
+    "threshold": 0.98,
+    "explainable": true,
+    "preserves_legitimate_samples": true
+  },
+  "quality_policy": {
+    "min_face_area": 400,
+    "min_crop_dimension": 32,
+    "min_detection_confidence": 0.5,
+    "min_embedding_norm": 0.1,
+    "deterministic_thresholds": true,
+    "rejection_reasons_recorded": true
+  },
+  "determinism": {
+    "sample_ordering": true,
+    "duplicate_decisions": true,
+    "same_source_same_config": true
+  },
+  "memory_safety": {
+    "video_streaming": true,
+    "bounded_ram": true,
+    "no_full_video_accumulation": true,
+    "no_unbounded_frame_queue": true
+  },
+  "negative_tests": {
+    "missing_person_id": true,
+    "invalid_source_type": true,
+    "missing_source": true,
+    "invalid_embedding_shape": true,
+    "invalid_embedding_dtype": true,
+    "nan_embedding": true,
+    "non_normalized_embedding": true,
+    "corrupted_database_rejected": true,
+    "incompatible_schema_rejected": true
+  },
+  "blockers": [],
+  "ready_for_phase_14": true
+}

@@ -1,0 +1,63 @@
+{
+  "phase": "39F",
+  "timestamp": "2026-08-28T15:16:12.620284Z",
+  "bootstrap_architecture": {
+    "bootstrap_py": "bootstrap.py (canonical entry point)",
+    "venv_manager": "app/bootstrap/venv_manager.py",
+    "startup_validation": "app/bootstrap/startup_validation.py",
+    "main_entry": "app/main.py (FastAPI)",
+    "mediamtx_startup": "External process (mediamtx.exe with mediamtx.yml)",
+    "camera_pipeline": "RTMP -> MediaMTX -> RTSP -> NVDEC -> GPU preprocessing",
+    "gpu_initialization": "CUDA + ONNX Runtime CUDA EP",
+    "health_checks": "/api/v1/health/live, /api/v1/health/ready, /api/v1/health/system"
+  },
+  "startup_dependency_order": [
+    "1. Environment validation (Python, venv, dependencies)",
+    "2. Configuration loading (Settings from env + config.yaml)",
+    "3. Database initialization (SQLite: parent_registry, notification_queue, exit_sessions, attendance)",
+    "4. Enrollment database loading (embeddings.npy + metadata)",
+    "5. Timetable loading/validation (TimetableLoader.load_from_excel)",
+    "6. Parent registry initialization",
+    "7. Notification queue initialization",
+    "8. MediaMTX startup/verification (external process on ports 1935/8554/9997)",
+    "9. Camera pipeline initialization (RTSP connections to MediaMTX)",
+    "10. GPU/CUDA initialization (CUDA DLL path, ONNX Runtime CUDA EP)",
+    "11. AI pipeline initialization (SCRFD, ArcFace, tracking)",
+    "12. Attendance engine",
+    "13. Policy engine",
+    "14. Telegram worker",
+    "15. API/backend (FastAPI on port 8000)",
+    "16. UI readiness (frontend served separately via Vite)",
+    "17. Final health verification"
+  ],
+  "mediamtx_behavior": "External process - must be started manually or via separate script. Not auto-started by bootstrap.py to avoid duplicate processes.",
+  "cold_start_test": {
+    "performed": true,
+    "environment_validation": "PASS",
+    "configuration_loading": "PASS",
+    "database_initialization": "PASS",
+    "enrollment_db_loading": "PASS",
+    "timetable_loading": "PASS",
+    "parent_registry_init": "PASS",
+    "notification_queue_init": "PASS",
+    "mediamtx_startup": "MANUAL_REQUIRED",
+    "camera_pipeline_init": "DEPENDS_ON_MEDIAMTX",
+    "gpu_cuda_init": "PASS",
+    "ai_pipeline_init": "PASS",
+    "attendance_engine": "PASS",
+    "policy_engine": "PASS",
+    "telegram_worker": "PASS (token configured)",
+    "api_backend": "PASS (FastAPI starts on 0.0.0.0:8000)",
+    "ui_readiness": "PASS (frontend builds, Vite dev server)",
+    "health_verification": "PASS (/live, /ready, /system endpoints)"
+  },
+  "clean_shutdown_test": {
+    "performed": true,
+    "result": "PASS - FastAPI shuts down gracefully, databases close, no orphaned processes"
+  },
+  "second_start_test": {
+    "performed": true,
+    "result": "PASS - No stale processes or locked databases prevent restart"
+  },
+  "status": "PASS_WITH_DOCUMENTED_LIMITATION"
+}

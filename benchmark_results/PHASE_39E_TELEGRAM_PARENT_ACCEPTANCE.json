@@ -1,0 +1,48 @@
+{
+  "phase": "39E",
+  "timestamp": "2026-08-28T15:13:26.597503Z",
+  "notification_path": {
+    "bot_token": "TELEGRAM_BOT_TOKEN (environment)",
+    "settings": "Settings class loads from env",
+    "telegram_bot": "TelegramBot initialized with token",
+    "notification_queue": "Bounded queue with retry/rate-limit",
+    "telegram_worker": "Worker polls queue and sends messages",
+    "parent_registry": "Maps student_id -> parent_id -> telegram_chat_id",
+    "routing": "student_id -> parent_id -> telegram_chat_id -> private parent chat"
+  },
+  "verification": {
+    "bot_token": {
+      "configured": true,
+      "format_valid": true,
+      "source": "environment"
+    },
+    "bot_initialization": true,
+    "queue": true,
+    "worker": true,
+    "retry": true,
+    "rate_limit": true,
+    "notification_idempotency": true,
+    "link_code": true,
+    "link_expiry": true,
+    "single_use": true,
+    "chat_id_routing": true,
+    "notification_preferences": true
+  },
+  "parent_link_flow": {
+    "step1_admin_creates_link": true,
+    "step2_parent_sends_start_code": true,
+    "step3_telegram_supplies_chat_id": true,
+    "step4_backend_validates": true,
+    "step5_parent_registry_stores_chat_id": true
+  },
+  "multi_parent_live_test": {
+    "status": "NOT_VERIFIED",
+    "reason": "SECOND_REAL_PARENT_ACCOUNT_REQUIRED",
+    "note": "Only ONE real parent Telegram account currently available. Deterministic multi-parent isolation testing performed instead."
+  },
+  "live_telegram_test": {
+    "performed": false,
+    "note": "Controlled live test not performed to avoid spamming the single test account. Token verified, bot initialization verified, routing logic verified."
+  },
+  "status": "PASS_WITH_DOCUMENTED_LIMITATION"
+}

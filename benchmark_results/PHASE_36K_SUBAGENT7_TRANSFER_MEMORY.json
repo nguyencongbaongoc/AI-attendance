@@ -1,0 +1,92 @@
+{
+  "transfer_analysis": {
+    "cpu_to_gpu_upload": {
+      "mean_ms": 5.430076000029658,
+      "p50_ms": 5.269399999633606,
+      "p95_ms": 6.881600000269827,
+      "max_ms": 9.637000000111584,
+      "total_ms": 271.5038000014829
+    },
+    "ort_input_binding": {
+      "mean_ms": 16.980813999980455,
+      "p50_ms": 17.049500000211992,
+      "p95_ms": 18.839200000002165,
+      "max_ms": 23.655500000131724,
+      "total_ms": 849.0406999990228
+    },
+    "ort_output_transfer": {
+      "mean_ms": 0.4661160000250675,
+      "p50_ms": 0.3963999997722567,
+      "p95_ms": 0.9595000001354492,
+      "max_ms": 1.1045999999623746,
+      "total_ms": 23.305800001253374
+    },
+    "output_parsing_numpy": {
+      "mean_ms": 0.4661160000250675,
+      "p50_ms": 0.3963999997722567,
+      "p95_ms": 0.9595000001354492,
+      "max_ms": 1.1045999999623746,
+      "total_ms": 23.305800001253374
+    },
+    "total_frame_transfer": {
+      "mean_ms": 41.16744999993898,
+      "p50_ms": 34.68129999964731,
+      "p95_ms": 79.1772000002311,
+      "max_ms": 95.8132999994632,
+      "total_ms": 2058.372499996949
+    }
+  },
+  "memory_analysis": {
+    "vram_per_frame": {
+      "mean_mb": 1416.29140625,
+      "max_mb": 1422.42578125,
+      "min_mb": 1326.36328125
+    }
+  },
+  "nvdec_path_analysis": {
+    "decoder_used": "nvdec",
+    "nvdec_device": 0,
+    "resolution": [
+      3840,
+      2160
+    ],
+    "fps": 30.0,
+    "current_path": "Software decoder (FFmpeg CPU) → NumPy array → GPU upload via torch.from_numpy()",
+    "avoidable": true,
+    "cost_estimate_ms": 5.430076000029658
+  },
+  "bottlenecks": [
+    "CPU→GPU frame upload: 5.4ms mean",
+    "ORT input binding overhead: 17.0ms mean"
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "issue": "Avoidable CPU→GPU transfer: Software decoder → NumPy → GPU upload",
+      "current": "Frame upload takes 5.4ms per frame",
+      "recommended": "Use NVDEC hardware decoder with CUDA output (cuda:0) to keep frames on GPU",
+      "impact": "Could eliminate 5.4ms CPU→GPU transfer per frame"
+    },
+    {
+      "priority": "HIGH",
+      "issue": "ORT input binding overhead is high",
+      "current": "ORT enqueue + binding takes 17.0ms",
+      "recommended": "Pre-bind static output buffers, reuse OrtValues, use CUDA Graph for inference",
+      "impact": "Could reduce binding overhead by 5-10ms"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "9 separate .numpy() calls for output tensors",
+      "current": "D2H transfer takes 0.5ms for 9 tensors",
+      "recommended": "Batch output conversion or use single contiguous output buffer",
+      "impact": "Reduce D2H overhead and Python call overhead"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "VRAM usage grows over time (memory fragmentation)",
+      "current": "VRAM not stable across frames",
+      "recommended": "Use CUDA memory pool / arena with fixed-size allocations",
+      "impact": "Stable VRAM usage, reduced allocation overhead"
+    }
+  ]
+}

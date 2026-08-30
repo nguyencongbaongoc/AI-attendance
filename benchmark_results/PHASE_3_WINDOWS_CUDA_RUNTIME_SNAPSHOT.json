@@ -1,0 +1,174 @@
+{
+  "snapshot_id": "6cd90f88-de36-4992-93ca-45e373d25a5f",
+  "generated_at": "2026-08-16T17:01:00.595802",
+  "phase": 3,
+  "phase_name": "Windows NVIDIA CUDA Runtime Validation",
+  "environment": {
+    "windows_version": "Windows-11-10.0.26200-SP0",
+    "architecture": "AMD64",
+    "python_version": "3.12.10",
+    "python_executable": "c:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Scripts\\python.exe",
+    "venv_active": true,
+    "venv_path": "c:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv"
+  },
+  "nvidia": {
+    "gpu_name": "NVIDIA GeForce GTX 1660 Ti",
+    "driver_version": "610.47",
+    "cuda_runtime_version": "13.3",
+    "cuda_toolkit_version": "13.3"
+  },
+  "cuda": {
+    "cudnn_version": "cuDNN 91.2 (bundled with torch)",
+    "visual_cpp_runtime": true,
+    "ffmpeg_available": true,
+    "ffmpeg_version": "ffmpeg version 9.0-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers"
+  },
+  "pytorch": {
+    "version": "2.13.0+cu126",
+    "cuda_version": "12.6",
+    "cuda_available": true,
+    "operation_success": true,
+    "operation_output_shape": [
+      100,
+      100
+    ],
+    "operation_elapsed_ms": 200.93
+  },
+  "onnxruntime": {
+    "version": "1.28.0",
+    "available_providers": [
+      "TensorrtExecutionProvider",
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "cuda_ep_registered": true,
+    "cpu_ep_registered": true,
+    "tensorrt_ep_registered": true
+  },
+  "cuda_ep_session": {
+    "created": true,
+    "providers": [
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "cuda_ep_first": true,
+    "error": null
+  },
+  "onnx_cuda_inference": {
+    "success": true,
+    "input_shape": [
+      1,
+      3,
+      3
+    ],
+    "output_shape": [
+      1,
+      3,
+      3
+    ],
+    "output_dtype": "float32",
+    "elapsed_ms": 9.179,
+    "error": null,
+    "note": "Runtime validation only — uses minimal non-production ONNX test model (MatMul), NOT a production SCRFD model"
+  },
+  "cpu_fallback": {
+    "success": true,
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "output_shape": [
+      1,
+      3,
+      3
+    ],
+    "elapsed_ms": 0.11,
+    "error": null
+  },
+  "model_availability": {
+    "scrfd": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\scrfd\\scrfd_10g_bnkps.onnx"
+    },
+    "arcface": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\arcface\\glintr100.onnx"
+    },
+    "landmark_1k3d68": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "df5c06b8a0c12e422b2ed8947b8869faa4105387f199c477af038aa01f9a45cc",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\landmark\\1k3d68.onnx"
+    },
+    "reid": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "09d398902020205dd4aa80495b2a8fceecd64ba610e6b72afc1f93965c9613d2",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\reid\\resnet50_reid.onnx"
+    },
+    "yolo_person": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\yolo\\yolo11n.pt"
+    },
+    "yolo_pose": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "869e83fcdffdc7371fa4e34cd8e51c838cc729571d1635e5141e3075e9319dc0",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\yolo\\yolo11n-pose.pt"
+    }
+  },
+  "git_status": {
+    "output": "?? .gitignore\n?? app/\n?? benchmark_results/\n?? bootstrap.py\n?? config/\n?? docs/\n?? models/\n?? requirements/\n?? scripts/\n?? tests/\n",
+    "returncode": "0"
+  },
+  "full_snapshot": {
+    "windows_version": "Windows-11-10.0.26200-SP0",
+    "architecture": "AMD64",
+    "python_version": "3.12.10",
+    "python_executable": "c:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Scripts\\python.exe",
+    "venv_active": true,
+    "venv_path": "c:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv",
+    "nvidia_gpu_name": "NVIDIA GeForce GTX 1660 Ti",
+    "nvidia_driver_version": "610.47",
+    "cuda_runtime_version": "13.3",
+    "cuda_toolkit_version": "13.3",
+    "cudnn_version": "cuDNN 91.2 (bundled with torch)",
+    "pytorch_version": "2.13.0+cu126",
+    "pytorch_cuda_version": "12.6",
+    "torch_cuda_available": true,
+    "onnxruntime_version": "1.28.0",
+    "cuda_ep_registered": true,
+    "visual_cpp_runtime": true,
+    "ffmpeg_available": true,
+    "ffmpeg_version": "ffmpeg version 9.0-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "pytorch_cuda_op": true,
+    "ort_cuda_session": true,
+    "ort_cuda_inference": true,
+    "model_availability": {
+      "scrfd": "MISSING",
+      "arcface": "MISSING",
+      "landmark_1k3d68": "MISSING",
+      "reid": "MISSING",
+      "yolo_person": "MISSING",
+      "yolo_pose": "MISSING"
+    },
+    "model_hashes": {
+      "scrfd": null,
+      "arcface": null,
+      "landmark_1k3d68": null,
+      "reid": null,
+      "yolo_person": null,
+      "yolo_pose": null
+    },
+    "git_status": {
+      "output": "?? .gitignore\n?? app/\n?? benchmark_results/\n?? bootstrap.py\n?? config/\n?? docs/\n?? models/\n?? requirements/\n?? scripts/\n?? tests/\n",
+      "returncode": "0"
+    },
+    "created_at": "2026-32-16T17:01:03"
+  }
+}

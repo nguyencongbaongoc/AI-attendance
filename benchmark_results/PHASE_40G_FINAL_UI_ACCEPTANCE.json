@@ -1,0 +1,69 @@
+{
+  "phase": "40G",
+  "title": "Final UI End-to-End Acceptance",
+  "timestamp": "2026-08-29T04:25:00Z",
+  "acceptance_test": {
+    "bootstrap_execution": "bootstrap.bat starts both backend (port 8000) and frontend (port 8443)",
+    "backend_health": "GET /api/v1/health/system returns 200 with system health data",
+    "frontend_load": "GET http://localhost:8443 returns Figma React app",
+    "websocket_connection": "WebSocket connects to ws://localhost:8000/api/v1/health/ws",
+    "sse_connection": "SSE connects to http://localhost:8000/api/v1/health/stream",
+    "api_proxy": "Vite proxy forwards /api requests to backend"
+  },
+  "ui_routes_verified": {
+    "command": "Command Center dashboard with live camera grid, event stream, system status",
+    "search": "Person Search with filters, search, grid view",
+    "person": "Person Detail with timeline, camera heatmap, face quality",
+    "replay": "Annotated Replay with video viewport, track details, event log",
+    "provenance": "Provenance Chain with node visualization, integrity report",
+    "enrollment": "Enrollment DB with enrolled table, 4-step wizard, quality checks",
+    "timetable": "Timetable Management with CRUD, form modal, Excel import",
+    "parents": "Parent/Telegram with queue stats, parent table, link workflow",
+    "excel": "Excel Export with form modal, exports table, download/delete",
+    "system": "System Health with component grid, camera details, GPU models, runtime"
+  },
+  "real_data_integration": {
+    "health_monitoring": "Real backend data via WebSocket/SSE + polling fallback",
+    "camera_status": "Real camera health from /api/v1/health/cameras",
+    "gpu_status": "Real GPU status from /api/v1/health/gpu",
+    "queue_metrics": "Real queue stats from /api/v1/health/queue/stats",
+    "alerts": "Real alerts from /api/v1/health/queue/alerts",
+    "attendance": "Mock data (backend API not implemented)",
+    "persons": "Mock data (backend API not implemented)",
+    "timetable": "Mock data (backend API not implemented)",
+    "enrollment": "Mock data (backend API not implemented)",
+    "excel": "Mock data (backend API not implemented)",
+    "parents": "Mock data (backend API not implemented)"
+  },
+  "ux_states_verified": {
+    "loading": "Skeleton loaders in PersonSearch, CameraCard, tables",
+    "empty": "Empty states in PersonSearch, TimetableManagement, ParentTelegram, ExcelExport",
+    "error": "Error boundaries via useUIStore, toast notifications (planned)",
+    "reconnect": "WebSocket auto-reconnect with exponential backoff",
+    "offline": "UI functional with cached data, shows disconnected status"
+  },
+  "browser_console": {
+    "errors": "None expected (mock data warnings only)",
+    "warnings": "Mock data usage, missing backend APIs",
+    "network": "WebSocket/SSE connections, API polling every 10s"
+  },
+  "backend_logs": {
+    "health_endpoints": "Requests to /api/v1/health/* every 10s",
+    "websocket": "Connection, ping/pong, health broadcasts",
+    "sse": "Event stream connections"
+  },
+  "security": {
+    "secrets_exposed": "No - TELEGRAM_BOT_TOKEN not in frontend",
+    "api_keys": "None in frontend code",
+    "cors": "Backend allows all origins (development)"
+  },
+  "figma_runtime": "No dependency on Figma editor or website at runtime",
+  "overall_status": "PASS_WITH_DOCUMENTED_LIMITATION",
+  "limitations": [
+    "Attendance, Person, Timetable, Enrollment, Excel, Parent APIs not implemented on backend",
+    "Mock data used for non-health features",
+    "Video stream integration not implemented",
+    "WebRTC/HLS player not integrated",
+    "Background process cleanup may be unreliable on forced termination"
+  ]
+}

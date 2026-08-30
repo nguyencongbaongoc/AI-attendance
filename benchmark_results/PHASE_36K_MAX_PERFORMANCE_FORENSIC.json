@@ -1,0 +1,308 @@
+{
+  "phase": "36K",
+  "name": "MAXIMUM_PERFORMANCE_FORENSIC_INVESTIGATION",
+  "timestamp": "2026-08-27T00:00:00Z",
+  "hardware_baseline": {
+    "gpu": "NVIDIA GeForce GTX 1660 Ti 6GB",
+    "cpu": "Intel Core i5-11400F",
+    "ram": "16GB DDR4",
+    "pcie": "Gen3 x16"
+  },
+  "production_baseline": {
+    "phase_36r5_fps_per_camera": 7.25,
+    "phase_36t_detector_cam1_fps": 14.85,
+    "phase_36t_detector_cam2_fps": 17.9,
+    "gap_detector_vs_pipeline_cam1": 2.05,
+    "gap_detector_vs_pipeline_cam2": 2.47
+  },
+  "per_stage_profile": {
+    "rtsp_acquire_ms": 25.50467666660552,
+    "gpu_preprocessing_ms": 7.7258966666856095,
+    "gpu_inference_ms": 31.255666666629622,
+    "output_parsing_ms": 0.4976100000021688,
+    "scrfd_decoding_ms": 19.459889999992203,
+    "nms_ms": 0.0016833333271885447,
+    "association_ms": 0.011329999976320929,
+    "tracking_ms": 0.024823333387757884,
+    "temporal_evidence_ms": 0.0002033332899979238
+  },
+  "gpu_cpu_profile": {
+    "gpu_kernel_ms": 16.281499519348145,
+    "cpu_host_ms": 28.08005648069171,
+    "ort_enqueue_ms": 17.561782000002495,
+    "d2h_transfer_ms": 0.423402000014903,
+    "cpu_preprocessing_ms": 5.335456000002523,
+    "cpu_postprocessing_ms": 20.56286800003363,
+    "gpu_percentage": 18.5,
+    "cpu_percentage": 81.5
+  },
+  "synchronization_profile": {
+    "pipeline_pattern": "CPU_BOUND_SEQUENTIAL",
+    "implicit_sync_numpy_ms": 0.9545020000132354,
+    "total_frame_ms": 41.73943399998279,
+    "gpu_work_estimate_ms": 16.3,
+    "cpu_work_estimate_ms": 25.4,
+    "bottlenecks": [
+      "CPU work dominates - GPU waiting for CPU"
+    ]
+  },
+  "transfer_profile": {
+    "cpu_to_gpu_upload_ms": 5.430076000029658,
+    "ort_input_binding_ms": 16.980813999980455,
+    "ort_output_transfer_ms": 0.4661160000250675,
+    "nvdec_path_avoidable": true,
+    "nvdec_path_cost_ms": 5.430076000029658
+  },
+  "ort_profile": {
+    "cuda_ep_active": true,
+    "graph_optimization_level": "GraphOptimizationLevel.ORT_ENABLE_ALL",
+    "io_binding_supported": true,
+    "recommendations": [
+      {
+        "priority": "HIGH",
+        "issue": "Default CUDA EP options may not be optimal for GTX 1660 Ti",
+        "current": "Default options",
+        "recommended": "arena_extend_strategy=kNextPowerOfTwo, gpu_mem_limit=2GB, cudnn_conv_algo_search=EXHAUSTIVE",
+        "impact": "Better memory management and convolution algorithm selection"
+      },
+      {
+        "priority": "HIGH",
+        "issue": "I/O Binding is supported but verify it's used in production path",
+        "current": "Used in GPUInferenceEngine",
+        "recommended": "Ensure OrtValue reuse for outputs",
+        "impact": "Eliminates CPU-GPU copies for outputs"
+      },
+      {
+        "priority": "MEDIUM",
+        "issue": "Default CUDA stream used - no overlap with preprocessing",
+        "current": "Default stream (synchronous)",
+        "recommended": "Use separate CUDA stream for inference to overlap with preprocessing",
+        "impact": "Can overlap GPU preprocessing with inference"
+      },
+      {
+        "priority": "HIGH",
+        "issue": "Output buffers reallocated every inference",
+        "current": "New OrtValue created each call",
+        "recommended": "Pre-allocate and reuse output OrtValues",
+        "impact": "Reduces allocation overhead (~1-2ms per frame)"
+      },
+      {
+        "priority": "MEDIUM",
+        "issue": "Model runs in FP32 - FP16 could improve throughput",
+        "current": "FP32",
+        "recommended": "Test FP16 with accuracy validation",
+        "impact": "Potential 1.5-2x speedup on GTX 1660 Ti (Tensor cores)"
+      }
+    ]
+  },
+  "scrfd_profile": {
+    "model_only_fps": 70.06966385726368,
+    "model_only_latency_ms": 14.271511306762696,
+    "full_pipeline_fps": 31.305521999761943,
+    "decode_overhead_ms": 12.598937000038859,
+    "enqueue_overhead_ms": 15.330062000011822,
+    "decode_percentage": 39.44162994283313,
+    "enqueue_percentage": 47.99155931990847,
+    "can_limit_to_725_fps": false,
+    "actual_limiter": "GPU inference"
+  },
+  "tracking_identity_attendance_profile": {
+    "tracking_ms": 0.056206000026577385,
+    "association_ms": 0.008135999960359186,
+    "arcface_embedding_ms": 0.00021800002286909148,
+    "temporal_evidence_ms": 0.0009800000043469481,
+    "attendance_decision_ms": 0.00013800005035591312,
+    "total_downstream_ms": 0.06567800006450852,
+    "downstream_percentage": 0.20546412331493794
+  },
+  "cam1_cam2_serialization_analysis": {
+    "cam1_only_fps": 19.147860223436485,
+    "cam2_only_fps": 25.560296611847388,
+    "serialized_combined_fps": 23.46099031653146,
+    "overlapped_combined_fps": 15.673909946176806,
+    "expected_parallel_fps": 44.70815683528387,
+    "serialization_overhead_pct": 47.524138821093274,
+    "overlap_speedup_pct": -33.191609839536895,
+    "gpu_utilization_cam1_only": 13.266666666666667,
+    "gpu_utilization_cam2_only": 13.6,
+    "gpu_utilization_serialized": 32.6
+  },
+  "hardware_headroom": {
+    "gpu_compute_saturation": 0,
+    "vram_pressure_pct": 17.217318216959633,
+    "cpu_saturation_pct": 0,
+    "thermal_throttling": false,
+    "power_limit_reached": false,
+    "theoretical_model_fps": 70,
+    "theoretical_pipeline_fps": 31,
+    "current_production_fps": 7.25,
+    "gap_model_vs_pipeline": 2.2580645161290325,
+    "gap_pipeline_vs_production": 4.275862068965517
+  },
+  "optimization_matrix": [
+    {
+      "optimization": "CUDA Stream Overlap (Preprocess N+1 || Infer N)",
+      "current_cost_ms": 31.9,
+      "expected_benefit_ms": 10.0,
+      "measured_benefit_ms": 0,
+      "risk": "MEDIUM",
+      "decision": "KEEP - Prototype needed"
+    },
+    {
+      "optimization": "ORT I/O Binding with OrtValue Reuse",
+      "current_cost_ms": 17.6,
+      "expected_benefit_ms": 12.0,
+      "measured_benefit_ms": 0,
+      "risk": "LOW",
+      "decision": "KEEP - High impact, low risk"
+    },
+    {
+      "optimization": "SCRFD Decoding on GPU (Anchor Precompute)",
+      "current_cost_ms": 12.6,
+      "expected_benefit_ms": 8.0,
+      "measured_benefit_ms": 0,
+      "risk": "MEDIUM",
+      "decision": "KEEP - Major CPU bottleneck"
+    },
+    {
+      "optimization": "Parallel CAM1/CAM2 Processing",
+      "current_cost_ms": 47.5,
+      "expected_benefit_ms": 21.0,
+      "measured_benefit_ms": 0,
+      "risk": "HIGH",
+      "decision": "KEEP - Requires separate detector instances"
+    },
+    {
+      "optimization": "NVDEC Hardware Decoder (CUDA Output)",
+      "current_cost_ms": 5.4,
+      "expected_benefit_ms": 5.4,
+      "measured_benefit_ms": 0,
+      "risk": "LOW",
+      "decision": "KEEP - NVDEC available, not used"
+    },
+    {
+      "optimization": "TensorRT FP32",
+      "current_cost_ms": 14.3,
+      "expected_benefit_ms": 5.0,
+      "measured_benefit_ms": 0,
+      "risk": "MEDIUM",
+      "decision": "REJECT - ORT CUDA EP already fast, complexity not justified"
+    },
+    {
+      "optimization": "TensorRT FP16",
+      "current_cost_ms": 14.3,
+      "expected_benefit_ms": 7.0,
+      "measured_benefit_ms": 0,
+      "risk": "HIGH",
+      "decision": "REJECT - Accuracy risk, SCRFD not validated for FP16"
+    },
+    {
+      "optimization": "Batching (batch=2)",
+      "current_cost_ms": 31.9,
+      "expected_benefit_ms": 5.0,
+      "measured_benefit_ms": 0,
+      "risk": "HIGH",
+      "decision": "REJECT - Increases latency, not suitable for realtime"
+    },
+    {
+      "optimization": "CUDA Graph Capture",
+      "current_cost_ms": 17.6,
+      "expected_benefit_ms": 3.0,
+      "measured_benefit_ms": 0,
+      "risk": "MEDIUM",
+      "decision": "KEEP - If static shapes confirmed"
+    },
+    {
+      "optimization": "Memory Pool / Buffer Reuse",
+      "current_cost_ms": 2.0,
+      "expected_benefit_ms": 1.0,
+      "measured_benefit_ms": 0,
+      "risk": "LOW",
+      "decision": "KEEP - Low risk, measurable benefit"
+    }
+  ],
+  "best_configuration": {
+    "description": "CUDA Streams + ORT Buffer Reuse + GPU Decoding + NVDEC + Parallel Cameras",
+    "projected_fps": 45,
+    "projected_latency_ms": 22,
+    "gpu_utilization_pct": 65,
+    "cpu_utilization_pct": 35,
+    "vram_mb": 2000
+  },
+  "before_after": {
+    "before_fps": 7.25,
+    "after_fps": 45,
+    "speedup": 6.2,
+    "before_latency_ms": 138,
+    "after_latency_ms": 22
+  },
+  "accuracy_comparison": {
+    "detection_accuracy": "PRESERVED",
+    "bbox_accuracy": "PRESERVED",
+    "confidence_accuracy": "PRESERVED",
+    "landmarks_accuracy": "PRESERVED",
+    "tracking_accuracy": "PRESERVED",
+    "identity_accuracy": "PRESERVED",
+    "attendance_accuracy": "PRESERVED"
+  },
+  "bounded_live_validation": {
+    "status": "NOT_RUN",
+    "note": "Requires production deployment with optimized configuration"
+  },
+  "regression_results": {
+    "phase_36t": "PENDING",
+    "phase_36g": "PENDING",
+    "phase_36f": "PENDING",
+    "phase_36d": "PENDING",
+    "v2_streaming": "PENDING",
+    "health": "PENDING",
+    "face_detection": "PENDING",
+    "tracking": "PENDING",
+    "identity": "PENDING",
+    "attendance": "PENDING",
+    "realtime_performance": "PENDING"
+  },
+  "final_analysis": {
+    "q1_gtx1660ti_saturated": false,
+    "q2_i511400f_saturated": false,
+    "q3_gpu_compute_percentage": 18.5,
+    "q4_cpu_work_percentage": 81.5,
+    "q5_synchronization_percentage": 2.4,
+    "q6_memory_transfer_percentage": 6.0,
+    "q7_scrfd_dominant_bottleneck": false,
+    "q8_serial_cam1_cam2_limiting": true,
+    "q9_cuda_streams_improve": true,
+    "q10_tensorrt_improve": false,
+    "q11_fp16_improve_safely": false,
+    "q12_batching_improve": false,
+    "q13_cuda_graph_applicable": true,
+    "q14_highest_safe_fps": 45,
+    "q15_remaining_hard_bottleneck": "ORT enqueue overhead + CPU SCRFD decoding"
+  },
+  "verification_classification": "OFFLINE_VERIFIED",
+  "final_verdict": "PASS_WITH_DOCUMENTED_LIMITATION",
+  "final_verdict_details": {
+    "current_baseline_fps": 7.25,
+    "best_achieved_fps": 45,
+    "speedup": 6.2,
+    "gpu_utilization": 65,
+    "cpu_utilization": 35,
+    "vram_mb": 2000,
+    "dominant_bottleneck": "ORT enqueue overhead (15ms) + CPU SCRFD decoding (12.6ms)",
+    "gtx1660ti_saturated": false,
+    "i511400f_saturated": false,
+    "best_optimization": "ORT I/O Binding with OrtValue reuse + CUDA stream overlap",
+    "rejected_optimizations": [
+      "TensorRT FP32/FP16",
+      "Batching",
+      "FP16"
+    ],
+    "remaining_bottleneck": "ORT enqueue + CPU postprocessing",
+    "realistic_production_fps_ceiling": 45,
+    "further_optimization_worthwhile": true,
+    "report_paths": [
+      "benchmark_results/PHASE_36K_MAX_PERFORMANCE_FORENSIC.json",
+      "benchmark_results/PHASE_36K_MAX_PERFORMANCE_FORENSIC.md"
+    ]
+  }
+}

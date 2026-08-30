@@ -1,0 +1,192 @@
+{
+  "timestamp": "2026-08-16T21:09:03.095236",
+  "total_tests": 9,
+  "passed_tests": 9,
+  "failed_tests": 0,
+  "skipped_tests": 0,
+  "results": [
+    {
+      "test_name": "canonical_frame",
+      "passed": true,
+      "duration_ms": 486.4594999999099,
+      "message": "CanonicalFrame tests passed",
+      "details": {
+        "width": 100,
+        "height": 100,
+        "channels": 3
+      },
+      "error": null
+    },
+    {
+      "test_name": "preprocessing_contracts",
+      "passed": true,
+      "duration_ms": 0.047199999244185165,
+      "message": "Preprocessing contracts tests passed",
+      "details": {
+        "contract_count": 6,
+        "models": [
+          "scrfd",
+          "arcface",
+          "landmark_1k3d68",
+          "reid",
+          "yolo_person",
+          "yolo_pose"
+        ]
+      },
+      "error": null
+    },
+    {
+      "test_name": "unified_preprocessor",
+      "passed": true,
+      "duration_ms": 351.1450000005425,
+      "message": "Unified preprocessor tests passed",
+      "details": {
+        "models": {
+          "scrfd": {
+            "shape": [
+              1,
+              3,
+              960,
+              960
+            ],
+            "conversions": 5
+          },
+          "arcface": {
+            "shape": [
+              1,
+              3,
+              112,
+              112
+            ],
+            "conversions": 5
+          },
+          "landmark_1k3d68": {
+            "shape": [
+              1,
+              3,
+              192,
+              192
+            ],
+            "conversions": 5
+          },
+          "reid": {
+            "shape": [
+              1,
+              3,
+              256,
+              128
+            ],
+            "conversions": 5
+          },
+          "yolo_person": {
+            "shape": [
+              1,
+              3,
+              640,
+              640
+            ],
+            "conversions": 6
+          },
+          "yolo_pose": {
+            "shape": [
+              1,
+              3,
+              640,
+              640
+            ],
+            "conversions": 6
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "test_name": "image_adapter",
+      "passed": true,
+      "duration_ms": 26.433600000018487,
+      "message": "Image adapter tests passed",
+      "details": {
+        "width": 100,
+        "height": 100
+      },
+      "error": null
+    },
+    {
+      "test_name": "video_adapter",
+      "passed": true,
+      "duration_ms": 189.15080000078888,
+      "message": "Video adapter tests passed",
+      "details": {
+        "frame_count": 10,
+        "fps": 30.0
+      },
+      "error": null
+    },
+    {
+      "test_name": "npy_artifact",
+      "passed": true,
+      "duration_ms": 232.35809999823687,
+      "message": "NPY artifact tests passed",
+      "details": {
+        "tensor_shape": [
+          1,
+          3,
+          960,
+          960
+        ],
+        "metadata_model": "scrfd"
+      },
+      "error": null
+    },
+    {
+      "test_name": "4k_safety",
+      "passed": true,
+      "duration_ms": 289.3876000016462,
+      "message": "4K safety test passed",
+      "details": {
+        "input_resolution": "3840x2160",
+        "output_shape": [
+          1,
+          3,
+          960,
+          960
+        ],
+        "tensor_size_mb": 10.55
+      },
+      "error": null
+    },
+    {
+      "test_name": "large_video_memory_safety",
+      "passed": true,
+      "duration_ms": 16654.438200002915,
+      "message": "Large video memory safety test passed",
+      "details": {
+        "frame_count": 100,
+        "max_memory_mb": 24.72,
+        "resolution": "640x480"
+      },
+      "error": null
+    },
+    {
+      "test_name": "safety_verification",
+      "passed": true,
+      "duration_ms": 80.3371000001789,
+      "message": "Safety verification passed",
+      "details": {
+        "files_checked": 6,
+        "patterns_checked": 5
+      },
+      "error": null
+    }
+  ],
+  "verdict": "PASS",
+  "safety_checks": {
+    "no_camera_access": true,
+    "no_streaming_protocols": true,
+    "synthetic_data_only": true
+  },
+  "memory_tests": {
+    "4k_safety": true,
+    "large_video_memory": true
+  }
+}

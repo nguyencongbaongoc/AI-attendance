@@ -1,0 +1,654 @@
+{
+  "phase": "36-R",
+  "name": "LONG_DURATION_SOAK_REVALIDATION",
+  "timestamp": "2026-08-25T06:14:36.149361Z",
+  "verdict": "FAIL",
+  "configured_duration_minutes": 1.0,
+  "configured_warmup_seconds": 10.0,
+  "actual_duration_seconds": 153.29222178459167,
+  "actual_duration_minutes": 2.5548703630765277,
+  "startup_duration_seconds": 8.755847454071045,
+  "warmup_duration_seconds": 10.0,
+  "soak_duration_seconds": 60.0,
+  "first_live_timestamp": "2026-08-25T13:12:11.612451Z",
+  "start_timestamp": "2026-08-25T13:12:02.856604Z",
+  "end_timestamp": "2026-08-25T13:14:36.148825Z",
+  "termination_reason": "completed",
+  "soak_completed": true,
+  "camera_states": {
+    "CAM1": "LIVE",
+    "CAM2": "LIVE"
+  },
+  "cam1": {
+    "camera_id": "CAM1",
+    "overall_duration": 153.29275727272034,
+    "startup": {
+      "phase_name": "STARTUP",
+      "duration": 98.89319324493408,
+      "frame_continuity": {
+        "total_frames": 0,
+        "dropped_frames": 0,
+        "stale_frames": 0,
+        "discontinuities": 0,
+        "timestamp_regressions": 0,
+        "duplicate_frame_indices": 0,
+        "max_gap": 0,
+        "mean_frame_interval": 0.0,
+        "p95_frame_interval": 0.0,
+        "p99_frame_interval": 0.0
+      },
+      "timestamp_monotonicity": {
+        "regressions_count": 0,
+        "max_regression": 0.0
+      },
+      "camera_id_integrity": {
+        "violations": 0
+      },
+      "health_state": {
+        "state_transitions": [
+          [
+            "OFFLINE",
+            "live",
+            1787638331.614576
+          ]
+        ],
+        "state_durations": {
+          "OFFLINE": 8.757972478866577
+        },
+        "total_unhealthy_duration": 8.757972478866577,
+        "longest_unhealthy_interval": 8.757972478866577,
+        "reconnect_attempts": 0,
+        "successful_reconnects": 0,
+        "failed_reconnects": 0
+      },
+      "queue_buffer": {
+        "max_depth": 0,
+        "avg_depth": 0.0,
+        "p95_depth": 0.0,
+        "p99_depth": 0.0,
+        "capacity": 10,
+        "overflow_count": 0,
+        "dropped_frame_count": 0
+      },
+      "inference_latency": {
+        "sample_count": 0,
+        "mean": 0.0,
+        "median": 0.0,
+        "p95": 0.0,
+        "p99": 0.0,
+        "max": 0.0,
+        "min": 0.0
+      },
+      "processing_fps": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "source_fps": {
+        "mean": 0.0
+      },
+      "sample_count": 0
+    },
+    "warmup": {
+      "phase_name": "WARMUP",
+      "duration": 89.71375465393066,
+      "frame_continuity": {
+        "total_frames": 10,
+        "dropped_frames": 0,
+        "stale_frames": 0,
+        "discontinuities": 0,
+        "timestamp_regressions": 0,
+        "duplicate_frame_indices": 0,
+        "max_gap": 0,
+        "mean_frame_interval": 0.9677880869971381,
+        "p95_frame_interval": 1.0038527011871339,
+        "p99_frame_interval": 1.0050656986236572
+      },
+      "timestamp_monotonicity": {
+        "regressions_count": 0,
+        "max_regression": 0.0
+      },
+      "camera_id_integrity": {
+        "violations": 0
+      },
+      "health_state": {
+        "state_transitions": [],
+        "state_durations": {},
+        "total_unhealthy_duration": 0.0,
+        "longest_unhealthy_interval": 0.0,
+        "reconnect_attempts": 0,
+        "successful_reconnects": 0,
+        "failed_reconnects": 0
+      },
+      "queue_buffer": {
+        "max_depth": 0,
+        "avg_depth": 0.0,
+        "p95_depth": 0.0,
+        "p99_depth": 0.0,
+        "capacity": 10,
+        "overflow_count": 0,
+        "dropped_frame_count": 0
+      },
+      "inference_latency": {
+        "sample_count": 10,
+        "mean": 203.04481983184814,
+        "median": 137.24863529205322,
+        "p95": 542.1804547309872,
+        "p99": 648.1798958778381,
+        "max": 674.6797561645508,
+        "min": 60.513973236083984
+      },
+      "processing_fps": {
+        "mean": 1.1653625362071987,
+        "min": 0.9129388492841546,
+        "max": 1.4680954766930483
+      },
+      "source_fps": {
+        "mean": 1.0454148081063004
+      },
+      "sample_count": 10
+    },
+    "soak": {
+      "phase_name": "SOAK",
+      "duration": 80.00376319885254,
+      "frame_continuity": {
+        "total_frames": 131,
+        "dropped_frames": 0,
+        "stale_frames": 0,
+        "discontinuities": 1,
+        "timestamp_regressions": 0,
+        "duplicate_frame_indices": 0,
+        "max_gap": 89,
+        "mean_frame_interval": 1.0283469480412606,
+        "p95_frame_interval": 1.015204906463623,
+        "p99_frame_interval": 1.027588415145874
+      },
+      "timestamp_monotonicity": {
+        "regressions_count": 0,
+        "max_regression": 0.0
+      },
+      "camera_id_integrity": {
+        "violations": 0
+      },
+      "health_state": {
+        "state_transitions": [],
+        "state_durations": {},
+        "total_unhealthy_duration": 0.0,
+        "longest_unhealthy_interval": 0.0,
+        "reconnect_attempts": 0,
+        "successful_reconnects": 0,
+        "failed_reconnects": 0
+      },
+      "queue_buffer": {
+        "max_depth": 0,
+        "avg_depth": 0.0,
+        "p95_depth": 0.0,
+        "p99_depth": 0.0,
+        "capacity": 10,
+        "overflow_count": 0,
+        "dropped_frame_count": 0
+      },
+      "inference_latency": {
+        "sample_count": 131,
+        "mean": 130.45442402362823,
+        "median": 132.05206394195557,
+        "p95": 205.1229834556579,
+        "p99": 376.88022851943947,
+        "max": 407.2282314300537,
+        "min": 54.3367862701416
+      },
+      "processing_fps": {
+        "mean": 1.0198782762681247,
+        "min": 1.0044554425635581,
+        "max": 1.0768958396680075
+      },
+      "source_fps": {
+        "mean": 0.9993087824361538
+      },
+      "sample_count": 131
+    }
+  },
+  "cam2": {
+    "camera_id": "CAM2",
+    "overall_duration": 153.29275727272034,
+    "startup": {
+      "phase_name": "STARTUP",
+      "duration": 98.89431810379028,
+      "frame_continuity": {
+        "total_frames": 0,
+        "dropped_frames": 0,
+        "stale_frames": 0,
+        "discontinuities": 0,
+        "timestamp_regressions": 0,
+        "duplicate_frame_indices": 0,
+        "max_gap": 0,
+        "mean_frame_interval": 0.0,
+        "p95_frame_interval": 0.0,
+        "p99_frame_interval": 0.0
+      },
+      "timestamp_monotonicity": {
+        "regressions_count": 0,
+        "max_regression": 0.0
+      },
+      "camera_id_integrity": {
+        "violations": 0
+      },
+      "health_state": {
+        "state_transitions": [],
+        "state_durations": {},
+        "total_unhealthy_duration": 0.0,
+        "longest_unhealthy_interval": 0.0,
+        "reconnect_attempts": 0,
+        "successful_reconnects": 0,
+        "failed_reconnects": 0
+      },
+      "queue_buffer": {
+        "max_depth": 0,
+        "avg_depth": 0.0,
+        "p95_depth": 0.0,
+        "p99_depth": 0.0,
+        "capacity": 10,
+        "overflow_count": 0,
+        "dropped_frame_count": 0
+      },
+      "inference_latency": {
+        "sample_count": 0,
+        "mean": 0.0,
+        "median": 0.0,
+        "p95": 0.0,
+        "p99": 0.0,
+        "max": 0.0,
+        "min": 0.0
+      },
+      "processing_fps": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "source_fps": {
+        "mean": 0.0
+      },
+      "sample_count": 0
+    },
+    "warmup": {
+      "phase_name": "WARMUP",
+      "duration": 89.75670623779297,
+      "frame_continuity": {
+        "total_frames": 10,
+        "dropped_frames": 0,
+        "stale_frames": 0,
+        "discontinuities": 0,
+        "timestamp_regressions": 0,
+        "duplicate_frame_indices": 0,
+        "max_gap": 0,
+        "mean_frame_interval": 0.9705886311001248,
+        "p95_frame_interval": 1.0042646408081055,
+        "p99_frame_interval": 1.0047439193725587
+      },
+      "timestamp_monotonicity": {
+        "regressions_count": 0,
+        "max_regression": 0.0
+      },
+      "camera_id_integrity": {
+        "violations": 0
+      },
+      "health_state": {
+        "state_transitions": [],
+        "state_durations": {},
+        "total_unhealthy_duration": 0.0,
+        "longest_unhealthy_interval": 0.0,
+        "reconnect_attempts": 0,
+        "successful_reconnects": 0,
+        "failed_reconnects": 0
+      },
+      "queue_buffer": {
+        "max_depth": 0,
+        "avg_depth": 0.0,
+        "p95_depth": 0.0,
+        "p99_depth": 0.0,
+        "capacity": 10,
+        "overflow_count": 0,
+        "dropped_frame_count": 0
+      },
+      "inference_latency": {
+        "sample_count": 10,
+        "mean": 182.4463129043579,
+        "median": 122.48051166534424,
+        "p95": 491.52473211288407,
+        "p99": 658.612449169159,
+        "max": 700.3843784332275,
+        "min": 52.206993103027344
+      },
+      "processing_fps": {
+        "mean": 1.1800197095370089,
+        "min": 0.9261241026752978,
+        "max": 1.527397574549006
+      },
+      "source_fps": {
+        "mean": 1.040392953973575
+      },
+      "sample_count": 10
+    },
+    "soak": {
+      "phase_name": "SOAK",
+      "duration": 80.01989459991455,
+      "frame_continuity": {
+        "total_frames": 134,
+        "dropped_frames": 0,
+        "stale_frames": 0,
+        "discontinuities": 1,
+        "timestamp_regressions": 0,
+        "duplicate_frame_indices": 0,
+        "max_gap": 89,
+        "mean_frame_interval": 1.009409185665757,
+        "p95_frame_interval": 1.0095093846321106,
+        "p99_frame_interval": 1.0702460193634025
+      },
+      "timestamp_monotonicity": {
+        "regressions_count": 0,
+        "max_regression": 0.0
+      },
+      "camera_id_integrity": {
+        "violations": 0
+      },
+      "health_state": {
+        "state_transitions": [],
+        "state_durations": {},
+        "total_unhealthy_duration": 0.0,
+        "longest_unhealthy_interval": 0.0,
+        "reconnect_attempts": 0,
+        "successful_reconnects": 0,
+        "failed_reconnects": 0
+      },
+      "queue_buffer": {
+        "max_depth": 0,
+        "avg_depth": 0.0,
+        "p95_depth": 0.0,
+        "p99_depth": 0.0,
+        "capacity": 10,
+        "overflow_count": 0,
+        "dropped_frame_count": 0
+      },
+      "inference_latency": {
+        "sample_count": 134,
+        "mean": 111.60126328468323,
+        "median": 106.19223117828369,
+        "p95": 194.02877092361445,
+        "p99": 239.77404832839963,
+        "max": 243.75295639038086,
+        "min": 52.66571044921875
+      },
+      "processing_fps": {
+        "mean": 1.0208128493107398,
+        "min": 1.0066768699028292,
+        "max": 1.0754905418984793
+      },
+      "source_fps": {
+        "mean": 0.9996083287998705
+      },
+      "sample_count": 134
+    }
+  },
+  "cross_camera_contamination": {
+    "verified": true,
+    "level": "LIVE_RUNTIME_VERIFIED",
+    "events": []
+  },
+  "system_resources": {
+    "available": true,
+    "overall": {
+      "initial_rss_mb": 895.66796875,
+      "final_rss_mb": 2046.72265625,
+      "min_rss_mb": 895.66796875,
+      "max_rss_mb": 2046.72265625,
+      "mean_rss_mb": 1902.4605034722222,
+      "absolute_growth_mb": 1151.0546875,
+      "percentage_growth": 128.51354828580276,
+      "linear_slope_mb_per_sample": 77.95865885416663,
+      "initial_vms_mb": 2224.6484375,
+      "final_vms_mb": 3770.359375,
+      "mean_cpu_percent": 53.15555555555555,
+      "max_cpu_percent": 397.7,
+      "gpu_telemetry": "AVAILABLE",
+      "mean_gpu_utilization": 11.444444444444445,
+      "max_gpu_memory_mb": 2052.44140625
+    },
+    "by_phase": {
+      "startup": {
+        "sample_count": 0
+      },
+      "warmup": {
+        "initial_rss_mb": 895.66796875,
+        "final_rss_mb": 895.66796875,
+        "min_rss_mb": 895.66796875,
+        "max_rss_mb": 895.66796875,
+        "mean_rss_mb": 895.66796875,
+        "absolute_growth_mb": 0.0,
+        "percentage_growth": 0.0,
+        "linear_slope_mb_per_sample": 0.0,
+        "sample_count": 1,
+        "mean_cpu_percent": 397.7,
+        "max_cpu_percent": 397.7
+      },
+      "soak": {
+        "initial_rss_mb": 2031.75,
+        "final_rss_mb": 2046.72265625,
+        "min_rss_mb": 2013.87890625,
+        "max_rss_mb": 2046.72265625,
+        "mean_rss_mb": 2028.3095703125,
+        "absolute_growth_mb": 14.97265625,
+        "percentage_growth": 0.736933985480497,
+        "linear_slope_mb_per_sample": 3.498883928571408,
+        "sample_count": 8,
+        "mean_cpu_percent": 10.0875,
+        "max_cpu_percent": 49.9
+      }
+    },
+    "soak_5min_comparison": {}
+  },
+  "event_bus": {
+    "events_published": 0,
+    "events_delivered": 0,
+    "duplicates_suppressed": 0,
+    "dropped_events": 0,
+    "max_history_size": 0,
+    "max_dedup_cache_size": 0,
+    "max_subscriber_count": 0,
+    "subscriber_errors": 0,
+    "history_bounded": true,
+    "dedup_cache_bounded": true
+  },
+  "regression": {
+    "verified": false,
+    "level": "NOT_VERIFIED",
+    "details": {
+      "Phase 32 Streaming Contracts": {
+        "passed": true,
+        "exit_code": 0,
+        "test_path": "tests/unit/test_streaming_contracts.py",
+        "stdout": "mContract::test_invalid_rtmp_stream_key PASSED [ 75%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_invalid_rtsp_path PASSED [ 78%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_unsupported_codec PASSED [ 81%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_unsupported_resolution PASSED [ 84%]\ntests/unit/test_streaming_contracts.py::TestValidateCameraStreamContract::test_unsupported_fps PASSED [ 87%]\ntests/unit/test_streaming_contracts.py::TestStreamHealthState::test_all_states_exist PASSED [ 90%]\ntests/unit/test_streaming_contracts.py::TestStreamHealthState::test_state_values PASSED [ 93%]\ntests/unit/test_streaming_contracts.py::TestStreamCodec::test_h264_supported PASSED [ 96%]\ntests/unit/test_streaming_contracts.py::TestStreamCodec::test_other_codecs_exist PASSED [100%]\n\n============================== warnings summary ===============================\ntests/unit/test_streaming_contracts.py: 16 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\streaming\\contracts.py:186: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/unit/test_streaming_contracts.py::TestCameraStreamContract::test_serialization_roundtrip\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\streaming\\contracts.py:214: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at=data.get(\"created_at\", datetime.utcnow().isoformat() + \"Z\"),\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================= 33 passed, 17 warnings in 0.47s =======================\n",
+        "stderr": ""
+      },
+      "Phase 32 MediaMTX Config": {
+        "passed": true,
+        "exit_code": 0,
+        "test_path": "tests/unit/test_streaming_mediamtx.py",
+        "stdout": "streaming_mediamtx.py::TestMediaMTXConfig::test_cam2_path_exists PASSED [ 21%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_rtmp_routes_to_expected_path PASSED [ 26%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_rtsp_routes_to_expected_path PASSED [ 30%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_no_duplicate_paths PASSED [ 34%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_no_duplicate_rtmp_keys PASSED [ 39%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_no_duplicate_rtsp_paths PASSED [ 43%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_custom_keys PASSED [ 47%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_to_yaml PASSED [ 52%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_serialization_roundtrip PASSED [ 56%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_valid_config PASSED [ 60%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_missing_cam1 PASSED [ 65%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_missing_cam2 PASSED [ 69%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_extra_camera PASSED [ 73%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_missing_rtmp_key PASSED [ 78%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_missing_rtsp_path PASSED [ 82%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_unsupported_codec PASSED [ 86%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_duplicate_rtmp_keys PASSED [ 91%]\ntests/unit/test_streaming_mediamtx.py::TestMediaMTXConfig::test_validate_duplicate_rtsp_paths PASSED [ 95%]\ntests/unit/test_streaming_mediamtx.py::TestDefaultConfigYAML::test_default_yaml_contains_required_fields PASSED [100%]\n\n============================= 23 passed in 0.46s ==============================\n",
+        "stderr": ""
+      },
+      "Phase 33 Health Events": {
+        "passed": true,
+        "exit_code": 0,
+        "test_path": "tests/unit/test_streaming_health_events.py",
+        "stdout": "_batch_serialization_roundtrip\ntests/unit/test_streaming_health_events.py::TestDeterministicIDs::test_batch_serialization_roundtrip\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\streaming\\health_events.py:90: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    timestamp=data.get(\"timestamp\", datetime.utcnow().isoformat() + \"Z\"),\n\ntests/unit/test_streaming_health_events.py::TestHealthEventBatch::test_create_batch\ntests/unit/test_streaming_health_events.py::TestHealthEventBatch::test_batch_serialization_roundtrip\ntests/unit/test_streaming_health_events.py::TestDeterministicIDs::test_create_reconnect_event_success\ntests/unit/test_streaming_health_events.py::TestDeterministicIDs::test_batch_serialization_roundtrip\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\streaming\\health_events.py:107: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    batch_timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/unit/test_streaming_health_events.py::TestHealthEventBatch::test_batch_serialization_roundtrip\ntests/unit/test_streaming_health_events.py::TestDeterministicIDs::test_batch_serialization_roundtrip\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\streaming\\health_events.py:121: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    batch_timestamp=data.get(\"batch_timestamp\", datetime.utcnow().isoformat() + \"Z\"),\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================= 25 passed, 35 warnings in 0.47s =======================\n",
+        "stderr": ""
+      },
+      "Phase 33 Health Monitor": {
+        "passed": true,
+        "exit_code": 0,
+        "test_path": "tests/unit/test_streaming_health.py",
+        "stdout": "st_streaming_health.py::TestCAM1CAM2Isolation::test_cam1_failure_does_not_affect_cam2\ntests/unit/test_streaming_health.py::TestCAM1CAM2Isolation::test_cam2_failure_does_not_affect_cam1\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\streaming\\health.py:300: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    snapshot.last_error_time = datetime.utcnow().isoformat() + \"Z\"\n\ntests/unit/test_streaming_health.py::TestStreamHealthMonitor::test_update_reconnect\ntests/unit/test_streaming_health.py::TestStreamHealthMonitor::test_update_reconnect_success\ntests/unit/test_streaming_health.py::TestStreamHealthMonitor::test_update_reconnect_failed\ntests/unit/test_streaming_health.py::TestHealthCheck::test_check_health_reconnecting_state\ntests/unit/test_streaming_health.py::TestHealthEventGeneration::test_reconnect_emits_events\ntests/unit/test_streaming_health.py::TestCAM1CAM2Isolation::test_independent_reconnect\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\streaming\\health.py:314: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    snapshot.last_reconnect_time = datetime.utcnow().isoformat() + \"Z\"\n\ntests/unit/test_streaming_health.py: 30 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\streaming\\health.py:38: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n====================== 36 passed, 124 warnings in 0.49s =======================\n",
+        "stderr": ""
+      },
+      "Phase 34 Live Dual Camera E2E": {
+        "passed": false,
+        "error": "NOT_FOUND",
+        "test_paths_checked": []
+      },
+      "Phase 34-R Live Dual Camera E2E Revalidation": {
+        "passed": false,
+        "error": "NOT_FOUND",
+        "test_paths_checked": []
+      },
+      "Phase 35 Realtime Performance": {
+        "passed": true,
+        "exit_code": 0,
+        "test_path": "tests/unit/test_phase35_performance.py",
+        "stdout": "\nplatform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Scripts\\python.exe\ncachedir: .pytest_cache\nrootdir: C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\nplugins: anyio-4.14.2\ncollecting ... collected 15 items\n\ntests/unit/test_phase35_performance.py::TestPerformanceMetrics::test_performance_metrics_creation PASSED [  6%]\ntests/unit/test_phase35_performance.py::TestPerformanceMetrics::test_performance_metrics_to_dict PASSED [ 13%]\ntests/unit/test_phase35_performance.py::TestDualCameraMetrics::test_dual_camera_metrics_creation PASSED [ 20%]\ntests/unit/test_phase35_performance.py::TestDualCameraMetrics::test_dual_camera_metrics_to_dict PASSED [ 26%]\ntests/unit/test_phase35_performance.py::TestLatencyCalculations::test_calculate_fps PASSED [ 33%]\ntests/unit/test_phase35_performance.py::TestLatencyCalculations::test_calculate_fps_insufficient_samples PASSED [ 40%]\ntests/unit/test_phase35_performance.py::TestLatencyCalculations::test_calculate_latency PASSED [ 46%]\ntests/unit/test_phase35_performance.py::TestLatencyCalculations::test_calculate_latency_empty PASSED [ 53%]\ntests/unit/test_phase35_performance.py::TestPerformanceInvariants::test_frame_continuity_check PASSED [ 60%]\ntests/unit/test_phase35_performance.py::TestPerformanceInvariants::test_timestamp_monotonicity_check PASSED [ 66%]\ntests/unit/test_phase35_performance.py::TestPerformanceInvariants::test_camera_id_integrity_check PASSED [ 73%]\ntests/unit/test_phase35_performance.py::TestPerformanceInvariants::test_bounded_queue_check PASSED [ 80%]\ntests/unit/test_phase35_performance.py::TestPerformanceInvariants::test_uncontrolled_retry_check PASSED [ 86%]\ntests/unit/test_phase35_performance.py::TestRealtimePerformanceMeasurement::test_initialization PASSED [ 93%]\ntests/unit/test_phase35_performance.py::TestRealtimePerformanceMeasurement::test_custom_urls PASSED [100%]\n\n============================= 15 passed in 6.58s ==============================\n",
+        "stderr": ""
+      },
+      "Phase 35A Contract Import Timestamp Repair": {
+        "passed": false,
+        "error": "NOT_FOUND",
+        "test_paths_checked": []
+      },
+      "Phase 31 Offline Full E2E": {
+        "passed": true,
+        "exit_code": 0,
+        "test_path": "tests/integration/test_phase31_offline_full_e2e.py",
+        "stdout": "time.UTC).\n    delivery_timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/integration/test_phase31_offline_full_e2e.py: 139 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\output\\contract.py:132: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/integration/test_phase31_offline_full_e2e.py: 139 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\output\\contract.py:286: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    delivery_timestamp=data.get(\"delivery_timestamp\", datetime.utcnow().isoformat() + \"Z\"),\n\ntests/integration/test_phase31_offline_full_e2e.py: 139 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\output\\contract.py:291: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at=data.get(\"created_at\", datetime.utcnow().isoformat() + \"Z\"),\n\ntests/integration/test_phase31_offline_full_e2e.py: 85 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\replay\\annotation.py:423: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n====================== 57 passed, 833 warnings in 9.14s =======================\n",
+        "stderr": ""
+      },
+      "Phase 23 Raw IN/OUT Event": {
+        "passed": true,
+        "exit_code": 0,
+        "test_path": "tests/unit/test_raw_in_out_event.py",
+        "stdout": "test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_json_serialization\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\in_out\\contract.py:227: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at=data.get(\"created_at\", datetime.utcnow().isoformat() + \"Z\"),\n\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_empty_event_id\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_empty_camera_id\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_invalid_direction\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_negative_timestamp\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_invalid_schema_version\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\in_out\\contract.py:105: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_geometry_version_immutable_across_config_changes\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\geometry\\contract.py:490: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    updated_at=datetime.utcnow().isoformat() + \"Z\",\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n====================== 76 passed, 140 warnings in 3.50s =======================\n",
+        "stderr": ""
+      },
+      "Phase 24 Repeated IN/OUT Resolution": {
+        "passed": true,
+        "exit_code": 0,
+        "test_path": "tests/unit/test_repeated_in_out.py",
+        "stdout": "e version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at=data.get(\"created_at\", datetime.utcnow().isoformat() + \"Z\"),\n\ntests/unit/test_repeated_in_out.py::TestSerialization::test_resolved_transition_serialization\ntests/unit/test_repeated_in_out.py::TestSerialization::test_resolution_result_serialization\ntests/unit/test_repeated_in_out.py::TestSerialization::test_resolution_result_serialization\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\in_out\\resolver_contract.py:155: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at=data.get(\"created_at\", datetime.utcnow().isoformat() + \"Z\"),\n\ntests/unit/test_repeated_in_out.py::TestSerialization::test_resolution_result_serialization\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\in_out\\resolver_contract.py:269: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at=data.get(\"created_at\", datetime.utcnow().isoformat() + \"Z\"),\n\ntests/unit/test_repeated_in_out.py::TestNegativeCases::test_missing_camera_id_in_raw_event\ntests/unit/test_repeated_in_out.py::TestNegativeCases::test_missing_local_track_id_in_raw_event\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\in_out\\contract.py:105: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n====================== 72 passed, 531 warnings in 3.41s =======================\n",
+        "stderr": ""
+      },
+      "Phase 25 Attendance Persistence": {
+        "passed": false,
+        "error": "NOT_FOUND",
+        "test_paths_checked": []
+      },
+      "Phase 26 Attendance Engine": {
+        "passed": true,
+        "exit_code": 0,
+        "test_path": "tests/unit/test_attendance_engine.py",
+        "stdout": "_within_entry_window\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_late_within_tolerance\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_outside_attendance_window\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_exit_recorded\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_outside_exit_window\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_invalid_timetable_entry\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\attendance\\timetable.py:87: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_late_within_tolerance\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_outside_attendance_window\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_exit_recorded\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_outside_exit_window\ntests/unit/test_attendance_engine.py::TestAttendanceEngine::test_is_idempotent\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\attendance\\policy.py:227: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================= 12 passed, 68 warnings in 3.35s =======================\n",
+        "stderr": ""
+      },
+      "Phase 29 Immediate Event Output": {
+        "passed": true,
+        "exit_code": 0,
+        "test_path": "tests/unit/test_immediate_event_contract.py",
+        "stdout": "ng\\Desktop\\AI attendance\\app\\output\\contract.py:132: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/unit/test_immediate_event_contract.py::TestImmediateEventSerialization::test_from_dict\ntests/unit/test_immediate_event_contract.py::TestImmediateEventSerialization::test_from_json\ntests/unit/test_immediate_event_contract.py::TestImmediateEventSerialization::test_round_trip_dict\ntests/unit/test_immediate_event_contract.py::TestImmediateEventSerialization::test_round_trip_json\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\output\\contract.py:286: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    delivery_timestamp=data.get(\"delivery_timestamp\", datetime.utcnow().isoformat() + \"Z\"),\n\ntests/unit/test_immediate_event_contract.py::TestImmediateEventSerialization::test_from_dict\ntests/unit/test_immediate_event_contract.py::TestImmediateEventSerialization::test_from_json\ntests/unit/test_immediate_event_contract.py::TestImmediateEventSerialization::test_round_trip_dict\ntests/unit/test_immediate_event_contract.py::TestImmediateEventSerialization::test_round_trip_json\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\output\\contract.py:291: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at=data.get(\"created_at\", datetime.utcnow().isoformat() + \"Z\"),\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================= 34 passed, 74 warnings in 3.75s =======================\n",
+        "stderr": ""
+      },
+      "Phase 30A Enrollment Database": {
+        "passed": false,
+        "exit_code": 1,
+        "test_path": "tests/unit/test_phase30a_enrollment.py",
+        "stdout": "mages PASSED [ 51%]\ntests/unit/test_phase30a_enrollment.py::TestPhase19Integration::test_phase19_integration_matching PASSED [ 53%]\ntests/unit/test_phase30a_enrollment.py::TestDeterministicRegeneration::test_deterministic_regeneration PASSED [ 56%]\ntests/unit/test_phase30a_enrollment.py::TestReportGeneration::test_generate_report_json PASSED [ 58%]\ntests/unit/test_phase30a_enrollment.py::TestReportGeneration::test_generate_report_markdown PASSED [ 61%]\ntests/unit/test_phase30a_enrollment.py::TestReportGeneration::test_generate_inspection_report PASSED [ 64%]\ntests/unit/test_phase30a_enrollment.py::TestEnrollmentPipeline::test_run_enrollment_creates_database PASSED [ 66%]\ntests/unit/test_phase30a_enrollment.py::TestEnrollmentPipeline::test_run_enrollment_tracks_rejections PASSED [ 69%]\ntests/unit/test_phase30a_enrollment.py::TestDataStructures::test_rejection_record PASSED [ 71%]\ntests/unit/test_phase30a_enrollment.py::TestDataStructures::test_enrollment_report PASSED [ 74%]\ntests/unit/test_phase30a_enrollment.py::TestDataStructures::test_database_inspection PASSED [ 76%]\ntests/unit/test_phase30a_enrollment.py::TestCLICommands::test_cmd_validate_valid_database PASSED [ 79%]\ntests/unit/test_phase30a_enrollment.py::TestCLICommands::test_cmd_validate_invalid_database PASSED [ 82%]\ntests/unit/test_phase30a_enrollment.py::TestCLICommands::test_cmd_inspect PASSED [ 84%]\ntests/unit/test_phase30a_enrollment.py::TestSafetyBoundaries::test_no_camera_imports PASSED [ 87%]\ntests/unit/test_phase30a_enrollment.py::TestSafetyBoundaries::test_no_attendance_logic PASSED [ 89%]\ntests/unit/test_phase30a_enrollment.py::TestSafetyBoundaries::test_no_live_enrollment PASSED [ 92%]\ntests/unit/test_phase30a_enrollment.py::TestSafetyBoundaries::test_uses_existing_pipeline PASSED [ 94%]\ntests/unit/test_phase30a_enrollment.py::TestNegativeCases::test_discover_empty_person_id PASSED [ 97%]\ntests/unit/test_phase30a_enrollment.py::TestNegativeCases::test_discover_whitespace_person_id PASSED [100%]",
+        "stderr": "-packages\\_pytest\\warnings.py\", line 119, in pytest_sessionfinish\n    return (yield)\n            ^^^^^\n  File \"C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Lib\\site-packages\\pluggy\\_callers.py\", line 121, in _multicall\n    res = hook_impl.function(*args)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Lib\\site-packages\\_pytest\\tmpdir.py\", line 340, in pytest_sessionfinish\n    tmp_path_factory._exit_stack.close()\n  File \"C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\contextlib.py\", line 618, in close\n    self.__exit__(None, None, None)\n  File \"C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\contextlib.py\", line 610, in __exit__\n    raise exc_details[1]\n  File \"C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\contextlib.py\", line 595, in __exit__\n    if cb(*exc_details):\n       ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\contextlib.py\", line 478, in _exit_wrapper\n    callback(*args, **kwds)\n  File \"C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Lib\\site-packages\\_pytest\\pathlib.py\", line 371, in cleanup_numbered_dir\n    cleanup_dead_symlinks(root)\n  File \"C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Lib\\site-packages\\_pytest\\pathlib.py\", line 356, in cleanup_dead_symlinks\n    if not left_dir.resolve().exists():\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\pathlib.py\", line 860, in exists\n    self.stat(follow_symlinks=follow_symlinks)\n  File \"C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\pathlib.py\", line 840, in stat\n    return os.stat(self, follow_symlinks=follow_symlinks)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [WinError 5] Access is denied: 'C:\\\\Users\\\\Nguyen Cong Thong\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-Nguyen Cong Thong\\\\pytest-current'\n"
+      }
+    }
+  },
+  "determinism_idempotency": {
+    "verified": true,
+    "decision1_id": "DEC-test_resolution-v1.0-114e5cc352475ccc",
+    "decision2_id": "DEC-test_resolution-v1.0-114e5cc352475ccc"
+  },
+  "inference_latency_windows": {
+    "0-5min": {
+      "mean": 108.20268235116635,
+      "median": 103.62005233764648,
+      "p95": 203.9145469665527,
+      "p99": 295.6652832031264,
+      "max": 407.2282314300537,
+      "min": 45.17364501953125,
+      "count": 265
+    },
+    "5-10min": {
+      "count": 0
+    },
+    "10-15min": {
+      "count": 0
+    },
+    "15-20min": {
+      "count": 0
+    },
+    "20-25min": {
+      "count": 0
+    },
+    "25-30min": {
+      "count": 0
+    }
+  },
+  "verification_classification": {
+    "cam1_soak": {
+      "frame_continuity": "NOT_VERIFIED",
+      "timestamp_monotonicity": "LIVE_RUNTIME_VERIFIED",
+      "camera_id_integrity": "LIVE_RUNTIME_VERIFIED",
+      "health_stability": "LIVE_RUNTIME_VERIFIED",
+      "no_uncontrolled_retry": "LIVE_RUNTIME_VERIFIED",
+      "queue_boundedness": "LIVE_RUNTIME_VERIFIED"
+    },
+    "cam2_soak": {
+      "frame_continuity": "NOT_VERIFIED",
+      "timestamp_monotonicity": "LIVE_RUNTIME_VERIFIED",
+      "camera_id_integrity": "LIVE_RUNTIME_VERIFIED",
+      "health_stability": "LIVE_RUNTIME_VERIFIED",
+      "no_uncontrolled_retry": "LIVE_RUNTIME_VERIFIED",
+      "queue_boundedness": "LIVE_RUNTIME_VERIFIED"
+    },
+    "cam1_startup_warmup": {
+      "startup": {
+        "frame_continuity": "LIVE_RUNTIME_VERIFIED",
+        "timestamp_monotonicity": "LIVE_RUNTIME_VERIFIED",
+        "camera_id_integrity": "LIVE_RUNTIME_VERIFIED",
+        "health_stability": "LIVE_RUNTIME_VERIFIED",
+        "queue_boundedness": "LIVE_RUNTIME_VERIFIED"
+      },
+      "warmup": {
+        "frame_continuity": "LIVE_RUNTIME_VERIFIED",
+        "timestamp_monotonicity": "LIVE_RUNTIME_VERIFIED",
+        "camera_id_integrity": "LIVE_RUNTIME_VERIFIED",
+        "health_stability": "LIVE_RUNTIME_VERIFIED",
+        "queue_boundedness": "LIVE_RUNTIME_VERIFIED"
+      }
+    },
+    "cam2_startup_warmup": {
+      "startup": {
+        "frame_continuity": "LIVE_RUNTIME_VERIFIED",
+        "timestamp_monotonicity": "LIVE_RUNTIME_VERIFIED",
+        "camera_id_integrity": "LIVE_RUNTIME_VERIFIED",
+        "health_stability": "LIVE_RUNTIME_VERIFIED",
+        "queue_boundedness": "LIVE_RUNTIME_VERIFIED"
+      },
+      "warmup": {
+        "frame_continuity": "LIVE_RUNTIME_VERIFIED",
+        "timestamp_monotonicity": "LIVE_RUNTIME_VERIFIED",
+        "camera_id_integrity": "LIVE_RUNTIME_VERIFIED",
+        "health_stability": "LIVE_RUNTIME_VERIFIED",
+        "queue_boundedness": "LIVE_RUNTIME_VERIFIED"
+      }
+    },
+    "cross_camera_contamination": "LIVE_RUNTIME_VERIFIED",
+    "memory_stability": "LIVE_RUNTIME_VERIFIED",
+    "event_bus_boundedness": "LIVE_RUNTIME_VERIFIED",
+    "regression": "NOT_VERIFIED",
+    "determinism_idempotency": "LIVE_RUNTIME_VERIFIED"
+  },
+  "memory_growth_threshold_percent": 20.0,
+  "regression_passed": false,
+  "determinism_verified": true,
+  "known_limitations": []
+}

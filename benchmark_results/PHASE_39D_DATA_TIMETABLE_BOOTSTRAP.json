@@ -1,0 +1,150 @@
+{
+  "phase": "39D",
+  "timestamp": "2026-08-28T15:11:02.747725Z",
+  "template_file": "data/templates/student_parent_timetable_template.xlsx",
+  "sheets": [
+    "STUDENTS",
+    "PARENTS",
+    "STUDENT_PARENTS",
+    "TIMETABLE",
+    "TELEGRAM_CONFIG_GUIDE"
+  ],
+  "students_sheet": {
+    "columns": [
+      "student_id",
+      "student_name",
+      "class_name",
+      "enrollment_status",
+      "notes"
+    ],
+    "rows": 4,
+    "student_ids": [
+      "HS001",
+      "HS002",
+      "HS003"
+    ]
+  },
+  "parents_sheet": {
+    "columns": [
+      "parent_id",
+      "parent_name",
+      "relationship",
+      "telegram_username",
+      "telegram_profile_link",
+      "telegram_chat_id",
+      "telegram_enabled",
+      "notification_preferences",
+      "notes"
+    ],
+    "rows": 3,
+    "parent_ids": [
+      "PAR-ABC12345",
+      "PAR-BCD23456",
+      "PAR-CDE34567"
+    ]
+  },
+  "student_parents_sheet": {
+    "columns": [
+      "link_id",
+      "student_id",
+      "parent_id",
+      "relationship",
+      "is_primary",
+      "notes"
+    ],
+    "rows": 4,
+    "links": [
+      {
+        "link_id": "LNK-ABC12345",
+        "student_id": "HS001",
+        "parent_id": "PAR-ABC12345",
+        "is_primary": true
+      },
+      {
+        "link_id": "LNK-BCD23456",
+        "student_id": "HS001",
+        "parent_id": "PAR-BCD23456",
+        "is_primary": false
+      },
+      {
+        "link_id": "LNK-CDE34567",
+        "student_id": "HS002",
+        "parent_id": "PAR-BCD23456",
+        "is_primary": true
+      },
+      {
+        "link_id": "LNK-DEF45678",
+        "student_id": "HS003",
+        "parent_id": "PAR-CDE34567",
+        "is_primary": true
+      }
+    ]
+  },
+  "timetable_sheet": {
+    "columns": [
+      "student_id",
+      "class_name",
+      "day",
+      "session_type",
+      "entry_time",
+      "exit_time",
+      "session_id",
+      "person_name",
+      "subject",
+      "location",
+      "expected_location",
+      "outside_allowed",
+      "entry_window_start",
+      "entry_window_end",
+      "late_tolerance",
+      "exit_window_start",
+      "exit_window_end",
+      "timetable_version"
+    ],
+    "required_fields": [
+      "student_id",
+      "class_name",
+      "day",
+      "session_type",
+      "entry_time",
+      "exit_time"
+    ],
+    "optional_semantic_fields": [
+      "session_id",
+      "person_name",
+      "subject",
+      "location",
+      "expected_location",
+      "outside_allowed",
+      "entry_window_start",
+      "entry_window_end",
+      "late_tolerance",
+      "exit_window_start",
+      "exit_window_end",
+      "timetable_version"
+    ],
+    "rows": 4,
+    "session_types": [
+      "classroom",
+      "lab",
+      "outside_lesson"
+    ],
+    "semantic_behavior": {
+      "CLASSROOM": "EXPECTED_INSIDE",
+      "BREAK": "EXPECTED_OUTSIDE",
+      "OUTSIDE_LESSON": "EXPECTED_OUTSIDE",
+      "LAB": "CONFIGURABLE",
+      "OTHER": "EXPECTED_INSIDE"
+    }
+  },
+  "timetable_loader": {
+    "method": "TimetableLoader.load_from_excel()",
+    "verified": true
+  },
+  "timetable_management_ui": {
+    "component": "TimetableManagement.vue",
+    "used": true,
+    "no_duplicate_ui": true
+  },
+  "status": "PASS"
+}

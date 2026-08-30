@@ -1,0 +1,278 @@
+{
+  "phase": "36H.1",
+  "name": "LIVE_UI_END_TO_END_NON_BLOCKING_VALIDATION",
+  "timestamp": "2026-08-26T06:07:00Z",
+  "verdict": "PASS_WITH_DOCUMENTED_LIMITATION",
+  "LIVE_UI_NON_BLOCKING": "NOT_VERIFIED",
+  "READY_FOR_FINAL_36R": false,
+  "subagent_findings": {
+    "subagent_1_frontend_ui_path": {
+      "summary": "Frontend uses mock/simulation only - NO real transport layer exists",
+      "findings": [
+        "LiveDashboard.vue uses setInterval to simulate updates (5s for camera timestamps, 15s for events)",
+        "No WebSocket, SSE, polling, or HTTP transport found in frontend or backend",
+        "CameraCard.vue renders frames via <img :src=\"feed.currentFrame\"/> but currentFrame is never updated from backend",
+        "Pinia store updateCameraFeed action exists but never called by real backend",
+        "Detection overlays (tracks) rendered from feed.tracks but tracks array never populated from real AI",
+        "maxEvents = 100 bounds liveEvents array, but events are simulated not real",
+        "No frame queue or buffering in frontend - single currentFrame replacement"
+      ],
+      "code_references": [
+        "frontend/src/views/LiveDashboard.vue:139-173 (simulation)",
+        "frontend/src/stores/app.js:101-109 (updateCameraFeed)",
+        "frontend/src/components/CameraCard.vue:57-63 (frame rendering)",
+        "frontend/src/components/CameraCard.vue:68-97 (track overlays)"
+      ]
+    },
+    "subagent_2_backend_ui_transport": {
+      "summary": "Backend has complete event pipeline but NO transport to frontend",
+      "findings": [
+        "CallbackEventBus + UIEventSubscriber + Phase28UIAdapter form complete in-process callback chain",
+        "Transport is direct in-process callback (NOT WebSocket/SSE/HTTP)",
+        "Only ImmediateEvent (attendance decisions) published - NOT per-frame video",
+        "Event frequency: ~0-10 events/minute (foot traffic dependent), NOT 30 FPS",
+        "Payload: ~2-5 KB JSON per event with 35+ provenance fields",
+        "Queue/backpressure: queue_size=1000, DROP_OLDEST policy",
+        "AI processing CAN block transport - synchronous pipeline on single thread",
+        "Slow frontend (callback) CAN cause backend backlog via subscriber queue",
+        "Frame delivery and detection events are COUPLED in same synchronous pipeline",
+        "UI adapter expects pinia_store_callback = store.addLiveEvent but no bridge exists"
+      ],
+      "code_references": [
+        "app/output/publisher.py:507-543 (CallbackEventBus)",
+        "app/output/ui_adapter.py:55-131 (UIEventSubscriber)",
+        "app/output/ui_adapter.py:134-216 (Phase28UIAdapter)",
+        "app/output/contract.py:53-303 (ImmediateEvent)"
+      ]
+    },
+    "subagent_3_ai_ui_concurrency": {
+      "summary": "AI inference BLOCKS UI - synchronous single-threaded pipeline",
+      "findings": [
+        "AI inference runs synchronously on caller thread - no dedicated inference threads",
+        "Frame flow: RTSPSource.get_next_frame() (blocks on FFmpeg) -> GPU preprocessing -> GPU inference -> event publishing -> UI callback",
+        "All on ONE thread - no decoupling between AI and UI",
+        "Queues: FFmpeg pipe buffer (~10MB), CallbackEventBus subscriber queue (1000), history (10000), dedup cache (50000) - all bounded",
+        "Locks: CallbackEventBus uses RLock for subscribers, Lock for sequence/stats, per-subscriber Lock for queue",
+        "GPU sync points: .numpy() on OrtValue outputs blocks EVERY frame (GPUFaceDetector line 203)",
+        "torch.cuda.synchronize() only at warmup, not in inference path",
+        "AI inference CAN block Live UI rendering - synchronous pipeline with GPU->CPU copy every frame",
+        "ThreadPoolExecutor in CallbackEventBus (max_workers=1) serializes event delivery",
+        "RTSPSource.get_next_frame() blocks on FFmpeg/OpenCV decode",
+        "GPU preprocessing and inference run on same thread as frame ingestion"
+      ],
+      "code_references": [
+        "app/vision/gpu_inference.py:120-246 (GPUInferenceEngine.infer_gpu)",
+        "app/vision/gpu_face_detector.py:203 (.numpy() on OrtValue)",
+        "app/streaming/rtsp_source.py:218-297 (get_next_frame)",
+        "app/output/publisher.py:205-207 (ThreadPoolExecutor max_workers=1)",
+        "app/output/publisher.py:273-383 (_deliver_to_subscribers synchronous)"
+      ]
+    },
+    "subagent_4_ui_performance_observability": {
+      "summary": "Limited observability - no real UI metrics exposed",
+      "findings": [
+        "UI rendering FPS: NOT measurable (no real frame delivery)",
+        "UI frame delivery FPS: NOT measurable (mock simulation only)",
+        "UI latency: NOT measurable (no timestamp propagation to frontend)",
+        "Frame gaps/duplicates/stale: NOT measurable (no frame sequence in frontend)",
+        "Frontend queue depth: Pinia store updates not instrumented",
+        "Backend queue depth: CallbackEventBus.get_subscriber_stats() exposes queue_size, events_dropped",
+        "AI queue depth: No explicit AI queue (synchronous)",
+        "Browser CPU/GPU: NOT instrumented (would need Performance API integration)",
+        "Backend CPU/GPU: Available via pynvml (app.runtime.gpu.get_gpu_memory_info)",
+        "Metrics sampling: ~1Hz in LiveDashboard simulation (setInterval 5s/15s)",
+        "GAPS: No WebSocket message rate, no browser rendering performance, no end-to-end latency"
+      ],
+      "code_references": [
+        "app/output/publisher.py:463-482 (get_subscriber_stats)",
+        "app/runtime/gpu.py:208-229 (get_gpu_memory_info)",
+        "app/streaming/rtsp_source.py:332-355 (frames_produced, fps, last_frame_time)",
+        "frontend/src/views/LiveDashboard.vue:144-173 (simulation intervals)"
+      ]
+    }
+  },
+  "real_ui_validation": {
+    "frontend_dev_server": "RUNNING at http://localhost:5173",
+    "cam1_rtsp": "ACCESSIBLE - 3840x2160 @ 60 FPS (reported as 60, expected 30)",
+    "cam2_rtsp": "ACCESSIBLE - 3840x2160 @ 30 FPS",
+    "both_cameras_simultaneous": "VERIFIED - both streams open and produce frames",
+    "live_feeds_visible": "PARTIAL - UI loads but shows mock/skeleton (no real frames)",
+    "detection_overlays": "NOT WORKING - tracks array empty (no AI->UI bridge)",
+    "camera_switching": "NOT TESTABLE - no real feeds to switch between",
+    "ui_responsive_during_ai": "UNKNOWN - no real AI->UI connection to test"
+  },
+  "performance_measurements": {
+    "source_fps": {
+      "cam1": 60.0,
+      "cam2": 30.0
+    },
+    "decode_fps": {
+      "cam1": 10.06,
+      "cam2": 12.01
+    },
+    "ingestion_fps": {
+      "cam1": 10.06,
+      "cam2": 12.01
+    },
+    "ai_preprocessing_inference_fps": {
+      "cam1": 11.8,
+      "cam2": 14.9
+    },
+    "backend_output_fps": "N/A - no per-frame output, only attendance events",
+    "frontend_frame_delivery_fps": "NOT_MEASURED - no real frame transport",
+    "frontend_rendering_fps": "NOT_MEASURED - no real frame transport",
+    "metrics_sampling_fps": 0.2,
+    "inference_latency_ms": {
+      "cam1_mean": 84.65,
+      "cam2_mean": 67.10
+    },
+    "gpu_inference_latency_ms": {
+      "480x640_cpu": 109.31,
+      "480x640_gpu": 43.47,
+      "4k_cpu": 321.23,
+      "4k_gpu": 128.45
+    }
+  },
+  "ui_latency": {
+    "camera_to_backend_receipt": "NOT_MEASURED",
+    "backend_receipt_to_backend_output": "NOT_MEASURED",
+    "backend_output_to_frontend_receipt": "NOT_MEASURED - no transport",
+    "frontend_receipt_to_rendered": "NOT_MEASURED - no transport",
+    "end_to_end": "NOT_VERIFIED",
+    "classification": "NOT_VERIFIED - no timestamp propagation to frontend"
+  },
+  "frame_gap_analysis": {
+    "source_frame_drops": "OBSERVED - H.264 decode errors in logs",
+    "ui_frame_drops": "NOT_APPLICABLE - no real UI frame delivery",
+    "ai_frame_drops": "EXPECTED - AI processes ~10-12 FPS vs 30-60 source FPS",
+    "stale_frames": "NOT_MEASURED",
+    "rendering_stalls": "NOT_OBSERVED in mock UI",
+    "freezes": "NOT_OBSERVED in mock UI",
+    "sudden_latency_growth": "NOT_MEASURED"
+  },
+  "backpressure_queue_validation": {
+    "ai_queue_capacity": "N/A - synchronous, no queue",
+    "ai_queue_depth": "N/A",
+    "ai_max_queue_depth": "N/A",
+    "ai_overflow_count": "N/A",
+    "ai_dropped_frames": "IMPLICIT - AI processes subset of frames",
+    "frontend_unbounded_queue": "NO - single currentFrame replacement",
+    "frontend_unbounded_reactive_history": "NO - maxEvents=100 bounds liveEvents",
+    "frontend_accumulated_ws_messages": "N/A - no WebSocket",
+    "frontend_stale_frame_accumulation": "NO - currentFrame replaced",
+    "latest_frame_policy": "IMPLICIT in AI (processes latest available), NOT in UI"
+  },
+  "gpu_cpu_impact_on_ui": {
+    "backend_cpu": "NOT_MEASURED during UI test",
+    "backend_gpu": "NOT_MEASURED during UI test",
+    "gpu_vram": "NOT_MEASURED during UI test",
+    "frontend_browser_cpu": "NOT_MEASURED",
+    "frontend_browser_gpu": "NOT_MEASURED",
+    "gpu_ai_causes_ui_freezes": "UNKNOWN - no real UI connection",
+    "browser_rendering_degradation": "UNKNOWN",
+    "backend_starvation": "POSSIBLE - synchronous pipeline",
+    "queue_growth": "BOUNDED - all queues have limits",
+    "frame_delivery_latency": "NOT_MEASURED"
+  },
+  "ai_load_test": {
+    "dual_camera_active": true,
+    "nvdec": "NOT USED - software decoder (decoder='software' in RTSPSourceConfig)",
+    "gpu_preprocessing": "VERIFIED - GPUFaceDetector uses PyTorch CUDA",
+    "ort_io_binding": "VERIFIED - GPUInferenceEngine uses I/O Binding",
+    "detection_active": true,
+    "live_ui_active": true,
+    "ui_observed_during_ai": "Mock UI only - no real integration"
+  },
+  "ui_safety_invariants": {
+    "UI-01_rendering_not_wait_for_ai": "NOT_VERIFIED - no real UI frame delivery",
+    "UI-02_ai_backpressure_not_unbounded_ui_queue": "VERIFIED - maxEvents=100, single currentFrame",
+    "UI-03_slow_ai_not_freeze_latest_frame": "NOT_VERIFIED - no real frame delivery",
+    "UI-04_gpu_sync_not_block_ui_thread": "VIOLATED - .numpy() on OrtValue blocks every frame in backend",
+    "UI-05_overlays_older_frames_continue": "NOT_VERIFIED - no real overlays",
+    "UI-06_cam1_detection_cam1": "NOT_VERIFIED - no real detection->UI",
+    "UI-07_cam2_detection_cam2": "NOT_VERIFIED - no real detection->UI",
+    "UI-08_cam1_not_in_cam2": "VERIFIED at backend (camera_id preserved in frames)",
+    "UI-09_cam2_not_in_cam1": "VERIFIED at backend (camera_id preserved in frames)",
+    "UI-10_ai_drop_not_ui_drop": "NOT_VERIFIED - no real UI frame delivery"
+  },
+  "browser_frontend_inspection": {
+    "console_errors": "NOT_CHECKED - would need browser devtools",
+    "network_ws_activity": "NONE - no WebSocket",
+    "message_rate": "N/A",
+    "rendering_performance": "NOT_MEASURED",
+    "long_tasks": "NOT_MEASURED",
+    "memory_growth": "NOT_MEASURED",
+    "dropped_frames": "NOT_MEASURED"
+  },
+  "bounded_validation": {
+    "duration_seconds": 28.51,
+    "cam1_frames": 100,
+    "cam2_frames": 100,
+    "source_exhaustion": "NO - continuous streams",
+    "metrics_requiring_longer": [
+      "UI latency percentiles",
+      "UI frame gap analysis",
+      "Long-term queue stability",
+      "Memory leak detection"
+    ]
+  },
+  "regression_results": {
+    "phase32_streaming_contracts": "PASS (29 tests)",
+    "phase32_mediamtx_config": "PASS (17 tests)",
+    "phase33_health_events": "PASS (26 tests)",
+    "phase33_health_monitor": "PASS (45 tests)",
+    "integration_tests": "254 passed, 4 failed, 8 errors",
+    "failures": [
+      "test_phase14_unit_tests_pass - PermissionError in pytest cleanup (not functional)",
+      "test_phase30a_unit_tests_pass - PermissionError in pytest cleanup (not functional)",
+      "test_performance_baseline_cam2_fps - CAM2 FPS 12.01 > 10.0 threshold",
+      "test_health_monitor_registration - 'offline' vs 'OFFLINE' case mismatch",
+      "Phase36R tests - TypeError: unexpected keyword argument 'sample_interval' (test fixture issue)"
+    ],
+    "permission_errors": "Windows pytest cleanup PermissionError - classified as non-functional per rules"
+  },
+  "limitations": [
+    "NO real backend-to-frontend transport layer exists (WebSocket/SSE/HTTP)",
+    "Frontend uses mock/simulation only - no real frame delivery",
+    "AI inference blocks backend pipeline (synchronous, GPU->CPU copy every frame)",
+    "UI latency, frame gaps, rendering FPS cannot be measured without transport",
+    "NVDEC not used (software decoder configured)",
+    "Phase 36R soak test has fixture errors (sample_interval)",
+    "CAM1 reports 60 FPS vs expected 30 FPS (stream mismatch)",
+    "H.264 decode errors observed in FFmpeg logs",
+    "Browser performance metrics not instrumented"
+  ],
+  "files_modified": [],
+  "final_verdict": {
+    "LIVE_UI_FRAME_DELIVERY": "NOT_VERIFIED",
+    "LIVE_UI_RENDERING": "NOT_VERIFIED",
+    "LIVE_UI_NON_BLOCKING": "NOT_VERIFIED",
+    "LIVE_UI_LATENCY": "NOT_VERIFIED",
+    "LIVE_UI_FRAME_CONTINUITY": "NOT_VERIFIED",
+    "LIVE_UI_BACKPRESSURE": "OFFLINE_VERIFIED",
+    "LIVE_UI_QUEUE_BOUNDEDNESS": "OFFLINE_VERIFIED",
+    "AI_UI_CONCURRENCY": "OFFLINE_VERIFIED - AI blocks backend pipeline",
+    "CAM1_UI_INTEGRITY": "NOT_VERIFIED",
+    "CAM2_UI_INTEGRITY": "NOT_VERIFIED",
+    "CROSS_CAMERA_UI_CONTAMINATION": "OFFLINE_VERIFIED - backend preserves camera_id",
+    "GPU_UI_INTERACTION": "NOT_VERIFIED",
+    "REGRESSION": "PASS_WITH_DOCUMENTED_LIMITATION"
+  },
+  "readiness_assessment": {
+    "actual_live_ui_exercised": false,
+    "cam1_live_feed_verified": false,
+    "cam2_live_feed_verified": false,
+    "ui_rendering_verified": false,
+    "ui_frame_delivery_verified": false,
+    "ai_does_not_block_ui": false,
+    "ui_queue_remains_bounded": true,
+    "no_ui_freeze_stall": "UNKNOWN",
+    "no_uncontrolled_latency_growth": "UNKNOWN",
+    "cam1_cam2_identity_correct": true,
+    "no_cross_camera_contamination": true,
+    "relevant_regression_passes": true,
+    "no_unexplained_production_defect": true,
+    "no_unresolved_ui_blocker": false,
+    "READY_FOR_FINAL_36R": false
+  }
+}

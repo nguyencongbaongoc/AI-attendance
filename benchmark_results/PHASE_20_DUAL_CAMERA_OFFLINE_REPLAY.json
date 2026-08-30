@@ -1,0 +1,283 @@
+{
+  "verdict": "PASS",
+  "total_tests": 22,
+  "passed": 22,
+  "failed": 0,
+  "cam1_total_frames": 30,
+  "cam1_processed_frames": 30,
+  "cam2_total_frames": 25,
+  "cam2_processed_frames": 25,
+  "timestamp_ordering": true,
+  "deterministic_replay": true,
+  "camera_isolation": true,
+  "provenance": true,
+  "bounded_memory": true,
+  "integration_gates": {
+    "test_phase15_integration": true,
+    "test_phase16_integration": true,
+    "test_phase17_integration": true,
+    "test_phase18_integration": true,
+    "test_phase19_integration": true
+  },
+  "n_camera_architecture": true,
+  "limitations": [
+    "Test videos are synthetic (640x480, no real faces)",
+    "Phase 14/19 matching not fully exercised (no enrollment DB)",
+    "Person detection (YOLO) not integrated in pipeline",
+    "ArcFace inference not integrated in pipeline"
+  ],
+  "phase_21_readiness": true,
+  "test_results": [
+    {
+      "name": "test_replay_clock",
+      "passed": true,
+      "message": "ReplayClock generates deterministic timestamps",
+      "details": {
+        "timestamps": [
+          0.0,
+          0.03333333333333333,
+          0.06666666666666667
+        ]
+      },
+      "duration_ms": 0.05909999890718609
+    },
+    {
+      "name": "test_valid_source_opens",
+      "passed": true,
+      "message": "Valid video sources open correctly",
+      "details": {
+        "cam1_frames": 30,
+        "cam2_frames": 25,
+        "cam1_fps": 30.0,
+        "cam2_fps": 25.0
+      },
+      "duration_ms": 54.112099998747
+    },
+    {
+      "name": "test_canonical_frame_reused",
+      "passed": true,
+      "message": "Replay produces CanonicalFrame with camera_id and replay metadata",
+      "details": {
+        "frames_checked": 5
+      },
+      "duration_ms": 26.340399999753572
+    },
+    {
+      "name": "test_replay_manifest",
+      "passed": true,
+      "message": "ReplayManifest creates, serializes, and loads correctly",
+      "details": {
+        "replay_id": "replay_387c30878391",
+        "num_sources": 2
+      },
+      "duration_ms": 30.590199996368028
+    },
+    {
+      "name": "test_dual_camera_scheduling",
+      "passed": true,
+      "message": "Dual-camera scheduler orders frames by timestamp",
+      "details": {
+        "cam1_frames": 30,
+        "cam2_frames": 25,
+        "total_frames": 55,
+        "timestamp_ordered": true
+      },
+      "duration_ms": 95.24470000178553
+    },
+    {
+      "name": "test_timestamp_ordering",
+      "passed": true,
+      "message": "Frames are correctly ordered by replay timestamp",
+      "details": {
+        "total_frames": 35,
+        "violations": 0
+      },
+      "duration_ms": 81.0533000039868
+    },
+    {
+      "name": "test_camera_isolation",
+      "passed": true,
+      "message": "Camera namespaces remain isolated",
+      "details": {
+        "cam1_frame_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "cam2_frame_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "duration_ms": 95.7191999987117
+    },
+    {
+      "name": "test_early_camera_termination",
+      "passed": true,
+      "message": "Early camera termination handled correctly",
+      "details": {
+        "cam1_frames": 10,
+        "cam2_frames": 25,
+        "cam1_exhausted_at_cam2_frame": 9
+      },
+      "duration_ms": 77.23200000327779
+    },
+    {
+      "name": "test_invalid_source_handling",
+      "passed": true,
+      "message": "Invalid sources handled with ReplaySourceError",
+      "details": {
+        "corrupt_opened": false,
+        "empty_opened": false,
+        "missing_opened": false
+      },
+      "duration_ms": 556.277499999851
+    },
+    {
+      "name": "test_deterministic_replay",
+      "passed": true,
+      "message": "Replay is deterministic across runs",
+      "details": {
+        "sequence_length": 55
+      },
+      "duration_ms": 193.40609999926528
+    },
+    {
+      "name": "test_bounded_memory",
+      "passed": true,
+      "message": "Scheduler respects bounded memory limits",
+      "details": {
+        "max_global_buffer": 19,
+        "max_cam1_buffer": 4,
+        "max_cam2_buffer": 4
+      },
+      "duration_ms": 99.18540000217035
+    },
+    {
+      "name": "test_provenance_preserved",
+      "passed": true,
+      "message": "Provenance chain preserved from source through replay",
+      "details": {
+        "chain_length": 3,
+        "sample": {
+          "camera_id": "CAM1",
+          "source_id": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\test_data\\phase20\\cam1_test.mp4",
+          "frame_index": 0,
+          "timestamp": 0.0,
+          "replay_timestamp": {
+            "value": 0.0,
+            "source": "frame_index_fps"
+          },
+          "replay_frame_index": 0
+        }
+      },
+      "duration_ms": 28.95400000124937
+    },
+    {
+      "name": "test_phase15_integration",
+      "passed": true,
+      "message": "Phase 15 Face Detection contract composes correctly",
+      "details": {
+        "frames_processed": 10,
+        "detections_found": 846
+      },
+      "duration_ms": 3562.0459999991
+    },
+    {
+      "name": "test_phase16_integration",
+      "passed": true,
+      "message": "Phase 16 Adaptive Crop contract composes correctly",
+      "details": {
+        "frames_processed": 10,
+        "face_crops_produced": 846
+      },
+      "duration_ms": 2843.341200001305
+    },
+    {
+      "name": "test_phase17_integration",
+      "passed": true,
+      "message": "Phase 17 Face Quality contract composes correctly",
+      "details": {
+        "frames_processed": 10,
+        "quality_results": 846
+      },
+      "duration_ms": 3244.0032999948016
+    },
+    {
+      "name": "test_phase18_integration",
+      "passed": true,
+      "message": "Phase 18 Temporal Evidence contract composes correctly",
+      "details": {
+        "frames_processed": 10,
+        "hypotheses": 10
+      },
+      "duration_ms": 3285.1008999932674
+    },
+    {
+      "name": "test_phase19_integration",
+      "passed": true,
+      "message": "Phase 19 Matching Calibration contract composes correctly",
+      "details": {
+        "calibration_status": "not_calibrated",
+        "threshold": 0.4
+      },
+      "duration_ms": 13.183799994294532
+    },
+    {
+      "name": "test_cam1_actual_frames",
+      "passed": true,
+      "message": "CAM1 decodes and processes actual frames",
+      "details": {
+        "total_frames": 30,
+        "processed_frames": 30
+      },
+      "duration_ms": 41.57100000156788
+    },
+    {
+      "name": "test_cam2_actual_frames",
+      "passed": true,
+      "message": "CAM2 decodes and processes actual frames",
+      "details": {
+        "total_frames": 25,
+        "processed_frames": 25
+      },
+      "duration_ms": 33.45769999577897
+    },
+    {
+      "name": "test_dual_camera_e2e",
+      "passed": true,
+      "message": "Dual-camera E2E replay with pipeline works",
+      "details": {
+        "cam1_processed": 10,
+        "cam2_processed": 25,
+        "total_pipeline_results": 35
+      },
+      "duration_ms": 10732.758500002092
+    },
+    {
+      "name": "test_n_camera_architecture",
+      "passed": true,
+      "message": "Architecture supports N cameras (tested with 3)",
+      "details": {
+        "CAM1": 10,
+        "CAM2": 25,
+        "CAM3": 10
+      },
+      "duration_ms": 114.96420000185026
+    },
+    {
+      "name": "test_offline_dependency_safety",
+      "passed": true,
+      "message": "No live/streaming dependencies in replay modules",
+      "details": {
+        "modules_checked": 5
+      },
+      "duration_ms": 7.638700000825338
+    }
+  ]
+}

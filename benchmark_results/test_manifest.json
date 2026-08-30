@@ -1,0 +1,105 @@
+{
+  "replay_id": "replay_387c30878391",
+  "sources": [
+    {
+      "camera_id": "CAM1",
+      "source_path": "test_data\\phase20\\cam1_test.mp4",
+      "source_metadata": {
+        "width": 640,
+        "height": 480,
+        "fps": 30.0,
+        "frame_count": 30,
+        "duration_seconds": 1.0,
+        "codec": null
+      },
+      "timestamp_policy": "pts",
+      "config": {
+        "camera_id": "CAM1",
+        "source_path": "test_data\\phase20\\cam1_test.mp4",
+        "use_pts": true,
+        "max_queue_size": 10
+      }
+    },
+    {
+      "camera_id": "CAM2",
+      "source_path": "test_data\\phase20\\cam2_test.mp4",
+      "source_metadata": {
+        "width": 640,
+        "height": 480,
+        "fps": 25.0,
+        "frame_count": 25,
+        "duration_seconds": 1.0,
+        "codec": null
+      },
+      "timestamp_policy": "pts",
+      "config": {
+        "camera_id": "CAM2",
+        "source_path": "test_data\\phase20\\cam2_test.mp4",
+        "use_pts": true,
+        "max_queue_size": 10
+      }
+    }
+  ],
+  "scheduler_config": {
+    "max_buffer_per_source": 10,
+    "max_total_buffer": 100,
+    "timestamp_policy": "strict",
+    "out_of_order_policy": "sort"
+  },
+  "pipeline_config": {
+    "face_detector_model": "scrfd",
+    "face_confidence_threshold": null,
+    "face_nms_threshold": null,
+    "crop_contract": {
+      "person_padding": {
+        "pad_pixels": null,
+        "pad_ratio": 0.15
+      },
+      "face_padding": {
+        "pad_pixels": null,
+        "pad_ratio": 0.2
+      },
+      "min_person_crop_width": 32,
+      "min_person_crop_height": 32,
+      "min_face_crop_width": 16,
+      "min_face_crop_height": 16,
+      "min_person_for_face_detection": 48
+    },
+    "quality_thresholds": {
+      "min_face_width": 64,
+      "min_face_height": 64,
+      "min_face_area": 4096,
+      "min_inter_eye_distance": 15.0,
+      "min_detection_confidence": 0.55,
+      "min_sharpness": 100.0,
+      "brightness_min": 30.0,
+      "brightness_max": 220.0,
+      "max_boundary_contact_ratio": 0.15,
+      "max_occlusion_ratio": 0.3
+    },
+    "temporal_config": {
+      "max_samples": 100,
+      "max_duration": 30.0,
+      "good_weight": 1.0,
+      "marginal_weight": 0.3,
+      "unusable_weight": 0.0,
+      "min_eligible_evidence": 3,
+      "min_temporal_span": 1.0,
+      "ambiguity_margin": 0.15,
+      "min_confident_support": 5,
+      "reject_duplicates": true,
+      "out_of_order_policy": "sort"
+    },
+    "matching_config": {
+      "match_threshold": 0.5,
+      "ambiguity_margin": 0.05,
+      "person_aggregation_policy": "best_sample"
+    },
+    "enrollment_db_path": null
+  },
+  "version_info": {
+    "phase": "20",
+    "python_version": "3.12"
+  },
+  "created_at": "2026-08-21T15:34:59.081145Z"
+}

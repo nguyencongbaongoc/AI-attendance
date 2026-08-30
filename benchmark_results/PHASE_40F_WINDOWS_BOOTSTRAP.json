@@ -1,0 +1,54 @@
+{
+  "phase": "40F",
+  "title": "Windows Bootstrap Integration",
+  "timestamp": "2026-08-29T04:20:00Z",
+  "bootstrap_changes": {
+    "original_behavior": "Started only backend (uvicorn on port 8000), MediaMTX manual",
+    "new_behavior": "Starts both backend (port 8000) and Figma frontend (port 8443) in background",
+    "process_management": "Uses 'start /B' for background processes with named window titles",
+    "cleanup": "taskkill on exit to stop both services"
+  },
+  "service_ports": {
+    "backend_api": 8000,
+    "frontend_dev": 8443,
+    "websocket": 8000 (ws://localhost:8000/api/v1/health/ws),
+    "sse": 8000 (http://localhost:8000/api/v1/health/stream)
+  },
+  "startup_sequence": [
+    "1. Validate repository root",
+    "2. Check .venv Python executable",
+    "3. Validate core dependencies (FastAPI, ONNX Runtime, OpenCV)",
+    "4. Run app.bootstrap.startup_validation",
+    "5. Check MediaMTX availability",
+    "6. Check TELEGRAM_BOT_TOKEN",
+    "7. Check Figma frontend (package.json)",
+    "8. Start backend (uvicorn) in background",
+    "9. Wait 3 seconds for backend readiness",
+    "10. Start Figma frontend (pnpm dev) in background",
+    "11. Display service URLs",
+    "12. Wait for user Ctrl+C",
+    "13. Cleanup: taskkill both processes"
+  ],
+  "frontend_detection": {
+    "pnpm_preferred": "Checks 'where pnpm' first",
+    "npm_fallback": "Falls back to 'where npm' if pnpm not found",
+    "error_handling": "Clear error if neither found"
+  },
+  "media_mtx": "Remains manual by design (external process)",
+  "port_conflict_handling": {
+    "backend": "Fixed at 8000 (validated by bootstrap)",
+    "frontend": "Fixed at 8443 (configured in vite.config.ts)",
+    "no_conflict": "Ports are separate, no collision"
+  },
+  "environment_variables": {
+    "TELEGRAM_BOT_TOKEN": "Checked but not required",
+    "VITE_API_BASE_URL": "Configured via .env.local in figma/",
+    "VITE_WS_BASE_URL": "Configured via .env.local in figma/"
+  },
+  "known_issues": [
+    "Background processes may not clean up properly on forced termination",
+    "No health check before showing 'Services Started' message",
+    "Frontend build not verified before starting dev server",
+    "No log aggregation for background processes"
+  ]
+}

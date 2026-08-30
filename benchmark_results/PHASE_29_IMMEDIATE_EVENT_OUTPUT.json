@@ -1,0 +1,188 @@
+{
+  "phase": "PHASE_29_IMMEDIATE_EVENT_OUTPUT",
+  "timestamp": "2026-08-22T18:18:13.002937Z",
+  "summary": {
+    "total_criteria": 25,
+    "passed": 25,
+    "failed": 0,
+    "success_rate": "100.0%",
+    "total_duration_ms": 1823.4665393829346
+  },
+  "criteria": [
+    {
+      "criterion_id": "AC-29-01",
+      "description": "ImmediateEvent can be created with all required fields",
+      "passed": true,
+      "evidence": "PASS: Created valid ImmediateEvent with ID IEV-test001",
+      "duration_ms": 0.0
+    },
+    {
+      "criterion_id": "AC-29-02",
+      "description": "ImmediateEvent ID is deterministic (SHA256 of source_resolution_id + event_type)",
+      "passed": true,
+      "evidence": "PASS: Deterministic ID generation verified: IEV-cb67f083cb00bf59",
+      "duration_ms": 0.0
+    },
+    {
+      "criterion_id": "AC-29-03",
+      "description": "ImmediateEvent supports serialization/deserialization (to_dict/from_dict)",
+      "passed": true,
+      "evidence": "PASS: Serialization round-trip verified",
+      "duration_ms": 0.0
+    },
+    {
+      "criterion_id": "AC-29-04",
+      "description": "Event bus publishes events to subscribers",
+      "passed": true,
+      "evidence": "PASS: Publish/subscribe works correctly",
+      "duration_ms": 101.17673873901367
+    },
+    {
+      "criterion_id": "AC-29-05",
+      "description": "Event bus suppresses duplicate events (same source_resolution_id + event_type)",
+      "passed": true,
+      "evidence": "PASS: Duplicate suppression works correctly",
+      "duration_ms": 101.27854347229004
+    },
+    {
+      "criterion_id": "AC-29-06",
+      "description": "Events receive monotonic delivery sequence numbers",
+      "passed": true,
+      "evidence": "PASS: Delivery sequence assigned correctly",
+      "duration_ms": 101.1972427368164
+    },
+    {
+      "criterion_id": "AC-29-07",
+      "description": "Event history is bounded by max_history parameter",
+      "passed": true,
+      "evidence": "PASS: History bounded to 5 events (most recent first)",
+      "duration_ms": 101.45235061645508
+    },
+    {
+      "criterion_id": "AC-29-08",
+      "description": "Deduplication cache is bounded by max_dedup_cache parameter",
+      "passed": true,
+      "evidence": "PASS: Deduplication cache bounded to 5 entries",
+      "duration_ms": 1.074075698852539
+    },
+    {
+      "criterion_id": "AC-29-09",
+      "description": "Multiple subscribers receive events independently",
+      "passed": true,
+      "evidence": "PASS: Multiple subscribers receive events independently",
+      "duration_ms": 101.4552116394043
+    },
+    {
+      "criterion_id": "AC-29-10",
+      "description": "Subscriber filter_fn filters events correctly",
+      "passed": true,
+      "evidence": "PASS: Subscriber filter works correctly",
+      "duration_ms": 101.48406028747559
+    },
+    {
+      "criterion_id": "AC-29-11",
+      "description": "DROP_OLDEST backpressure policy drops oldest event when queue full",
+      "passed": true,
+      "evidence": "PASS: DROP_OLDEST policy works correctly",
+      "duration_ms": 0.5919933319091797
+    },
+    {
+      "criterion_id": "AC-29-12",
+      "description": "DROP_NEWEST backpressure policy rejects newest event when queue full",
+      "passed": true,
+      "evidence": "PASS: DROP_NEWEST policy works correctly",
+      "duration_ms": 0.0
+    },
+    {
+      "criterion_id": "AC-29-13",
+      "description": "REJECT_SUBSCRIBER backpressure policy marks subscriber inactive when queue full",
+      "passed": true,
+      "evidence": "PASS: REJECT_SUBSCRIBER policy works correctly",
+      "duration_ms": 0.637054443359375
+    },
+    {
+      "criterion_id": "AC-29-14",
+      "description": "Subscriber failure isolation - one subscriber failing doesn't affect others",
+      "passed": true,
+      "evidence": "PASS: Failure isolation works - bad subscriber doesn't block good subscriber",
+      "duration_ms": 104.40826416015625
+    },
+    {
+      "criterion_id": "AC-29-15",
+      "description": "Phase24 adapter converts ResolvedTransition to ImmediateEvent (RESOLUTION_IN/OUT)",
+      "passed": true,
+      "evidence": "PASS: Phase24 adapter converts ResolvedTransition to ImmediateEvent",
+      "duration_ms": 100.7838249206543
+    },
+    {
+      "criterion_id": "AC-29-16",
+      "description": "Phase26 adapter converts AttendanceDecision to ImmediateEvent with attendance state",
+      "passed": true,
+      "evidence": "PASS: Phase26 adapter converts AttendanceDecision to ImmediateEvent with full provenance",
+      "duration_ms": 100.51894187927246
+    },
+    {
+      "criterion_id": "AC-29-17",
+      "description": "Phase25 adapter converts AttendanceRecord to ImmediateEvent with HISTORICAL status",
+      "passed": true,
+      "evidence": "PASS: Phase25 adapter converts AttendanceRecord to ImmediateEvent (HISTORICAL)",
+      "duration_ms": 100.54779052734375
+    },
+    {
+      "criterion_id": "AC-29-18",
+      "description": "Phase23 adapter converts RawInOutEvent to ImmediateEvent (RAW_IN/OUT)",
+      "passed": true,
+      "evidence": "PASS: Phase23 adapter converts RawInOutEvent to ImmediateEvent (RAW_IN/OUT)",
+      "duration_ms": 100.63743591308594
+    },
+    {
+      "criterion_id": "AC-29-19",
+      "description": "Multiple adapters can publish to the same event bus",
+      "passed": true,
+      "evidence": "PASS: Multiple adapters publish to same bus correctly",
+      "duration_ms": 101.01079940795898
+    },
+    {
+      "criterion_id": "AC-29-20",
+      "description": "Deduplication works across different adapters (same source_resolution_id + event_type)",
+      "passed": true,
+      "evidence": "PASS: Deduplication works across different adapters",
+      "duration_ms": 100.5101203918457
+    },
+    {
+      "criterion_id": "AC-29-21",
+      "description": "DevelopmentEventSource generates deterministic test events for development",
+      "passed": true,
+      "evidence": "PASS: DevelopmentEventSource generates deterministic test events",
+      "duration_ms": 101.01580619812012
+    },
+    {
+      "criterion_id": "AC-29-22",
+      "description": "DevelopmentEventSource produces deterministic events across multiple runs",
+      "passed": true,
+      "evidence": "PASS: DevelopmentEventSource produces identical events across runs",
+      "duration_ms": 101.00936889648438
+    },
+    {
+      "criterion_id": "AC-29-23",
+      "description": "UIEventSubscriber converts ImmediateEvent to UI-friendly format for Pinia store",
+      "passed": true,
+      "evidence": "PASS: UIEventSubscriber converts ImmediateEvent to UIEvent format",
+      "duration_ms": 100.85654258728027
+    },
+    {
+      "criterion_id": "AC-29-24",
+      "description": "Phase28UIAdapter connects event bus to Pinia store callback",
+      "passed": true,
+      "evidence": "PASS: Phase28UIAdapter connects event bus to Pinia store callback",
+      "duration_ms": 101.20534896850586
+    },
+    {
+      "criterion_id": "AC-29-25",
+      "description": "MockEventReplacer replaces Phase 28 mock adapter with real Phase 29 events",
+      "passed": true,
+      "evidence": "PASS: MockEventReplacer enables transition from mock to real events",
+      "duration_ms": 100.61502456665039
+    }
+  ]
+}

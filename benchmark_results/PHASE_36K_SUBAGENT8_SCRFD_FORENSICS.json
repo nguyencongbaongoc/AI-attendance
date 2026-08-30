@@ -1,0 +1,99 @@
+{
+  "timing_analysis": {
+    "model_only": {
+      "mean_ms": 14.271511306762696,
+      "p50_ms": 14.086624145507812,
+      "p95_ms": 16.935935974121094,
+      "p99_ms": 18.051584243774414,
+      "max_ms": 18.051584243774414
+    },
+    "preprocessing_plus_model": {
+      "mean_ms": 19.343527306711838,
+      "p50_ms": 19.064239900180837,
+      "p95_ms": 23.428235974111885,
+      "p99_ms": 25.746284244458366,
+      "max_ms": 25.746284244458366
+    },
+    "model_gpu_time": {
+      "mean_ms": 14.271511306762696,
+      "p50_ms": 14.086624145507812,
+      "p95_ms": 16.935935974121094,
+      "p99_ms": 18.051584243774414,
+      "max_ms": 18.051584243774414
+    },
+    "enqueue_time": {
+      "mean_ms": 15.330062000011822,
+      "p50_ms": 15.111000000615604,
+      "p95_ms": 17.806500000006054,
+      "p99_ms": 18.942699999570323,
+      "max_ms": 18.942699999570323
+    },
+    "output_parsing": {
+      "mean_ms": 0.0002839999979187269,
+      "p50_ms": 0.00020000061340397224,
+      "p95_ms": 0.0007999997251317836,
+      "p99_ms": 0.0010000003385357559,
+      "max_ms": 0.0010000003385357559
+    },
+    "scrfd_decoding": {
+      "mean_ms": 12.598937000038859,
+      "p50_ms": 6.004200000461424,
+      "p95_ms": 46.60800000056042,
+      "p99_ms": 63.529799999741954,
+      "max_ms": 63.529799999741954
+    },
+    "nms": {
+      "mean_ms": 0.0004980000085197389,
+      "p50_ms": 0.0004999992597731762,
+      "p95_ms": 0.0009000004865811206,
+      "p99_ms": 0.0012000000424450263,
+      "max_ms": 0.0012000000424450263
+    },
+    "total_pipeline": {
+      "mean_ms": 31.943246306757135,
+      "p50_ms": 25.588379578868626,
+      "p95_ms": 65.94213994481106,
+      "p99_ms": 83.38677981795627,
+      "max_ms": 83.38677981795627
+    }
+  },
+  "scrfd_capability": {
+    "model_only_fps": 70.06966385726368,
+    "model_only_latency_ms": 14.271511306762696,
+    "full_pipeline_fps": 31.305521999761943,
+    "full_pipeline_latency_ms": 31.943246306757135,
+    "decode_overhead_ms": 12.598937000038859,
+    "enqueue_overhead_ms": 15.330062000011822,
+    "decode_percentage": 39.44162994283313,
+    "enqueue_percentage": 47.99155931990847,
+    "can_limit_to_725_fps": false,
+    "actual_limiter": "GPU inference"
+  },
+  "bottlenecks": [
+    "ORT enqueue overhead is high: 15.3ms",
+    "GPU inference is fast (14.3ms) - not the bottleneck"
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "issue": "SCRFD CPU decoding dominates total latency",
+      "current": "Decoding: 12.6ms vs GPU inference: 14.3ms",
+      "recommended": "Move anchor generation to GPU, use vectorized NumPy, or TensorRT postprocessing",
+      "impact": "Could reduce total latency by 7.6ms (target 5ms decoding)"
+    },
+    {
+      "priority": "HIGH",
+      "issue": "ORT enqueue overhead is significant",
+      "current": "Enqueue: 15.3ms",
+      "recommended": "Use I/O Binding with pre-bound buffers, reuse OrtValues",
+      "impact": "Could reduce enqueue overhead by 13.3ms (target 2ms)"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "SCRFD model itself is capable of >60 FPS on GTX 1660 Ti",
+      "current": "Model-only: 70.1 FPS (14.3ms)",
+      "recommended": "Focus optimization on CPU postprocessing, not model replacement",
+      "impact": "Model replacement unnecessary - optimize pipeline around model"
+    }
+  ]
+}

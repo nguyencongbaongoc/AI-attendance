@@ -1,0 +1,34 @@
+# Phase 30A Database Inspection
+
+**Database:** data\enrollment_db\embeddings.npy
+
+## Embeddings
+
+- **Shape:** (9, 512)
+- **Dtype:** float32
+- **All Finite:** True
+- **L2 Normalized:** True
+
+## Metadata
+
+- **Schema Version:** 1.0
+- **Embedding Dimension:** 512
+- **Dtype:** float32
+- **Normalization:** L2
+- **Model ID:** arcface
+- **Model Filename:** glintr100.onnx
+- **Model SHA256:** 4ab1d6435d639628...
+- **Contract Version:** 1.0
+- **Embedding Count:** 9
+- **Person IDs:** HS001, HS002, HS003
+- **Creation Timestamp:** 2026-08-23T14:01:36.441284Z
+
+## Person Counts
+
+- **HS001**: 3 embeddings
+- **HS002**: 3 embeddings
+- **HS003**: 3 embeddings
+
+## Validation
+
+- **Passed:** True

@@ -1,0 +1,219 @@
+{
+  "timestamp": "2026-08-17T01:15:09.739248",
+  "total_tests": 9,
+  "passed_tests": 9,
+  "failed_tests": 0,
+  "skipped_tests": 0,
+  "results": [
+    {
+      "test_name": "face_detection",
+      "passed": true,
+      "duration_ms": 5353.541100004804,
+      "message": "Face detection initialization and contract validation passed",
+      "details": {
+        "model_sha256": "5838f7fe053675b1...",
+        "cuda_provider": true,
+        "cpu_provider": true,
+        "detections_found": 372,
+        "bbox_validation": false,
+        "nms": true,
+        "coordinate_conversion": true,
+        "confidence_threshold": 0.55,
+        "nms_threshold": 0.45
+      },
+      "error": null
+    },
+    {
+      "test_name": "face_crop",
+      "passed": true,
+      "duration_ms": 2.6474000042071566,
+      "message": "Face crop tests passed",
+      "details": {
+        "boundary_safety": true,
+        "multiple_faces": true,
+        "provenance": true,
+        "crop_dimensions": "100x100"
+      },
+      "error": null
+    },
+    {
+      "test_name": "landmarks",
+      "passed": true,
+      "duration_ms": 870.2096999986679,
+      "message": "Landmark detection validation passed",
+      "details": {
+        "model_sha256": "df5c06b8a0c12e42...",
+        "cuda_provider": true,
+        "cpu_provider": true,
+        "output_contract": true,
+        "coordinate_space": "model_input_relative",
+        "coordinate_conversion": true,
+        "inference_time_ms": 139.40039999579312,
+        "num_landmarks": 68
+      },
+      "error": null
+    },
+    {
+      "test_name": "face_quality",
+      "passed": true,
+      "duration_ms": 2.981499994348269,
+      "message": "Face quality assessment tests passed",
+      "details": {
+        "face_size": true,
+        "detection_confidence": true,
+        "sharpness": true,
+        "sharpness_value": 35601.640911,
+        "brightness": true,
+        "brightness_value": 126.33583333333333,
+        "landmark_validity": true,
+        "pose": false,
+        "pose_value": 127.27922061357856,
+        "decision_logic": true,
+        "final_decision": "acceptable",
+        "final_decision_with_lm": "rejected"
+      },
+      "error": null
+    },
+    {
+      "test_name": "consistency",
+      "passed": true,
+      "duration_ms": 950.6586000061361,
+      "message": "Consistency tests passed",
+      "details": {
+        "image_video_equivalence": true,
+        "determinism": true,
+        "shared_phase6_preprocessing": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "memory_safety",
+      "passed": true,
+      "duration_ms": 6.092100004025269,
+      "message": "Memory safety tests passed",
+      "details": {
+        "streaming": true,
+        "peak_memory_mb": 0.01,
+        "unbounded_accumulation": false
+      },
+      "error": null
+    },
+    {
+      "test_name": "cuda_cpu",
+      "passed": true,
+      "duration_ms": 1026.2167000037152,
+      "message": "CUDA/CPU path validation passed",
+      "details": {
+        "cuda_provider_available": true,
+        "cpu_provider_available": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "provenance",
+      "passed": true,
+      "duration_ms": 3.853599999274593,
+      "message": "Provenance tests passed",
+      "details": {
+        "provenance_chain_complete": true,
+        "model_identities": true,
+        "chain_steps": [
+          "source",
+          "detection",
+          "crop",
+          "landmarks",
+          "quality"
+        ]
+      },
+      "error": null
+    },
+    {
+      "test_name": "safety_verification",
+      "passed": true,
+      "duration_ms": 8.009400000446476,
+      "message": "Safety verification passed",
+      "details": {
+        "files_checked": 6,
+        "patterns_checked": 5
+      },
+      "error": null
+    }
+  ],
+  "verdict": "PASS",
+  "face_detection": {
+    "model": "scrfd",
+    "sha256": "5838f7fe053675b1...",
+    "cuda": true,
+    "cpu": true,
+    "bbox_validation": false,
+    "nms": true,
+    "coordinate_conversion": true
+  },
+  "face_crop": {
+    "boundary_safety": true,
+    "multiple_faces": true,
+    "provenance": true
+  },
+  "landmarks": {
+    "model": "landmark_1k3d68",
+    "sha256": "df5c06b8a0c12e42...",
+    "cuda": true,
+    "cpu": true,
+    "output_contract": true,
+    "coordinate_space": "model_input_relative",
+    "validation": true
+  },
+  "face_quality": {
+    "face_size": true,
+    "detection_confidence": true,
+    "sharpness": true,
+    "brightness": true,
+    "landmark_validity": true,
+    "final_quality_decision": "acceptable"
+  },
+  "consistency": {
+    "image_video_equivalence": true,
+    "determinism": true,
+    "shared_phase6_preprocessing": true
+  },
+  "memory": {
+    "streaming": true,
+    "peak_memory_mb": 0.01,
+    "unbounded_accumulation": false
+  },
+  "tests": {
+    "phase7": "9/9 passed",
+    "full_regression": "pending",
+    "failed": 0,
+    "skipped": 0
+  },
+  "safety": {
+    "camera_accessed": false,
+    "mediamtx_started": false,
+    "rtmp": false,
+    "rtsp": false,
+    "live_ffmpeg": false,
+    "ipc": false,
+    "persistent_workers": false,
+    "model_files_modified": false
+  },
+  "accuracy": {
+    "production_accuracy_benchmark": "NOT_PERFORMED"
+  },
+  "files_created": [
+    "app/vision/__init__.py",
+    "app/vision/detection.py",
+    "app/vision/crop.py",
+    "app/vision/landmarks.py",
+    "app/vision/quality.py",
+    "app/vision/face_sample.py",
+    "tests/unit/test_face_detection.py",
+    "tests/unit/test_face_crop.py",
+    "tests/unit/test_face_landmarks.py",
+    "tests/unit/test_face_quality.py",
+    "tests/unit/test_face_pipeline.py"
+  ],
+  "files_modified": [],
+  "blockers": [],
+  "ready_for_phase8": true
+}

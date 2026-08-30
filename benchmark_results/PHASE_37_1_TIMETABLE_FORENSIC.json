@@ -1,0 +1,295 @@
+{
+  "phase": "PHASE_37_1_TIMETABLE_FORENSIC",
+  "timestamp": "2026-08-27T05:19:01.515474Z",
+  "verdict": "TIMETABLE_EXISTS_BUT_INCOMPLETE",
+  "executive_summary": {
+    "timetable_subsystem_exists": true,
+    "implementation_phase": "Phase 26 (not Phase 25)",
+    "contract_complete": true,
+    "runtime_integration": true,
+    "external_data_source": false,
+    "production_ready": false,
+    "missing_pieces": [
+      "No external timetable data file (Excel/CSV/JSON) found",
+      "No timetable loader/parser implementation",
+      "No holiday/exception/leave calendar support",
+      "No UI for timetable management",
+      "No integration with student registry for class/session assignment"
+    ]
+  },
+  "phase_25_evidence": {
+    "phase_25_was": "Attendance Persistence (SQLite storage for AttendanceRecord)",
+    "phase_25_timetable": false,
+    "phase_25_files": [
+      "app/attendance/contract.py",
+      "app/attendance/storage.py",
+      "app/attendance/repository.py",
+      "app/attendance/query.py",
+      "scripts/phase25_attendance_persistence.py"
+    ],
+    "phase_25_verdict": "PASS (from benchmark_results/PHASE_25_ATTENDANCE_PERSISTENCE.json)"
+  },
+  "phase_26_evidence": {
+    "phase_26_was": "Attendance Decision Engine with Timetable Contract",
+    "timetable_implementation": "app/attendance/timetable.py",
+    "timetable_components": [
+      "TimetableEntry (immutable dataclass)",
+      "Timetable (collection with query methods)",
+      "SessionDay enum (7 days)",
+      "SessionType enum (4 types)",
+      "AttendanceState enum (6 states: UNKNOWN, EXPECTED, PRESENT, LATE, LEFT, ABSENT)",
+      "DecisionReason enum (12 reasons)",
+      "generate_timetable_id()",
+      "validate_timetable_entry()"
+    ],
+    "data_format": "In-memory Python objects, JSON serializable",
+    "schema": "TimetableEntry with person_id, session_id, day, entry_time, exit_time, entry_window_start, entry_window_end, late_tolerance, exit_window_start, exit_window_end",
+    "student_identity_model": "Uses person_id (e.g., HS001, HS002, HS003) matching enrollment database",
+    "phase_26_integration": "AttendanceEngine consumes Timetable via AttendanceDecisionContext",
+    "phase_26_verdict": "PASS (from benchmark_results/PHASE_26_ATTENDANCE_ENGINE.json, 74/74 criteria)"
+  },
+  "current_runtime_path": {
+    "flow": "student/identity -> recognition -> person_id -> student_id -> raw IN/OUT -> attendance engine",
+    "timetable_entry_point": "AttendanceDecisionContext.timetable (required parameter)",
+    "person_id_resolution": "Requires person_id_override in AttendanceDecisionContext (no automatic lookup from GlobalObservation)",
+    "day_resolution": "Requires day_override in AttendanceDecisionContext (no automatic derivation from timestamp)",
+    "integration_status": "Contract exists and is consumed, but requires manual overrides for person_id and day"
+  },
+  "data_schema_analysis": {
+    "timetable_entry_fields": [
+      "entry_id",
+      "person_id",
+      "session_id",
+      "session_type",
+      "day",
+      "class_name",
+      "person_name",
+      "entry_time",
+      "exit_time",
+      "entry_window_start",
+      "entry_window_end",
+      "late_tolerance",
+      "exit_window_start",
+      "exit_window_end",
+      "timetable_version",
+      "created_at",
+      "updated_at"
+    ],
+    "time_representation": "Seconds from midnight (int)",
+    "day_representation": "SessionDay enum (monday-sunday)",
+    "session_representation": "SessionType enum (morning, afternoon, full_day, evening)",
+    "validation": "Comprehensive __post_init__ validation",
+    "serialization": "to_dict/from_dict, to_json/from_json"
+  },
+  "student_id_compatibility": {
+    "canonical_identity": "Excel student_id (e.g., HS001) -> person_id in enrollment -> embeddings.npy.metadata.json",
+    "timetable_person_id": "Uses same person_id string (HS001, HS002, HS003)",
+    "technical_ids_separate": true,
+    "technical_ids": [
+      "track_id",
+      "person_id (embedding index)",
+      "embedding_index",
+      "global_observation_id",
+      "event_id",
+      "video_id"
+    ],
+    "contract_preserved": true
+  },
+  "enrollment_npy_compatibility": {
+    "enrollment_db_structure": "data/enrollment_db/embeddings.npy + embeddings.npy.metadata.json",
+    "person_ids_in_metadata": [
+      "HS001",
+      "HS002",
+      "HS003"
+    ],
+    "timetable_person_id_match": true,
+    "no_second_identity_db": true
+  },
+  "attendance_engine_compatibility": {
+    "consumes_timetable": true,
+    "expected_arrival_logic": "entry_window_start <= timestamp <= entry_window_end -> PRESENT",
+    "expected_departure_logic": "exit_window_start <= timestamp <= exit_window_end -> LEFT",
+    "absence_logic": "Outside windows -> ABSENT",
+    "in_out_state": "Derived from ResolvedTransition.direction (in/out)",
+    "repeated_in_out_handling": "Handled by Phase 24 resolver (suppressed events not passed to engine)",
+    "unknown_identity_handling": "IdentityHandlingPolicy enum (UNRESOLVED, UNKNOWN_PERSON, PENDING_REVIEW)",
+    "camera_health_handling": "Not in attendance engine (handled upstream)",
+    "policies_not_implemented": "07:30/17:30/30-minute notification policies NOT implemented (correctly deferred)"
+  },
+  "existing_tests_and_results": {
+    "unit_tests": {
+      "test_attendance_timetable.py": "19 tests PASSED",
+      "test_attendance_engine.py": "12 tests PASSED",
+      "test_attendance_policy.py": "17 tests PASSED"
+    },
+    "integration_tests": {
+      "test_attendance_integration.py": "5 tests PASSED"
+    },
+    "acceptance_script": "scripts/phase26_acceptance.py: 74/74 criteria PASSED",
+    "all_tests_pass": true
+  },
+  "defects": [
+    "datetime.utcnow() deprecation warnings in timetable.py, policy.py, engine.py",
+    "AttendanceEngine._determine_person_id() raises IdentityResolutionError without person_id_override",
+    "AttendanceEngine._determine_day() raises IdentityResolutionError without day_override",
+    "No automatic person_id lookup from GlobalObservation.identity_evidence_ref",
+    "No automatic day derivation from event timestamp"
+  ],
+  "missing_components": [
+    "External timetable data source (Excel/CSV/JSON file)",
+    "Timetable loader/parser (from file to Timetable object)",
+    "Holiday/exception calendar support",
+    "Leave/exemption management",
+    "Student-to-class/session assignment mapping",
+    "UI for timetable management",
+    "Automatic person_id resolution from GlobalObservation",
+    "Automatic day derivation from timestamp"
+  ],
+  "architectural_risks": [
+    "Timetable contract exists but no data source - runtime requires manual construction",
+    "person_id and day must be provided as overrides - not derived from upstream",
+    "No validation that timetable person_ids match enrolled students",
+    "No versioning/migration strategy for timetable changes",
+    "SessionFinalizationPolicy TIME_BASED and MANUAL not fully exercised in tests"
+  ],
+  "compatibility_matrix": [
+    {
+      "existing_component": "Excel student registry",
+      "current_implementation": "Not found as separate file; student IDs inferred from enrollment directory structure (HS001, HS002, HS003)",
+      "phase_37_requirement": "Canonical business identity for timetable",
+      "compatible": true,
+      "action": "Use existing person_id (HS001, etc.) as timetable person_id"
+    },
+    {
+      "existing_component": "Enrollment DB (embeddings.npy + metadata.json)",
+      "current_implementation": "data/enrollment_db/ with 3 persons, 9 embeddings",
+      "phase_37_requirement": "Single identity source",
+      "compatible": true,
+      "action": "Timetable person_id must match enrollment person_ids"
+    },
+    {
+      "existing_component": "embeddings.npy",
+      "current_implementation": "(9, 512) float32 L2-normalized",
+      "phase_37_requirement": "Face recognition backend",
+      "compatible": true,
+      "action": "No change needed"
+    },
+    {
+      "existing_component": "metadata.json",
+      "current_implementation": "Full provenance per sample",
+      "phase_37_requirement": "Audit trail",
+      "compatible": true,
+      "action": "No change needed"
+    },
+    {
+      "existing_component": "person_id",
+      "current_implementation": "String identifier (HS001, HS002, HS003)",
+      "phase_37_requirement": "Timetable person reference",
+      "compatible": true,
+      "action": "Direct mapping"
+    },
+    {
+      "existing_component": "AttendanceRecord (Phase 25)",
+      "current_implementation": "SQLite persistence with full provenance",
+      "phase_37_requirement": "Persist attendance decisions",
+      "compatible": true,
+      "action": "AttendanceDecision compatible with AttendanceRecord schema"
+    },
+    {
+      "existing_component": "Timetable (Phase 26)",
+      "current_implementation": "In-memory contract, JSON serializable",
+      "phase_37_requirement": "Schedule for attendance decisions",
+      "compatible": true,
+      "action": "Reuse existing contract; add loader"
+    },
+    {
+      "existing_component": "Raw IN/OUT (Phase 23/24)",
+      "current_implementation": "ResolvedTransition with direction, timestamp, provenance",
+      "phase_37_requirement": "Event input to attendance engine",
+      "compatible": true,
+      "action": "No change needed"
+    },
+    {
+      "existing_component": "Provenance chain",
+      "current_implementation": "Full chain preserved: AttendanceDecision -> ResolvedTransition -> RawInOutEvent -> CrossingEvent -> GlobalObservation",
+      "phase_37_requirement": "Forensic reproducibility",
+      "compatible": true,
+      "action": "Timetable fields (timetable_id, session_id, day) already in AttendanceDecision"
+    },
+    {
+      "existing_component": "Event bus",
+      "current_implementation": "Not explicitly found; direct function calls",
+      "phase_37_requirement": "Async notification",
+      "compatible": true,
+      "action": "Deferred to Phase 37.2+"
+    },
+    {
+      "existing_component": "UI",
+      "current_implementation": "Phase 28 Live UI (frontend/)",
+      "phase_37_requirement": "Timetable management UI",
+      "compatible": true,
+      "action": "Extend existing UI"
+    },
+    {
+      "existing_component": "Notification layer",
+      "current_implementation": "Not implemented",
+      "phase_37_requirement": "07:30/17:30/30-min policies",
+      "compatible": true,
+      "action": "Deferred to Phase 37.2+"
+    }
+  ],
+  "recommendation_for_phase_37_2": {
+    "decision": "TIMETABLE_EXISTS_BUT_INCOMPLETE",
+    "action": "Implement timetable data layer (loader, file format, holiday calendar) on top of existing Phase 26 contract",
+    "do_not": "Create parallel timetable system or modify Phase 26 contract",
+    "required_implementation": [
+      "1. Define timetable file format (Excel/CSV/JSON) with columns: student_id, class_name, day, period, entry_time, exit_time, entry_window, late_tolerance, exit_window",
+      "2. Implement TimetableLoader.parse(file_path) -> Timetable",
+      "3. Add holiday/exception calendar support (separate file or embedded)",
+      "4. Implement automatic person_id resolution from GlobalObservation -> enrollment metadata",
+      "5. Implement automatic day derivation from event timestamp (timezone-aware)",
+      "6. Add validation: timetable person_ids must exist in enrollment database",
+      "7. Add timetable versioning and change detection",
+      "8. Extend Phase 30 Daily Excel to include timetable-derived expected times"
+    ],
+    "files_to_create": [
+      "app/attendance/timetable_loader.py",
+      "app/attendance/calendar.py (holidays/exceptions)",
+      "data/timetable/ (directory for timetable files)",
+      "tests/unit/test_timetable_loader.py",
+      "tests/integration/test_timetable_integration.py"
+    ],
+    "files_to_modify": [
+      "app/attendance/engine.py (add automatic person_id/day resolution)",
+      "app/attendance/daily_excel.py (include timetable expected times)"
+    ]
+  },
+  "files_inspected": [
+    "app/attendance/timetable.py",
+    "app/attendance/engine.py",
+    "app/attendance/policy.py",
+    "app/attendance/contract.py",
+    "app/attendance/repository.py",
+    "app/attendance/query.py",
+    "app/attendance/daily_excel.py",
+    "app/attendance/__init__.py",
+    "app/vision/enrollment.py",
+    "app/vision/enrollment_contract.py",
+    "app/in_out/resolver_contract.py",
+    "data/enrollment_db/embeddings.npy.metadata.json",
+    "scripts/phase25_attendance_persistence.py",
+    "scripts/phase26_acceptance.py",
+    "scripts/phase30a_enrollment.py",
+    "tests/unit/test_attendance_timetable.py",
+    "tests/unit/test_attendance_engine.py",
+    "tests/unit/test_attendance_policy.py",
+    "tests/unit/test_attendance/",
+    "tests/integration/test_attendance_integration.py",
+    "benchmark_results/PHASE_25_ATTENDANCE_PERSISTENCE.json",
+    "benchmark_results/PHASE_25_ATTENDANCE_PERSISTENCE.md",
+    "benchmark_results/PHASE_26_ATTENDANCE_ENGINE.json",
+    "benchmark_results/PHASE_26_ATTENDANCE_ENGINE.md",
+    "benchmark_results/PHASE_30_DAILY_EXCEL.md"
+  ],
+  "files_modified": []
+}

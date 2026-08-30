@@ -1,0 +1,704 @@
+{
+  "phase": 5,
+  "timestamp": "2026-08-16T19:00:01.014107",
+  "configuration": {
+    "warmup_runs": 3,
+    "measured_runs": 10
+  },
+  "summary": {
+    "phase": 5,
+    "timestamp": "2026-08-16T19:00:01.014107",
+    "models_validated": 6,
+    "sha256_verified": 6,
+    "cuda_success": 6,
+    "cpu_success": 6,
+    "output_valid": 6,
+    "errors": [],
+    "verdict": "PASS"
+  },
+  "models": [
+    {
+      "model_id": "scrfd",
+      "sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+      "sha256_match": true,
+      "provider": "onnx",
+      "input_shape": [
+        1,
+        3,
+        960,
+        960
+      ],
+      "output_shapes": [
+        [
+          28800,
+          1
+        ],
+        [
+          7200,
+          1
+        ],
+        [
+          1800,
+          1
+        ],
+        [
+          28800,
+          4
+        ],
+        [
+          7200,
+          4
+        ],
+        [
+          1800,
+          4
+        ],
+        [
+          28800,
+          10
+        ],
+        [
+          7200,
+          10
+        ],
+        [
+          1800,
+          10
+        ]
+      ],
+      "output_dtypes": [
+        "float32",
+        "float32",
+        "float32",
+        "float32",
+        "float32",
+        "float32",
+        "float32",
+        "float32",
+        "float32"
+      ],
+      "output_names": [
+        "448",
+        "471",
+        "494",
+        "451",
+        "474",
+        "497",
+        "454",
+        "477",
+        "500"
+      ],
+      "cuda_success": true,
+      "cpu_success": true,
+      "output_finite": true,
+      "output_no_nan": true,
+      "output_no_inf": true,
+      "warmup_runs": 3,
+      "measured_runs": 10,
+      "latency_cuda_mean_ms": 27.614829999947688,
+      "latency_cuda_median_ms": 27.400049999414477,
+      "latency_cuda_p95_ms": 29.04290000151377,
+      "latency_cuda_min_ms": 26.540700000623474,
+      "latency_cuda_max_ms": 29.04290000151377,
+      "latency_cpu_mean_ms": 456.5705599998182,
+      "latency_cpu_median_ms": 444.7685499999352,
+      "latency_cpu_p95_ms": 532.7092999978049,
+      "latency_cpu_min_ms": 405.95680000114953,
+      "latency_cpu_max_ms": 532.7092999978049,
+      "gpu_memory_before_mb": 0.0,
+      "gpu_memory_after_mb": 0.0,
+      "gpu_utilization_observed": "8%",
+      "cuda_provider_used": true,
+      "cpu_provider_used": true,
+      "errors": []
+    },
+    {
+      "model_id": "arcface",
+      "sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+      "sha256_match": true,
+      "provider": "onnx",
+      "input_shape": [
+        1,
+        3,
+        112,
+        112
+      ],
+      "output_shapes": [
+        [
+          1,
+          512
+        ]
+      ],
+      "output_dtypes": [
+        "float32"
+      ],
+      "output_names": [
+        "1333"
+      ],
+      "cuda_success": true,
+      "cpu_success": true,
+      "output_finite": true,
+      "output_no_nan": true,
+      "output_no_inf": true,
+      "warmup_runs": 3,
+      "measured_runs": 10,
+      "latency_cuda_mean_ms": 16.447539999353467,
+      "latency_cuda_median_ms": 15.748349998830236,
+      "latency_cuda_p95_ms": 22.776300000259653,
+      "latency_cuda_min_ms": 15.374700000393204,
+      "latency_cuda_max_ms": 22.776300000259653,
+      "latency_cpu_mean_ms": 429.19543999960297,
+      "latency_cpu_median_ms": 428.67690000093717,
+      "latency_cpu_p95_ms": 497.2882000001846,
+      "latency_cpu_min_ms": 391.5622999993502,
+      "latency_cpu_max_ms": 497.2882000001846,
+      "gpu_memory_before_mb": 0.0,
+      "gpu_memory_after_mb": 0.0,
+      "gpu_utilization_observed": "25%",
+      "cuda_provider_used": true,
+      "cpu_provider_used": true,
+      "errors": []
+    },
+    {
+      "model_id": "landmark_1k3d68",
+      "sha256": "df5c06b8a0c12e422b2ed8947b8869faa4105387f199c477af038aa01f9a45cc",
+      "sha256_match": true,
+      "provider": "onnx",
+      "input_shape": [
+        1,
+        3,
+        192,
+        192
+      ],
+      "output_shapes": [
+        [
+          1,
+          3309
+        ]
+      ],
+      "output_dtypes": [
+        "float32"
+      ],
+      "output_names": [
+        "fc1"
+      ],
+      "cuda_success": true,
+      "cpu_success": true,
+      "output_finite": true,
+      "output_no_nan": true,
+      "output_no_inf": true,
+      "warmup_runs": 3,
+      "measured_runs": 10,
+      "latency_cuda_mean_ms": 10.4361899986543,
+      "latency_cuda_median_ms": 9.662049997132272,
+      "latency_cuda_p95_ms": 14.629299999796785,
+      "latency_cuda_min_ms": 9.221199998137308,
+      "latency_cuda_max_ms": 14.629299999796785,
+      "latency_cpu_mean_ms": 53.806339999937336,
+      "latency_cpu_median_ms": 45.60825000044133,
+      "latency_cpu_p95_ms": 109.88709999946877,
+      "latency_cpu_min_ms": 35.70670000044629,
+      "latency_cpu_max_ms": 109.88709999946877,
+      "gpu_memory_before_mb": 0.0,
+      "gpu_memory_after_mb": 0.0,
+      "gpu_utilization_observed": "14%",
+      "cuda_provider_used": true,
+      "cpu_provider_used": true,
+      "errors": []
+    },
+    {
+      "model_id": "reid",
+      "sha256": "09d398902020205dd4aa80495b2a8fceecd64ba610e6b72afc1f93965c9613d2",
+      "sha256_match": true,
+      "provider": "onnx",
+      "input_shape": [
+        1,
+        3,
+        256,
+        128
+      ],
+      "output_shapes": [
+        [
+          1,
+          2048
+        ]
+      ],
+      "output_dtypes": [
+        "float32"
+      ],
+      "output_names": [
+        "output"
+      ],
+      "cuda_success": true,
+      "cpu_success": true,
+      "output_finite": true,
+      "output_no_nan": true,
+      "output_no_inf": true,
+      "warmup_runs": 3,
+      "measured_runs": 10,
+      "latency_cuda_mean_ms": 19.995540001400514,
+      "latency_cuda_median_ms": 23.722950001683785,
+      "latency_cuda_p95_ms": 28.088900002330774,
+      "latency_cuda_min_ms": 5.837600001541432,
+      "latency_cuda_max_ms": 28.088900002330774,
+      "latency_cpu_mean_ms": 27.34426999995776,
+      "latency_cpu_median_ms": 28.09424999941257,
+      "latency_cpu_p95_ms": 33.481999998912215,
+      "latency_cpu_min_ms": 19.756600002438063,
+      "latency_cpu_max_ms": 33.481999998912215,
+      "gpu_memory_before_mb": 0.0,
+      "gpu_memory_after_mb": 0.0,
+      "gpu_utilization_observed": "4%",
+      "cuda_provider_used": true,
+      "cpu_provider_used": true,
+      "errors": []
+    },
+    {
+      "model_id": "yolo_person",
+      "sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+      "sha256_match": true,
+      "provider": "ultralytics",
+      "input_shape": [
+        1,
+        3,
+        640,
+        640
+      ],
+      "output_shapes": [
+        [
+          0,
+          6
+        ]
+      ],
+      "output_dtypes": [
+        "torch.float32"
+      ],
+      "output_names": [
+        "boxes"
+      ],
+      "cuda_success": true,
+      "cpu_success": true,
+      "output_finite": true,
+      "output_no_nan": true,
+      "output_no_inf": true,
+      "warmup_runs": 3,
+      "measured_runs": 10,
+      "latency_cuda_mean_ms": 28.874119999090908,
+      "latency_cuda_median_ms": 27.45160000085889,
+      "latency_cuda_p95_ms": 40.36459999770159,
+      "latency_cuda_min_ms": 23.557399999845074,
+      "latency_cuda_max_ms": 40.36459999770159,
+      "latency_cpu_mean_ms": 194.87005999981193,
+      "latency_cpu_median_ms": 161.6830500006472,
+      "latency_cpu_p95_ms": 442.3657000006642,
+      "latency_cpu_min_ms": 132.46839999919757,
+      "latency_cpu_max_ms": 442.3657000006642,
+      "gpu_memory_before_mb": 0.0,
+      "gpu_memory_after_mb": 41.87451171875,
+      "gpu_utilization_observed": "38%",
+      "cuda_provider_used": true,
+      "cpu_provider_used": true,
+      "errors": []
+    },
+    {
+      "model_id": "yolo_pose",
+      "sha256": "869e83fcdffdc7371fa4e34cd8e51c838cc729571d1635e5141e3075e9319dc0",
+      "sha256_match": true,
+      "provider": "ultralytics",
+      "input_shape": [
+        1,
+        3,
+        640,
+        640
+      ],
+      "output_shapes": [
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          17,
+          3
+        ]
+      ],
+      "output_dtypes": [
+        "torch.float32",
+        "torch.float32"
+      ],
+      "output_names": [
+        "boxes",
+        "keypoints"
+      ],
+      "cuda_success": true,
+      "cpu_success": true,
+      "output_finite": true,
+      "output_no_nan": true,
+      "output_no_inf": true,
+      "warmup_runs": 3,
+      "measured_runs": 10,
+      "latency_cuda_mean_ms": 31.525090000286582,
+      "latency_cuda_median_ms": 28.94285000184027,
+      "latency_cuda_p95_ms": 43.121000002429355,
+      "latency_cuda_min_ms": 22.487499998533167,
+      "latency_cuda_max_ms": 43.121000002429355,
+      "latency_cpu_mean_ms": 175.98714000050677,
+      "latency_cpu_median_ms": 156.03790000022855,
+      "latency_cpu_p95_ms": 239.12080000081914,
+      "latency_cpu_min_ms": 125.85440000111703,
+      "latency_cpu_max_ms": 239.12080000081914,
+      "gpu_memory_before_mb": 41.87451171875,
+      "gpu_memory_after_mb": 52.74951171875,
+      "gpu_utilization_observed": "16%",
+      "cuda_provider_used": true,
+      "cpu_provider_used": true,
+      "errors": []
+    }
+  ],
+  "runtime_matrix": {
+    "entries": [
+      {
+        "model_id": "scrfd",
+        "sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+        "sha256_match": true,
+        "provider": "onnx",
+        "input_shape": [
+          1,
+          3,
+          960,
+          960
+        ],
+        "output_shapes": [
+          [
+            28800,
+            1
+          ],
+          [
+            7200,
+            1
+          ],
+          [
+            1800,
+            1
+          ],
+          [
+            28800,
+            4
+          ],
+          [
+            7200,
+            4
+          ],
+          [
+            1800,
+            4
+          ],
+          [
+            28800,
+            10
+          ],
+          [
+            7200,
+            10
+          ],
+          [
+            1800,
+            10
+          ]
+        ],
+        "output_dtypes": [
+          "float32",
+          "float32",
+          "float32",
+          "float32",
+          "float32",
+          "float32",
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "output_names": [
+          "448",
+          "471",
+          "494",
+          "451",
+          "474",
+          "497",
+          "454",
+          "477",
+          "500"
+        ],
+        "cuda_success": true,
+        "cpu_success": true,
+        "output_finite": true,
+        "output_no_nan": true,
+        "output_no_inf": true,
+        "warmup_runs": 3,
+        "measured_runs": 10,
+        "latency_cuda_mean_ms": 27.614829999947688,
+        "latency_cuda_median_ms": 27.400049999414477,
+        "latency_cuda_p95_ms": 29.04290000151377,
+        "latency_cuda_min_ms": 26.540700000623474,
+        "latency_cuda_max_ms": 29.04290000151377,
+        "latency_cpu_mean_ms": 456.5705599998182,
+        "latency_cpu_median_ms": 444.7685499999352,
+        "latency_cpu_p95_ms": 532.7092999978049,
+        "latency_cpu_min_ms": 405.95680000114953,
+        "latency_cpu_max_ms": 532.7092999978049,
+        "gpu_memory_before_mb": 0.0,
+        "gpu_memory_after_mb": 0.0,
+        "gpu_utilization_observed": "8%",
+        "cuda_provider_used": true,
+        "cpu_provider_used": true,
+        "errors": []
+      },
+      {
+        "model_id": "arcface",
+        "sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+        "sha256_match": true,
+        "provider": "onnx",
+        "input_shape": [
+          1,
+          3,
+          112,
+          112
+        ],
+        "output_shapes": [
+          [
+            1,
+            512
+          ]
+        ],
+        "output_dtypes": [
+          "float32"
+        ],
+        "output_names": [
+          "1333"
+        ],
+        "cuda_success": true,
+        "cpu_success": true,
+        "output_finite": true,
+        "output_no_nan": true,
+        "output_no_inf": true,
+        "warmup_runs": 3,
+        "measured_runs": 10,
+        "latency_cuda_mean_ms": 16.447539999353467,
+        "latency_cuda_median_ms": 15.748349998830236,
+        "latency_cuda_p95_ms": 22.776300000259653,
+        "latency_cuda_min_ms": 15.374700000393204,
+        "latency_cuda_max_ms": 22.776300000259653,
+        "latency_cpu_mean_ms": 429.19543999960297,
+        "latency_cpu_median_ms": 428.67690000093717,
+        "latency_cpu_p95_ms": 497.2882000001846,
+        "latency_cpu_min_ms": 391.5622999993502,
+        "latency_cpu_max_ms": 497.2882000001846,
+        "gpu_memory_before_mb": 0.0,
+        "gpu_memory_after_mb": 0.0,
+        "gpu_utilization_observed": "25%",
+        "cuda_provider_used": true,
+        "cpu_provider_used": true,
+        "errors": []
+      },
+      {
+        "model_id": "landmark_1k3d68",
+        "sha256": "df5c06b8a0c12e422b2ed8947b8869faa4105387f199c477af038aa01f9a45cc",
+        "sha256_match": true,
+        "provider": "onnx",
+        "input_shape": [
+          1,
+          3,
+          192,
+          192
+        ],
+        "output_shapes": [
+          [
+            1,
+            3309
+          ]
+        ],
+        "output_dtypes": [
+          "float32"
+        ],
+        "output_names": [
+          "fc1"
+        ],
+        "cuda_success": true,
+        "cpu_success": true,
+        "output_finite": true,
+        "output_no_nan": true,
+        "output_no_inf": true,
+        "warmup_runs": 3,
+        "measured_runs": 10,
+        "latency_cuda_mean_ms": 10.4361899986543,
+        "latency_cuda_median_ms": 9.662049997132272,
+        "latency_cuda_p95_ms": 14.629299999796785,
+        "latency_cuda_min_ms": 9.221199998137308,
+        "latency_cuda_max_ms": 14.629299999796785,
+        "latency_cpu_mean_ms": 53.806339999937336,
+        "latency_cpu_median_ms": 45.60825000044133,
+        "latency_cpu_p95_ms": 109.88709999946877,
+        "latency_cpu_min_ms": 35.70670000044629,
+        "latency_cpu_max_ms": 109.88709999946877,
+        "gpu_memory_before_mb": 0.0,
+        "gpu_memory_after_mb": 0.0,
+        "gpu_utilization_observed": "14%",
+        "cuda_provider_used": true,
+        "cpu_provider_used": true,
+        "errors": []
+      },
+      {
+        "model_id": "reid",
+        "sha256": "09d398902020205dd4aa80495b2a8fceecd64ba610e6b72afc1f93965c9613d2",
+        "sha256_match": true,
+        "provider": "onnx",
+        "input_shape": [
+          1,
+          3,
+          256,
+          128
+        ],
+        "output_shapes": [
+          [
+            1,
+            2048
+          ]
+        ],
+        "output_dtypes": [
+          "float32"
+        ],
+        "output_names": [
+          "output"
+        ],
+        "cuda_success": true,
+        "cpu_success": true,
+        "output_finite": true,
+        "output_no_nan": true,
+        "output_no_inf": true,
+        "warmup_runs": 3,
+        "measured_runs": 10,
+        "latency_cuda_mean_ms": 19.995540001400514,
+        "latency_cuda_median_ms": 23.722950001683785,
+        "latency_cuda_p95_ms": 28.088900002330774,
+        "latency_cuda_min_ms": 5.837600001541432,
+        "latency_cuda_max_ms": 28.088900002330774,
+        "latency_cpu_mean_ms": 27.34426999995776,
+        "latency_cpu_median_ms": 28.09424999941257,
+        "latency_cpu_p95_ms": 33.481999998912215,
+        "latency_cpu_min_ms": 19.756600002438063,
+        "latency_cpu_max_ms": 33.481999998912215,
+        "gpu_memory_before_mb": 0.0,
+        "gpu_memory_after_mb": 0.0,
+        "gpu_utilization_observed": "4%",
+        "cuda_provider_used": true,
+        "cpu_provider_used": true,
+        "errors": []
+      },
+      {
+        "model_id": "yolo_person",
+        "sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+        "sha256_match": true,
+        "provider": "ultralytics",
+        "input_shape": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "output_shapes": [
+          [
+            0,
+            6
+          ]
+        ],
+        "output_dtypes": [
+          "torch.float32"
+        ],
+        "output_names": [
+          "boxes"
+        ],
+        "cuda_success": true,
+        "cpu_success": true,
+        "output_finite": true,
+        "output_no_nan": true,
+        "output_no_inf": true,
+        "warmup_runs": 3,
+        "measured_runs": 10,
+        "latency_cuda_mean_ms": 28.874119999090908,
+        "latency_cuda_median_ms": 27.45160000085889,
+        "latency_cuda_p95_ms": 40.36459999770159,
+        "latency_cuda_min_ms": 23.557399999845074,
+        "latency_cuda_max_ms": 40.36459999770159,
+        "latency_cpu_mean_ms": 194.87005999981193,
+        "latency_cpu_median_ms": 161.6830500006472,
+        "latency_cpu_p95_ms": 442.3657000006642,
+        "latency_cpu_min_ms": 132.46839999919757,
+        "latency_cpu_max_ms": 442.3657000006642,
+        "gpu_memory_before_mb": 0.0,
+        "gpu_memory_after_mb": 41.87451171875,
+        "gpu_utilization_observed": "38%",
+        "cuda_provider_used": true,
+        "cpu_provider_used": true,
+        "errors": []
+      },
+      {
+        "model_id": "yolo_pose",
+        "sha256": "869e83fcdffdc7371fa4e34cd8e51c838cc729571d1635e5141e3075e9319dc0",
+        "sha256_match": true,
+        "provider": "ultralytics",
+        "input_shape": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "output_shapes": [
+          [
+            0,
+            6
+          ],
+          [
+            0,
+            17,
+            3
+          ]
+        ],
+        "output_dtypes": [
+          "torch.float32",
+          "torch.float32"
+        ],
+        "output_names": [
+          "boxes",
+          "keypoints"
+        ],
+        "cuda_success": true,
+        "cpu_success": true,
+        "output_finite": true,
+        "output_no_nan": true,
+        "output_no_inf": true,
+        "warmup_runs": 3,
+        "measured_runs": 10,
+        "latency_cuda_mean_ms": 31.525090000286582,
+        "latency_cuda_median_ms": 28.94285000184027,
+        "latency_cuda_p95_ms": 43.121000002429355,
+        "latency_cuda_min_ms": 22.487499998533167,
+        "latency_cuda_max_ms": 43.121000002429355,
+        "latency_cpu_mean_ms": 175.98714000050677,
+        "latency_cpu_median_ms": 156.03790000022855,
+        "latency_cpu_p95_ms": 239.12080000081914,
+        "latency_cpu_min_ms": 125.85440000111703,
+        "latency_cpu_max_ms": 239.12080000081914,
+        "gpu_memory_before_mb": 41.87451171875,
+        "gpu_memory_after_mb": 52.74951171875,
+        "gpu_utilization_observed": "16%",
+        "cuda_provider_used": true,
+        "cpu_provider_used": true,
+        "errors": []
+      }
+    ],
+    "verified_count": 6,
+    "cuda_success_count": 6,
+    "cpu_success_count": 6,
+    "total_count": 6,
+    "timestamp": "2026-08-16T19:00:01.014107"
+  }
+}

@@ -1,0 +1,183 @@
+{
+  "benchmark": {
+    "name": "Phase 3: Windows NVIDIA CUDA Runtime Validation",
+    "generated": "2026-08-16T17:01:00.595802",
+    "phase": 3,
+    "status": "COMPLETE",
+    "verdict": "PARTIAL",
+    "cuda_runtime_found": "PASS",
+    "production_model_runtime": "BLOCKED"
+  },
+  "environment": {
+    "windows_version": "Windows-11-10.0.26200-SP0",
+    "architecture": "AMD64",
+    "python_version": "3.12.10",
+    "python_executable": "c:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Scripts\\python.exe",
+    "venv_active": true,
+    "venv_path": "c:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv"
+  },
+  "nvidia": {
+    "gpu_name": "NVIDIA GeForce GTX 1660 Ti",
+    "driver_version": "610.47",
+    "cuda_runtime_version": "13.3",
+    "cuda_toolkit_version": "13.3"
+  },
+  "cuda": {
+    "cudnn_version": "cuDNN 91.2 (bundled with torch)",
+    "visual_cpp_runtime": true,
+    "ffmpeg_available": true,
+    "ffmpeg_version": "ffmpeg version 9.0-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers"
+  },
+  "pytorch": {
+    "version": "2.13.0+cu126",
+    "cuda_version": "12.6",
+    "cuda_available": true,
+    "device_count": 1,
+    "device_name": "NVIDIA GeForce GTX 1660 Ti",
+    "compute_capability": "7.5",
+    "total_memory_mb": 6143,
+    "operation_success": true,
+    "operation_output_shape": [
+      100,
+      100
+    ],
+    "operation_elapsed_ms": 200.93
+  },
+  "onnxruntime": {
+    "version": "1.28.0",
+    "package_name": "onnxruntime-gpu",
+    "available_providers": [
+      "TensorrtExecutionProvider",
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "cuda_ep_registered": true,
+    "cpu_ep_registered": true,
+    "tensorrt_ep_registered": true
+  },
+  "cuda_ep_session": {
+    "success": true,
+    "session_providers": [
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "cuda_ep_in_first": true,
+    "error": null
+  },
+  "onnx_cuda_inference": {
+    "success": true,
+    "model_type": "minimal_non_production_test_model",
+    "production_model_used": false,
+    "input_shape": [
+      1,
+      3,
+      3
+    ],
+    "output_shape": [
+      1,
+      3,
+      3
+    ],
+    "output_dtype": "float32",
+    "elapsed_ms": 9.179,
+    "error": null
+  },
+  "cpu_fallback": {
+    "success": true,
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "output_shape": [
+      1,
+      3,
+      3
+    ],
+    "elapsed_ms": 0.11,
+    "error": null
+  },
+  "model_availability": {
+    "scrfd": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\scrfd\\scrfd_10g_bnkps.onnx"
+    },
+    "arcface": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\arcface\\glintr100.onnx"
+    },
+    "landmark_1k3d68": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "df5c06b8a0c12e422b2ed8947b8869faa4105387f199c477af038aa01f9a45cc",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\landmark\\1k3d68.onnx"
+    },
+    "reid": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "09d398902020205dd4aa80495b2a8fceecd64ba610e6b72afc1f93965c9613d2",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\reid\\resnet50_reid.onnx"
+    },
+    "yolo_person": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\yolo\\yolo11n.pt"
+    },
+    "yolo_pose": {
+      "status": "MISSING",
+      "sha256": null,
+      "expected_sha256": "869e83fcdffdc7371fa4e34cd8e51c838cc729571d1635e5141e3075e9319dc0",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\yolo\\yolo11n-pose.pt"
+    }
+  },
+  "gpu_memory_observations": {
+    "before_mb": 8.2,
+    "after_mb": 8.24,
+    "delta_mb": 0.04,
+    "vram_total_mb": 6143
+  },
+  "test_results": {
+    "phase3_total": 50,
+    "phase3_passed": 50,
+    "phase3_failed": 0,
+    "phase3_skipped": 0,
+    "regression_total": 211,
+    "regression_passed": 206,
+    "regression_failed": 0,
+    "regression_skipped": 5
+  },
+  "phase_boundary_verification": {
+    "camera_accessed": false,
+    "mediamtx_started": false,
+    "ffmpeg_streaming": false,
+    "ai_inference_executed": false,
+    "model_files_modified": false,
+    "legacy_production_code_modified": false
+  },
+  "files_created": [
+    "app/runtime/cuda.py",
+    "tests/unit/test_runtime_cuda.py",
+    "scripts/phase3_cuda_validation.py",
+    "scripts/generate_phase3_reports.py",
+    "benchmark_results/PHASE_3_WINDOWS_CUDA_RUNTIME.md",
+    "benchmark_results/PHASE_3_WINDOWS_CUDA_RUNTIME.json",
+    "benchmark_results/PHASE_3_WINDOWS_CUDA_RUNTIME_SNAPSHOT.json"
+  ],
+  "files_modified": [
+    "app/runtime/__init__.py (added Phase 3 exports)",
+    "requirements/windows.txt (added AI runtime package versions)"
+  ],
+  "known_limitations": [
+    "Production model files are MISSING — SCRFD, ArcFace, 1K3D68, ReID, YOLO Person, YOLO Pose",
+    "Production ONNX runtime inference proof is BLOCKED until models are downloaded (dedicated future phase)",
+    "cuDNN not found system-wide — only bundled with PyTorch",
+    "CUDA Toolkit is 13.3 but PyTorch bundles CUDA 12.6 (backward compatible)"
+  ],
+  "final_verdict": "PARTIAL",
+  "cuda_runtime_verdict": "PASS",
+  "production_model_verdict": "BLOCKED",
+  "ready_for_phase_4": true
+}

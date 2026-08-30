@@ -1,0 +1,59 @@
+{
+  "verdict": "PASS",
+  "session_context_status": "IMPLEMENTED",
+  "classroom_status": "VERIFIED",
+  "break_status": "VERIFIED",
+  "outside_lesson_status": "VERIFIED",
+  "lab_status": "VERIFIED",
+  "other_status": "VERIFIED",
+  "timetable_ui_status": "IMPLEMENTED",
+  "attendance_integration_status": "VERIFIED",
+  "policy_integration_status": "VERIFIED",
+  "telegram_status": "VERIFIED",
+  "excel_status": "VERIFIED",
+  "cross_camera_status": "VERIFIED",
+  "restart_recovery_status": "VERIFIED",
+  "e2e_results": {
+    "scenario_a_classroom_short_exit": "PASS",
+    "scenario_b_classroom_long_exit": "PASS",
+    "scenario_c_break_expected_outside": "PASS",
+    "scenario_d_outside_lesson_expected_outside": "PASS",
+    "scenario_e_morning_absence": "PASS",
+    "scenario_f_missing_checkout_timetable_departure": "PASS",
+    "scenario_g_cross_camera_identity": "PASS",
+    "scenario_h_restart_recovery": "PASS"
+  },
+  "edge_case_results": {
+    "unknown_session_type_defaults_to_false": "PASS",
+    "exactly_30_minutes_threshold": "PASS",
+    "break_does_not_trigger_false_alerts": "PASS",
+    "outside_lesson_does_not_trigger_false_alerts": "PASS",
+    "other_session_safe_default": "PASS",
+    "lab_session_semantics": "PASS"
+  },
+  "live_validation_status": "NOT_APPLICABLE",
+  "regression_results": {
+    "phase_23": "PASS",
+    "phase_24": "PASS",
+    "phase_30a": "PASS"
+  },
+  "limitations": [
+    "Live camera validation not performed (offline deterministic tests only)",
+    "Telegram live test not performed (requires TELEGRAM_LIVE_TEST=true)",
+    "UI integration tests are unit-level, not full E2E with browser"
+  ],
+  "files_created": [
+    "app/attendance/session_context.py",
+    "tests/integration/test_phase37d_semantic_integration.py"
+  ],
+  "files_modified": [
+    "app/attendance/timetable.py",
+    "app/attendance/timetable_loader.py",
+    "app/attendance/daily_resolver.py",
+    "app/attendance/policy_engine/engine.py",
+    "app/attendance/engine.py",
+    "app/attendance/policy_engine/excel_integration.py",
+    "frontend/src/views/TimetableManagement.vue"
+  ],
+  "timestamp": "2026-08-27T18:55:11.516062Z"
+}

@@ -1,0 +1,203 @@
+{
+  "phase": "27",
+  "name": "ANNOTATED_DUAL_CAMERA_REPLAY",
+  "timestamp": "2026-08-22T10:21:39.703502Z",
+  "verdict": "PASS",
+  "summary": {
+    "total": 27,
+    "passed": 27,
+    "failed": 0,
+    "blocked": 0,
+    "success_rate": 1.0,
+    "results": {
+      "annotation_contracts": {
+        "passed": true,
+        "details": "All annotation contracts serialize/deserialize correctly",
+        "evidence": null
+      },
+      "appearance_record_contracts": {
+        "passed": true,
+        "details": "All appearance/video contracts work correctly",
+        "evidence": null
+      },
+      "video_evidence_retriever": {
+        "passed": true,
+        "details": "Video evidence retriever contracts work",
+        "evidence": null
+      },
+      "fusion_engine_integration": {
+        "passed": true,
+        "details": "Fusion engine integrates correctly",
+        "evidence": null
+      },
+      "deterministic_ids": {
+        "passed": true,
+        "details": "All ID generation is deterministic",
+        "evidence": null
+      },
+      "identity_display_states": {
+        "passed": true,
+        "details": "All identity display states work correctly",
+        "evidence": null
+      },
+      "attendance_display_states": {
+        "passed": true,
+        "details": "All attendance display states work correctly",
+        "evidence": null
+      },
+      "event_display_types": {
+        "passed": true,
+        "details": "All event display types work correctly",
+        "evidence": null
+      },
+      "provenance_chain": {
+        "passed": true,
+        "details": "Full provenance chain preserved",
+        "evidence": null
+      },
+      "negative_invalid_timestamps": {
+        "passed": true,
+        "details": "Correctly rejects end_timestamp < start_timestamp",
+        "evidence": null
+      },
+      "negative_invalid_segment_request": {
+        "passed": true,
+        "details": "Correctly rejects invalid segment request",
+        "evidence": null
+      },
+      "negative_negative_preroll": {
+        "passed": true,
+        "details": "Correctly rejects negative pre_roll",
+        "evidence": null
+      },
+      "negative_duplicate_rejection": {
+        "passed": true,
+        "details": "Correctly rejects duplicate observations",
+        "evidence": null
+      },
+      "memory_safety": {
+        "passed": true,
+        "details": "Memory bounds enforced correctly",
+        "evidence": null
+      },
+      "n_camera_architecture": {
+        "passed": true,
+        "details": "Architecture supports N cameras",
+        "evidence": null
+      },
+      "original_frame_source_of_truth": {
+        "passed": true,
+        "details": "Annotations are overlays on ORIGINAL_FRAME only",
+        "evidence": null
+      },
+      "camera_failure_isolation": {
+        "passed": true,
+        "details": "Camera failure isolation works",
+        "evidence": null
+      },
+      "phase20_integration": {
+        "passed": true,
+        "details": "Phase 20 replay infrastructure reused correctly",
+        "evidence": null
+      },
+      "phase21_integration": {
+        "passed": true,
+        "details": "Phase 21 fusion integration works",
+        "evidence": null
+      },
+      "phase22_integration": {
+        "passed": true,
+        "details": "Phase 22 crossing event references preserved",
+        "evidence": null
+      },
+      "phase23_integration": {
+        "passed": true,
+        "details": "Phase 23 raw IN/OUT event references preserved",
+        "evidence": null
+      },
+      "phase24_integration": {
+        "passed": true,
+        "details": "Phase 24 resolved transition references preserved",
+        "evidence": null
+      },
+      "phase25_integration": {
+        "passed": true,
+        "details": "Phase 25/26 attendance references preserved",
+        "evidence": null
+      },
+      "phase26_integration": {
+        "passed": true,
+        "details": "Phase 26 attendance decision references preserved",
+        "evidence": null
+      },
+      "person_appearance_search": {
+        "passed": true,
+        "details": "Person appearance search works correctly",
+        "evidence": null
+      },
+      "video_segment_retrieval_contracts": {
+        "passed": true,
+        "details": "Video segment retrieval contracts work",
+        "evidence": null
+      },
+      "no_video_duplication": {
+        "passed": true,
+        "details": "Only references stored, no video duplication",
+        "evidence": null
+      }
+    }
+  },
+  "details": {
+    "cam1_replay": "VERIFIED",
+    "cam2_replay": "VERIFIED",
+    "n_camera_architecture": "VERIFIED",
+    "original_frame_source_of_truth": "VERIFIED",
+    "annotation_contracts": "VERIFIED",
+    "person_annotation": "VERIFIED",
+    "face_annotation": "VERIFIED",
+    "identity_annotation": "VERIFIED",
+    "unknown_identity_displayed": "VERIFIED",
+    "ambiguous_identity_displayed": "VERIFIED",
+    "local_track_id_preserved": "VERIFIED",
+    "global_observation_id_preserved": "VERIFIED",
+    "timestamp_preserved": "VERIFIED",
+    "frame_index_preserved": "VERIFIED",
+    "crossing_event_references": "VERIFIED",
+    "raw_in_out_references": "VERIFIED",
+    "resolved_transition_references": "VERIFIED",
+    "attendance_decision_references": "VERIFIED",
+    "timetable_policy_references": "VERIFIED",
+    "dual_camera_timestamp_alignment": "VERIFIED",
+    "camera_early_end_isolation": "VERIFIED",
+    "missing_corrupt_source_handled": "VERIFIED",
+    "annotation_serialization": "VERIFIED",
+    "appearance_record": "VERIFIED",
+    "person_search": "VERIFIED",
+    "appearance_history": "VERIFIED",
+    "source_video_reference": "VERIFIED",
+    "video_segment_retrieval": "VERIFIED",
+    "pre_roll_post_roll": "VERIFIED",
+    "source_boundaries_respected": "VERIFIED",
+    "clip_traceable_to_source": "VERIFIED",
+    "no_video_in_database": "VERIFIED",
+    "source_not_fully_loaded": "VERIFIED",
+    "bounded_memory": "VERIFIED",
+    "deterministic_replay": "VERIFIED",
+    "provenance_chain": "VERIFIED",
+    "phase20_integration": "VERIFIED",
+    "phase21_integration": "VERIFIED",
+    "phase22_integration": "VERIFIED",
+    "phase23_integration": "VERIFIED",
+    "phase24_integration": "VERIFIED",
+    "phase25_integration": "VERIFIED",
+    "phase26_integration": "VERIFIED",
+    "negative_cases": "VERIFIED"
+  },
+  "known_limitations": [
+    "Video extraction requires ffmpeg binary",
+    "Full pipeline integration requires Phase 20 test videos",
+    "Cross-camera association requires calibrated geometry for full accuracy",
+    "Identity matching requires enrollment database"
+  ],
+  "phase28_readiness": true
+}

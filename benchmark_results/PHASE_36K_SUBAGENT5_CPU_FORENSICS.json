@@ -1,0 +1,109 @@
+{
+  "cpu_analysis": {
+    "mean_cpu_time_ms": 45.0,
+    "p50_cpu_time_ms": 46.875,
+    "p95_cpu_time_ms": 78.125,
+    "max_cpu_time_ms": 93.75,
+    "mean_threads": 30.0,
+    "max_threads": 30
+  },
+  "stage_analysis": {
+    "preprocessing": {
+      "mean_ms": 5.33703199995216,
+      "p50_ms": 5.22969999929046,
+      "p95_ms": 6.848800000625488,
+      "max_ms": 7.058000000142783,
+      "percentage_of_total": 12.36736331469244
+    },
+    "inference_enqueue": {
+      "mean_ms": 17.3403299999336,
+      "p50_ms": 17.20629999999801,
+      "p95_ms": 19.38570000038453,
+      "max_ms": 23.703100000602717,
+      "percentage_of_total": 40.18228879042919
+    },
+    "output_parsing": {
+      "mean_ms": 0.43173400006708107,
+      "p50_ms": 0.4070000004503527,
+      "p95_ms": 0.6155999999464257,
+      "max_ms": 0.79840000034892,
+      "percentage_of_total": 1.0004457972489023
+    },
+    "scrfd_decoding": {
+      "mean_ms": 19.812627999981487,
+      "p50_ms": 12.52829999975802,
+      "p95_ms": 56.694299999435316,
+      "max_ms": 59.981299999890325,
+      "percentage_of_total": 45.91127965820998
+    },
+    "nms": {
+      "mean_ms": 0.1429959999768471,
+      "p50_ms": 0.12860000060754828,
+      "p95_ms": 0.21259999994072132,
+      "max_ms": 0.43479999931150815,
+      "percentage_of_total": 0.33136085454935854
+    },
+    "association": {
+      "mean_ms": 0.00837800003864686,
+      "p50_ms": 0.007700000423938036,
+      "p95_ms": 0.013299999409355223,
+      "max_ms": 0.015700000403739978,
+      "percentage_of_total": 0.019414118245755653
+    },
+    "tracking": {
+      "mean_ms": 0.07481800001187366,
+      "p50_ms": 0.06649999977526022,
+      "p95_ms": 0.12090000018361025,
+      "max_ms": 0.2602000004117144,
+      "percentage_of_total": 0.1733737756554203
+    },
+    "total": {
+      "mean_ms": 43.15416200000982,
+      "p50_ms": 36.610200000723125,
+      "p95_ms": 79.74410000042553,
+      "max_ms": 82.8443000000334,
+      "percentage_of_total": 100.0
+    }
+  },
+  "thread_analysis": {},
+  "memory_analysis": {
+    "mean_delta_mb": -0.08125,
+    "max_delta_mb": 4.7421875,
+    "total_growth_mb": 43.3203125
+  },
+  "bottlenecks": [
+    "SCRFD decoding dominates CPU: 19.8ms mean",
+    "GPU preprocessing CPU overhead: 5.3ms mean",
+    "High thread count: 30 threads (possible thread pool overhead)"
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "issue": "SCRFD decoding (anchor generation + bbox decode) is pure Python/NumPy",
+      "current": "19.8ms per frame on CPU",
+      "recommended": "Move anchor generation to GPU (precompute), use vectorized NumPy, or TensorRT postprocessing",
+      "impact": "Could reduce CPU time by 10-15ms"
+    },
+    {
+      "priority": "HIGH",
+      "issue": "GPU preprocessing has CPU overhead (PyTorch CUDA kernel launches)",
+      "current": "5.3ms per frame",
+      "recommended": "Use CUDA Graphs for preprocessing or fuse operations",
+      "impact": "Could reduce CPU overhead by 2-3ms"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "Multiple .numpy() calls cause Python-GIL contention",
+      "current": "9 separate .numpy() calls per frame",
+      "recommended": "Batch output conversion or use DLPack for zero-copy",
+      "impact": "Reduce Python overhead"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "Thread count grows during execution",
+      "current": "Up to 30 threads",
+      "recommended": "Set OMP_NUM_THREADS=1, MKL_NUM_THREADS=1, torch.set_num_threads(1)",
+      "impact": "Reduce thread contention and context switching"
+    }
+  ]
+}

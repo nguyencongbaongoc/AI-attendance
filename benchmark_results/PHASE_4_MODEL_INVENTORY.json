@@ -1,0 +1,92 @@
+{
+  "entries": [
+    {
+      "model_id": "scrfd",
+      "filename": "scrfd_10g_bnkps.onnx",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\scrfd\\scrfd_10g_bnkps.onnx",
+      "file_size": 16923827,
+      "expected_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+      "actual_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+      "hash_match": true,
+      "integrity_status": "VALID",
+      "contract_status": "VERIFIED",
+      "registry_status": "available",
+      "provenance": "imported_from_legacy_project",
+      "error_message": null
+    },
+    {
+      "model_id": "arcface",
+      "filename": "glintr100.onnx",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\arcface\\glintr100.onnx",
+      "file_size": 260665334,
+      "expected_sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+      "actual_sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+      "hash_match": true,
+      "integrity_status": "VALID",
+      "contract_status": "VERIFIED",
+      "registry_status": "available",
+      "provenance": "imported_from_legacy_project",
+      "error_message": null
+    },
+    {
+      "model_id": "landmark_1k3d68",
+      "filename": "1k3d68.onnx",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\landmark\\1k3d68.onnx",
+      "file_size": 143607619,
+      "expected_sha256": "df5c06b8a0c12e422b2ed8947b8869faa4105387f199c477af038aa01f9a45cc",
+      "actual_sha256": "df5c06b8a0c12e422b2ed8947b8869faa4105387f199c477af038aa01f9a45cc",
+      "hash_match": true,
+      "integrity_status": "VALID",
+      "contract_status": "VERIFIED",
+      "registry_status": "available",
+      "provenance": "imported_from_legacy_project",
+      "error_message": null
+    },
+    {
+      "model_id": "reid",
+      "filename": "resnet50_reid.onnx",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\reid\\resnet50_reid.onnx",
+      "file_size": 93950200,
+      "expected_sha256": "09d398902020205dd4aa80495b2a8fceecd64ba610e6b72afc1f93965c9613d2",
+      "actual_sha256": "09d398902020205dd4aa80495b2a8fceecd64ba610e6b72afc1f93965c9613d2",
+      "hash_match": true,
+      "integrity_status": "VALID",
+      "contract_status": "VERIFIED",
+      "registry_status": "available",
+      "provenance": "imported_from_legacy_project",
+      "error_message": null
+    },
+    {
+      "model_id": "yolo_person",
+      "filename": "yolo11n.pt",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\yolo\\yolo11n.pt",
+      "file_size": 5613764,
+      "expected_sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+      "actual_sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+      "hash_match": true,
+      "integrity_status": "VALID",
+      "contract_status": "VERIFIED",
+      "registry_status": "available",
+      "provenance": "imported_from_legacy_project",
+      "error_message": null
+    },
+    {
+      "model_id": "yolo_pose",
+      "filename": "yolo11n-pose.pt",
+      "path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\models\\yolo\\yolo11n-pose.pt",
+      "file_size": 6255593,
+      "expected_sha256": "869e83fcdffdc7371fa4e34cd8e51c838cc729571d1635e5141e3075e9319dc0",
+      "actual_sha256": "869e83fcdffdc7371fa4e34cd8e51c838cc729571d1635e5141e3075e9319dc0",
+      "hash_match": true,
+      "integrity_status": "VALID",
+      "contract_status": "VERIFIED",
+      "registry_status": "available",
+      "provenance": "imported_from_legacy_project",
+      "error_message": null
+    }
+  ],
+  "verified_count": 6,
+  "mismatch_count": 0,
+  "missing_count": 0,
+  "total_count": 6
+}

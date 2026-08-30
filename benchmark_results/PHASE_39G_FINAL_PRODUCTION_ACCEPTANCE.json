@@ -1,0 +1,87 @@
+{
+  "phase": "39G",
+  "timestamp": "2026-08-28T15:19:12.974595Z",
+  "end_to_end_pipeline": {
+    "camera": "RTMP input -> MediaMTX",
+    "mediamtx": "RTMP -> RTSP conversion (ports 1935/8554)",
+    "nvdec": "Hardware decoding via FFmpeg NVDEC",
+    "gpu_preprocessing": "CUDA-accelerated preprocessing",
+    "gpu_face_detector": "SCRFD on CUDA EP",
+    "saic": "Scale-Aware Identity Clustering",
+    "identity": "ArcFace embeddings -> person_id matching",
+    "person_id_to_student_id": "Enrollment database mapping",
+    "attendance": "AttendanceEngine records events",
+    "timetable": "TimetableLoader provides session context",
+    "session_context": "Semantic context (CLASSROOM/BREAK/LAB/OUTSIDE_LESSON)",
+    "policy_engine": "Evaluates rules (07:30 absence, 17:30 departure, 30-min exit)",
+    "notification_event": "Generated for policy violations",
+    "bounded_queue": "NotificationQueue with retry/rate-limit",
+    "telegram_worker": "Polls queue, sends via TelegramBot",
+    "parent_registry": "Routes student_id -> parent_id -> telegram_chat_id",
+    "private_parent_chat": "Final delivery to parent"
+  },
+  "daily_excel_export": {
+    "exporter": "DailyExcelExporter",
+    "output_pattern": "attendance_YYYY-MM-DD.xlsx",
+    "sheets": [
+      "DAILY_ATTENDANCE",
+      "EXPECTED_SCHEDULE",
+      "EVENTS",
+      "SUMMARY",
+      "PROVENANCE",
+      "POLICY_EVENTS",
+      "NOTIFICATION_STATUS",
+      "POLICY_SUMMARY"
+    ],
+    "verification": {
+      "date_based_output": true,
+      "historical_files_not_overwritten": true,
+      "student_id_preserved": true,
+      "timetable_context_preserved": true,
+      "policy_events_preserved": true,
+      "notification_status_preserved": true
+    }
+  },
+  "policy_logic_verification": {
+    "morning_absence_0730": true,
+    "expected_departure_1730": true,
+    "exit_threshold_30min": true,
+    "short_exit_filtered": true,
+    "long_exit_evaluated": true,
+    "break_allowed_outside": true,
+    "outside_lesson_allowed_outside": true,
+    "classroom_unexpected_outside": true,
+    "lab_configurable_outside_allowed": true,
+    "other_safe_default_inside": true
+  },
+  "parent_isolation": {
+    "deterministic_testing": true,
+    "multi_parent_live": "NOT_VERIFIED (SECOND_REAL_PARENT_ACCOUNT_REQUIRED)"
+  },
+  "persistence": {
+    "attendance_db": "PASS",
+    "parent_registry_db": "PASS",
+    "notification_queue_db": "PASS",
+    "exit_sessions_db": "PASS"
+  },
+  "observability": {
+    "structured_logging": true,
+    "health_endpoints": true,
+    "metrics_collection": true,
+    "startup_validation": true
+  },
+  "security": {
+    "no_secrets_in_logs": true,
+    "token_env_only": true,
+    "chat_id_protection": true,
+    "admin_auth_required": true,
+    "link_code_protection": true,
+    "sql_parameterization": true,
+    "safe_file_import": true
+  },
+  "regression": {
+    "phase_38c2_tests": "312 passed, 0 failed, 0 errors",
+    "previous_phases_preserved": true
+  },
+  "status": "PASS_WITH_DOCUMENTED_LIMITATION"
+}

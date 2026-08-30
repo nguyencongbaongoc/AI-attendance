@@ -1,0 +1,934 @@
+{
+  "timestamp": "2026-08-17T21:46:56.633973",
+  "total_tests": 10,
+  "passed_tests": 7,
+  "failed_tests": 3,
+  "results": [
+    {
+      "test_name": "model_contract",
+      "passed": true,
+      "duration_ms": 552.0864999998594,
+      "message": "Model contract validated",
+      "details": {
+        "model_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+        "ir_version": 6,
+        "opset": 11,
+        "input_name": "input.1",
+        "input_shape": [
+          1,
+          3,
+          -1,
+          -1
+        ],
+        "output_names": [
+          "448",
+          "471",
+          "494",
+          "451",
+          "474",
+          "497",
+          "454",
+          "477",
+          "500"
+        ],
+        "output_shapes_metadata": {
+          "448": [
+            12800,
+            1
+          ],
+          "471": [
+            3200,
+            1
+          ],
+          "494": [
+            800,
+            1
+          ],
+          "451": [
+            12800,
+            4
+          ],
+          "474": [
+            3200,
+            4
+          ],
+          "497": [
+            800,
+            4
+          ],
+          "454": [
+            12800,
+            10
+          ],
+          "477": [
+            3200,
+            10
+          ],
+          "500": [
+            800,
+            10
+          ]
+        },
+        "output_shapes_actual_640": {
+          "448": [
+            12800,
+            1
+          ],
+          "471": [
+            3200,
+            1
+          ],
+          "494": [
+            800,
+            1
+          ],
+          "451": [
+            12800,
+            4
+          ],
+          "474": [
+            3200,
+            4
+          ],
+          "497": [
+            800,
+            4
+          ],
+          "454": [
+            12800,
+            10
+          ],
+          "477": [
+            3200,
+            10
+          ],
+          "500": [
+            800,
+            10
+          ]
+        },
+        "shape_match_640": true,
+        "expected_anchors_640": {
+          "stride8": 12800,
+          "stride16": 3200,
+          "stride32": 800
+        }
+      },
+      "error": null
+    },
+    {
+      "test_name": "preprocessing_contract",
+      "passed": true,
+      "duration_ms": 115.10480000015377,
+      "message": "Preprocessing contract: 960x960 (model native: 640x640)",
+      "details": {
+        "input_height": 960,
+        "input_width": 960,
+        "input_channels": 3,
+        "color_space": "rgb",
+        "tensor_layout": "nchw",
+        "dtype": "float32",
+        "resize_mode": "letterbox",
+        "padding_value": 0,
+        "normalization_mean": null,
+        "normalization_std": null,
+        "normalization_scale": null,
+        "normalization_verified": false,
+        "target_shape": [
+          1,
+          3,
+          960,
+          960
+        ],
+        "notes": "SCRFD 960x960 input. Threshold 0.55, NMS 0.45."
+      },
+      "error": null
+    },
+    {
+      "test_name": "standalone_cpu_inference",
+      "passed": true,
+      "duration_ms": 663.5040999999546,
+      "message": "CPU inference: finite outputs, deterministic",
+      "details": {
+        "input_shape": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "output_shapes": {
+          "448": [
+            12800,
+            1
+          ],
+          "471": [
+            3200,
+            1
+          ],
+          "494": [
+            800,
+            1
+          ],
+          "451": [
+            12800,
+            4
+          ],
+          "474": [
+            3200,
+            4
+          ],
+          "497": [
+            800,
+            4
+          ],
+          "454": [
+            12800,
+            10
+          ],
+          "477": [
+            3200,
+            10
+          ],
+          "500": [
+            800,
+            10
+          ]
+        },
+        "all_finite": true,
+        "deterministic": true,
+        "provider": "CPUExecutionProvider"
+      },
+      "error": null
+    },
+    {
+      "test_name": "standalone_cuda_inference",
+      "passed": false,
+      "duration_ms": 68.31120000060764,
+      "message": "CUDA session creation failed",
+      "details": {
+        "cuda_available": false,
+        "error": "D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n"
+      },
+      "error": "D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n"
+    },
+    {
+      "test_name": "output_decoding",
+      "passed": true,
+      "duration_ms": 474.99489999972866,
+      "message": "Output decoding validated",
+      "details": {
+        "output_structure_valid": true,
+        "anchor_count_match": true,
+        "decode_valid": true,
+        "num_score_outputs": 3,
+        "num_bbox_outputs": 3,
+        "num_kps_outputs": 3,
+        "stride8_anchors": 12800,
+        "high_conf_detections": 0,
+        "sample_decoded_bboxes": [],
+        "sample_decoded_kps": []
+      },
+      "error": null
+    },
+    {
+      "test_name": "cpu_stress_100_iter",
+      "passed": true,
+      "duration_ms": 20163.328399999955,
+      "message": "CPU stress: 0 crashes, 95.7MB growth, 1 latency spikes",
+      "details": {
+        "iterations": 100,
+        "crashes": 0,
+        "memory_growth_mb": 95.7,
+        "latency_spikes": 1,
+        "initial_memory_mb": 576.7,
+        "final_memory_mb": 672.3
+      },
+      "error": null
+    },
+    {
+      "test_name": "cuda_stress_100_iter",
+      "passed": false,
+      "duration_ms": 56.43260000033479,
+      "message": "CUDA session creation failed",
+      "details": {
+        "cuda_available": false,
+        "error": "D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n"
+      },
+      "error": "D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n"
+    },
+    {
+      "test_name": "synthetic_patterns",
+      "passed": true,
+      "duration_ms": 5002.545199999986,
+      "message": "Synthetic patterns: 9/9 passed",
+      "details": {
+        "blank_640x640": {
+          "success": true,
+          "all_finite": true,
+          "output_shapes": [
+            [
+              28800,
+              1
+            ],
+            [
+              7200,
+              1
+            ],
+            [
+              1800,
+              1
+            ],
+            [
+              28800,
+              4
+            ],
+            [
+              7200,
+              4
+            ],
+            [
+              1800,
+              4
+            ],
+            [
+              28800,
+              10
+            ],
+            [
+              7200,
+              10
+            ],
+            [
+              1800,
+              10
+            ]
+          ],
+          "input_shape": [
+            640,
+            640,
+            3
+          ],
+          "preprocessed_shape": [
+            1,
+            3,
+            960,
+            960
+          ]
+        },
+        "blank_1920x1080": {
+          "success": true,
+          "all_finite": true,
+          "output_shapes": [
+            [
+              28800,
+              1
+            ],
+            [
+              7200,
+              1
+            ],
+            [
+              1800,
+              1
+            ],
+            [
+              28800,
+              4
+            ],
+            [
+              7200,
+              4
+            ],
+            [
+              1800,
+              4
+            ],
+            [
+              28800,
+              10
+            ],
+            [
+              7200,
+              10
+            ],
+            [
+              1800,
+              10
+            ]
+          ],
+          "input_shape": [
+            1080,
+            1920,
+            3
+          ],
+          "preprocessed_shape": [
+            1,
+            3,
+            960,
+            960
+          ]
+        },
+        "blank_3840x2160": {
+          "success": true,
+          "all_finite": true,
+          "output_shapes": [
+            [
+              28800,
+              1
+            ],
+            [
+              7200,
+              1
+            ],
+            [
+              1800,
+              1
+            ],
+            [
+              28800,
+              4
+            ],
+            [
+              7200,
+              4
+            ],
+            [
+              1800,
+              4
+            ],
+            [
+              28800,
+              10
+            ],
+            [
+              7200,
+              10
+            ],
+            [
+              1800,
+              10
+            ]
+          ],
+          "input_shape": [
+            2160,
+            3840,
+            3
+          ],
+          "preprocessed_shape": [
+            1,
+            3,
+            960,
+            960
+          ]
+        },
+        "noise_640x640": {
+          "success": true,
+          "all_finite": true,
+          "output_shapes": [
+            [
+              28800,
+              1
+            ],
+            [
+              7200,
+              1
+            ],
+            [
+              1800,
+              1
+            ],
+            [
+              28800,
+              4
+            ],
+            [
+              7200,
+              4
+            ],
+            [
+              1800,
+              4
+            ],
+            [
+              28800,
+              10
+            ],
+            [
+              7200,
+              10
+            ],
+            [
+              1800,
+              10
+            ]
+          ],
+          "input_shape": [
+            640,
+            640,
+            3
+          ],
+          "preprocessed_shape": [
+            1,
+            3,
+            960,
+            960
+          ]
+        },
+        "noise_1920x1080": {
+          "success": true,
+          "all_finite": true,
+          "output_shapes": [
+            [
+              28800,
+              1
+            ],
+            [
+              7200,
+              1
+            ],
+            [
+              1800,
+              1
+            ],
+            [
+              28800,
+              4
+            ],
+            [
+              7200,
+              4
+            ],
+            [
+              1800,
+              4
+            ],
+            [
+              28800,
+              10
+            ],
+            [
+              7200,
+              10
+            ],
+            [
+              1800,
+              10
+            ]
+          ],
+          "input_shape": [
+            1080,
+            1920,
+            3
+          ],
+          "preprocessed_shape": [
+            1,
+            3,
+            960,
+            960
+          ]
+        },
+        "noise_3840x2160": {
+          "success": true,
+          "all_finite": true,
+          "output_shapes": [
+            [
+              28800,
+              1
+            ],
+            [
+              7200,
+              1
+            ],
+            [
+              1800,
+              1
+            ],
+            [
+              28800,
+              4
+            ],
+            [
+              7200,
+              4
+            ],
+            [
+              1800,
+              4
+            ],
+            [
+              28800,
+              10
+            ],
+            [
+              7200,
+              10
+            ],
+            [
+              1800,
+              10
+            ]
+          ],
+          "input_shape": [
+            2160,
+            3840,
+            3
+          ],
+          "preprocessed_shape": [
+            1,
+            3,
+            960,
+            960
+          ]
+        },
+        "face_pattern_1": {
+          "success": true,
+          "all_finite": true,
+          "output_shapes": [
+            [
+              28800,
+              1
+            ],
+            [
+              7200,
+              1
+            ],
+            [
+              1800,
+              1
+            ],
+            [
+              28800,
+              4
+            ],
+            [
+              7200,
+              4
+            ],
+            [
+              1800,
+              4
+            ],
+            [
+              28800,
+              10
+            ],
+            [
+              7200,
+              10
+            ],
+            [
+              1800,
+              10
+            ]
+          ],
+          "input_shape": [
+            640,
+            640,
+            3
+          ],
+          "preprocessed_shape": [
+            1,
+            3,
+            960,
+            960
+          ]
+        },
+        "face_pattern_3": {
+          "success": true,
+          "all_finite": true,
+          "output_shapes": [
+            [
+              28800,
+              1
+            ],
+            [
+              7200,
+              1
+            ],
+            [
+              1800,
+              1
+            ],
+            [
+              28800,
+              4
+            ],
+            [
+              7200,
+              4
+            ],
+            [
+              1800,
+              4
+            ],
+            [
+              28800,
+              10
+            ],
+            [
+              7200,
+              10
+            ],
+            [
+              1800,
+              10
+            ]
+          ],
+          "input_shape": [
+            640,
+            640,
+            3
+          ],
+          "preprocessed_shape": [
+            1,
+            3,
+            960,
+            960
+          ]
+        },
+        "face_pattern_1080p": {
+          "success": true,
+          "all_finite": true,
+          "output_shapes": [
+            [
+              28800,
+              1
+            ],
+            [
+              7200,
+              1
+            ],
+            [
+              1800,
+              1
+            ],
+            [
+              28800,
+              4
+            ],
+            [
+              7200,
+              4
+            ],
+            [
+              1800,
+              4
+            ],
+            [
+              28800,
+              10
+            ],
+            [
+              7200,
+              10
+            ],
+            [
+              1800,
+              10
+            ]
+          ],
+          "input_shape": [
+            1080,
+            1920,
+            3
+          ],
+          "preprocessed_shape": [
+            1,
+            3,
+            960,
+            960
+          ]
+        }
+      },
+      "error": null
+    },
+    {
+      "test_name": "integration_pipeline",
+      "passed": true,
+      "duration_ms": 1257.5426000003063,
+      "message": "Integration pipeline components validated (no valid detection in synthetic data)",
+      "details": {
+        "detections_found": 4,
+        "valid_detections": 0,
+        "landmarks_valid": true,
+        "quality_valid": true,
+        "provenance_complete": true,
+        "model_identities": true,
+        "landmarks_count": 68,
+        "quality_decision": "acceptable",
+        "provenance_chain": [
+          "source",
+          "detection",
+          "crop",
+          "landmarks",
+          "quality"
+        ],
+        "note": "Synthetic data doesn't produce valid SCRFD detections; pipeline components tested individually"
+      },
+      "error": null
+    },
+    {
+      "test_name": "cuda_cpu_consistency",
+      "passed": false,
+      "duration_ms": 383.79669999994803,
+      "message": "CUDA not available for consistency test",
+      "details": {
+        "cuda_available": false
+      },
+      "error": null
+    }
+  ],
+  "python_version": "3.12.10",
+  "pytorch_version": "2.13.0+cu126",
+  "ort_version": "1.17.0",
+  "cuda_version": "13.3",
+  "cudnn_version": "92.400",
+  "nvidia_driver": "unknown",
+  "gpu_name": "NVIDIA GeForce GTX 1660 Ti",
+  "model_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+  "model_ir_version": 6,
+  "model_opset": 11,
+  "input_name": "input.1",
+  "input_shape": [
+    1,
+    3,
+    -1,
+    -1
+  ],
+  "output_names": [
+    "448",
+    "471",
+    "494",
+    "451",
+    "474",
+    "497",
+    "454",
+    "477",
+    "500"
+  ],
+  "output_shapes": {
+    "448": [
+      12800,
+      1
+    ],
+    "471": [
+      3200,
+      1
+    ],
+    "494": [
+      800,
+      1
+    ],
+    "451": [
+      12800,
+      4
+    ],
+    "474": [
+      3200,
+      4
+    ],
+    "497": [
+      800,
+      4
+    ],
+    "454": [
+      12800,
+      10
+    ],
+    "477": [
+      3200,
+      10
+    ],
+    "500": [
+      800,
+      10
+    ]
+  },
+  "contract_input_height": 960,
+  "contract_input_width": 960,
+  "contract_resize_mode": "letterbox",
+  "contract_color_space": "rgb",
+  "contract_normalization": "False",
+  "cpu_inference_passed": true,
+  "cpu_output_shapes": {
+    "448": [
+      12800,
+      1
+    ],
+    "471": [
+      3200,
+      1
+    ],
+    "494": [
+      800,
+      1
+    ],
+    "451": [
+      12800,
+      4
+    ],
+    "474": [
+      3200,
+      4
+    ],
+    "497": [
+      800,
+      4
+    ],
+    "454": [
+      12800,
+      10
+    ],
+    "477": [
+      3200,
+      10
+    ],
+    "500": [
+      800,
+      10
+    ]
+  },
+  "cpu_decoding_valid": true,
+  "cpu_deterministic": true,
+  "cpu_100_iter_passed": true,
+  "cpu_memory_stable": true,
+  "cuda_available": false,
+  "cuda_inference_passed": false,
+  "cuda_output_shapes": {},
+  "cuda_decoding_valid": false,
+  "cuda_cpu_consistency": false,
+  "cuda_100_iter_passed": false,
+  "cuda_memory_stable": false,
+  "synthetic_640x640": true,
+  "synthetic_1920x1080": true,
+  "synthetic_3840x2160": true,
+  "synthetic_blank": true,
+  "synthetic_face_pattern": true,
+  "synthetic_multi_face": true,
+  "integration_passed": true,
+  "coordinate_space_correct": false,
+  "bbox_restoration_correct": false,
+  "keypoints_correct": true,
+  "provenance_complete": true,
+  "root_cause_category": "C",
+  "root_cause_evidence": [
+    "standalone_cuda_inference: CUDA session creation failed",
+    "  Error: D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n",
+    "cuda_stress_100_iter: CUDA session creation failed",
+    "  Error: D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n",
+    "cuda_cpu_consistency: CUDA not available for consistency test"
+  ],
+  "repairs_attempted": [
+    "CUDA EP LoadLibrary error 126 - missing CUDA/cuDNN DLLs in PATH",
+    "Added PyTorch lib to PATH and DLL directories"
+  ],
+  "final_verdict": "PARTIAL",
+  "ready_for_detector_replacement": false,
+  "recommended_replacement": null,
+  "remaining_limitations": [
+    "CUDA inference unavailable (LoadLibrary error 126 for onnxruntime_providers_cuda.dll)",
+    "Preprocessing contract uses 960x960, model native is 640x640 (2.25x anchor mismatch)",
+    "Normalization parameters NOT_VERIFIED for SCRFD",
+    "CUDAExecutionProvider registered but fails to load (CUDA/cuDNN version mismatch)"
+  ]
+}

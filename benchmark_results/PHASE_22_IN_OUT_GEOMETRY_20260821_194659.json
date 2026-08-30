@@ -1,0 +1,388 @@
+{
+  "verdict": "FAIL",
+  "total_tests": 34,
+  "passed": 33,
+  "failed": 1,
+  "geometry_contract": true,
+  "coordinate_space": true,
+  "line_serialization": true,
+  "zone_serialization": true,
+  "geometry_versioning": true,
+  "camera_isolation": true,
+  "display_transform": true,
+  "source_transform": true,
+  "round_trip": true,
+  "line_side": true,
+  "in_crossing": true,
+  "out_crossing": true,
+  "reverse_crossing": true,
+  "parallel_movement": true,
+  "line_touch": true,
+  "jitter_hysteresis": true,
+  "debounce": true,
+  "multiple_crossings": true,
+  "stationary": true,
+  "missing_samples": true,
+  "out_of_order": true,
+  "zone_entry": true,
+  "zone_exit": true,
+  "ambiguous_identity": true,
+  "phase21_integration": true,
+  "provenance": true,
+  "deterministic": true,
+  "bounded_memory": true,
+  "multi_camera": false,
+  "save_reload": true,
+  "negative_tests": true,
+  "n_camera": true,
+  "limitations": [
+    "Tests use synthetic trajectories (no real video)",
+    "Phase 21 integration uses minimal GlobalObservation",
+    "UI rendering not tested (headless)"
+  ],
+  "phase_23_readiness": false,
+  "test_results": [
+    {
+      "name": "test_geometry_contract_exists",
+      "passed": true,
+      "message": "CameraGeometryConfig contract exists and is valid",
+      "details": {
+        "line_config_hash": "e0da1b509d3357c8",
+        "zone_config_hash": "b282861df1ffa68c"
+      },
+      "duration_ms": 0.3110999969067052
+    },
+    {
+      "name": "test_original_frame_coordinates",
+      "passed": true,
+      "message": "All geometry operates in ORIGINAL_FRAME coordinates",
+      "details": {
+        "coordinate_space": "original_frame"
+      },
+      "duration_ms": 0.1188000023830682
+    },
+    {
+      "name": "test_line_serialization",
+      "passed": true,
+      "message": "Line geometry serializes and deserializes correctly",
+      "details": {
+        "config_hash": "722373a80441116c"
+      },
+      "duration_ms": 0.12380000407574698
+    },
+    {
+      "name": "test_zone_serialization",
+      "passed": true,
+      "message": "Zone geometry serializes and deserializes correctly",
+      "details": {
+        "config_hash": "46b7d0114585f93c"
+      },
+      "duration_ms": 0.14999999984866008
+    },
+    {
+      "name": "test_geometry_versioning",
+      "passed": true,
+      "message": "Geometry versioning works correctly",
+      "details": {
+        "v1_hash": "e0da1b509d3357c8",
+        "v2_hash": "2187b2fc3e8ab6d5"
+      },
+      "duration_ms": 0.14109999756328762
+    },
+    {
+      "name": "test_camera_isolation",
+      "passed": true,
+      "message": "Camera geometries are properly isolated",
+      "details": {
+        "cam1_line_x": 1000,
+        "cam2_line_x": 2000
+      },
+      "duration_ms": 0.13190000026952475
+    },
+    {
+      "name": "test_display_to_source_transform",
+      "passed": true,
+      "message": "Display to source transform works correctly",
+      "details": {
+        "scale": 0.5,
+        "offset_x": 0.0,
+        "offset_y": 0.0
+      },
+      "duration_ms": 0.05489999603014439
+    },
+    {
+      "name": "test_source_to_display_transform",
+      "passed": true,
+      "message": "Source to display transform works correctly",
+      "details": {
+        "scale": 0.5
+      },
+      "duration_ms": 0.03139999898849055
+    },
+    {
+      "name": "test_transform_round_trip",
+      "passed": true,
+      "message": "Coordinate round-trip is accurate within tolerance",
+      "details": {
+        "max_error": 0.0,
+        "tests": 100
+      },
+      "duration_ms": 2.1630000046570785
+    },
+    {
+      "name": "test_line_side_calculation",
+      "passed": true,
+      "message": "Line side calculation works correctly",
+      "details": {},
+      "duration_ms": 0.08569999772589654
+    },
+    {
+      "name": "test_valid_in_crossing",
+      "passed": true,
+      "message": "Valid IN crossing detected correctly",
+      "details": {
+        "event_id": "CE-LI-4a40f72e27",
+        "crossing_point": {
+          "x": 1000.0,
+          "y": 1080.0
+        }
+      },
+      "duration_ms": 0.34530000266386196
+    },
+    {
+      "name": "test_valid_out_crossing",
+      "passed": true,
+      "message": "Valid OUT crossing detected correctly",
+      "details": {
+        "event_id": "CE-LI-4a40f72e27",
+        "direction": "out"
+      },
+      "duration_ms": 0.2528000040911138
+    },
+    {
+      "name": "test_reverse_crossing",
+      "passed": true,
+      "message": "Reverse crossings detected correctly",
+      "details": {
+        "events": [
+          "in",
+          "out",
+          "in"
+        ]
+      },
+      "duration_ms": 0.40350000199396163
+    },
+    {
+      "name": "test_parallel_movement",
+      "passed": true,
+      "message": "Parallel movement does not trigger crossing",
+      "details": {
+        "events": 0
+      },
+      "duration_ms": 0.21240000205580145
+    },
+    {
+      "name": "test_line_touch_without_crossing",
+      "passed": true,
+      "message": "Line touch without crossing does not trigger event",
+      "details": {
+        "events": 0
+      },
+      "duration_ms": 0.15639999764971435
+    },
+    {
+      "name": "test_jitter_hysteresis",
+      "passed": true,
+      "message": "Jitter around line is suppressed by hysteresis",
+      "details": {
+        "jitter_events": 0,
+        "crossing_events": 1
+      },
+      "duration_ms": 0.40949999674921855
+    },
+    {
+      "name": "test_debounce",
+      "passed": true,
+      "message": "Temporal debounce prevents rapid crossing events",
+      "details": {
+        "events": 2,
+        "directions": [
+          "in",
+          "out"
+        ]
+      },
+      "duration_ms": 0.46380000276258215
+    },
+    {
+      "name": "test_multiple_crossings",
+      "passed": true,
+      "message": "Multiple crossings tracked correctly",
+      "details": {
+        "crossings": 5,
+        "sequence": [
+          "in",
+          "out",
+          "in",
+          "out",
+          "in"
+        ]
+      },
+      "duration_ms": 0.5540999991353601
+    },
+    {
+      "name": "test_stationary_person",
+      "passed": true,
+      "message": "Stationary person does not trigger crossing",
+      "details": {
+        "frames": 20,
+        "events": 0
+      },
+      "duration_ms": 0.49849999777507037
+    },
+    {
+      "name": "test_missing_trajectory_samples",
+      "passed": true,
+      "message": "Missing trajectory samples handled correctly",
+      "details": {
+        "events": 2,
+        "gap_handling": "within_limit_then_exceeds"
+      },
+      "duration_ms": 0.28229999588802457
+    },
+    {
+      "name": "test_out_of_order_timestamps",
+      "passed": true,
+      "message": "Out-of-order timestamps handled without crash",
+      "details": {
+        "events": 2
+      },
+      "duration_ms": 0.28759999986505136
+    },
+    {
+      "name": "test_zone_outside_to_inside",
+      "passed": true,
+      "message": "Zone entry (outside→inside) detected correctly",
+      "details": {
+        "event_type": "zone_entry",
+        "direction": "in"
+      },
+      "duration_ms": 0.32279999868478626
+    },
+    {
+      "name": "test_zone_inside_to_outside",
+      "passed": true,
+      "message": "Zone exit (inside→outside) detected correctly",
+      "details": {
+        "event_type": "zone_exit",
+        "direction": "out"
+      },
+      "duration_ms": 0.30780000088270754
+    },
+    {
+      "name": "test_ambiguous_identity_crossing",
+      "passed": true,
+      "message": "Crossing detection works with unknown/ambiguous identity",
+      "details": {
+        "unknown_id_events": 1,
+        "ambiguous_id_events": 1
+      },
+      "duration_ms": 0.45370000589173287
+    },
+    {
+      "name": "test_phase21_global_observation_integration",
+      "passed": true,
+      "message": "Phase 21 GlobalObservation integrates with crossing detection",
+      "details": {
+        "global_obs_id": "GO-cd5c724c3b44",
+        "event_go_id": "GO-cd5c724c3b44"
+      },
+      "duration_ms": 0.40770000487100333
+    },
+    {
+      "name": "test_provenance",
+      "passed": true,
+      "message": "Crossing event preserves full provenance",
+      "details": {
+        "event_id": "CE-LI-4a40f72e27",
+        "config_hash": "d37ed85cbd8a8481"
+      },
+      "duration_ms": 0.23100000544218346
+    },
+    {
+      "name": "test_deterministic_replay",
+      "passed": true,
+      "message": "Crossing detection is deterministic across runs",
+      "details": {
+        "runs": 5,
+        "events_per_run": 2
+      },
+      "duration_ms": 1.180699997348711
+    },
+    {
+      "name": "test_bounded_trajectory_memory",
+      "passed": true,
+      "message": "Trajectory history is bounded",
+      "details": {
+        "max_history": 10,
+        "actual_history": 10
+      },
+      "duration_ms": 8.545900003809948
+    },
+    {
+      "name": "Multi-camera geometry isolation",
+      "passed": false,
+      "message": "Test exception: ",
+      "details": {
+        "exception": "",
+        "type": "AssertionError"
+      },
+      "duration_ms": 0.3921000025002286
+    },
+    {
+      "name": "test_configuration_save_reload",
+      "passed": true,
+      "message": "Configuration save/reload works correctly",
+      "details": {
+        "config_hash": "e0da1b509d3357c8"
+      },
+      "duration_ms": 13.754299994616304
+    },
+    {
+      "name": "test_negative_invalid_geometry",
+      "passed": true,
+      "message": "Invalid geometry configurations rejected",
+      "details": {},
+      "duration_ms": 0.06280000525293872
+    },
+    {
+      "name": "test_invalid_coordinate_space",
+      "passed": true,
+      "message": "Invalid coordinate space rejected",
+      "details": {},
+      "duration_ms": 0.14350000128615648
+    },
+    {
+      "name": "test_invalid_frame_dimensions",
+      "passed": true,
+      "message": "Invalid frame dimensions rejected",
+      "details": {},
+      "duration_ms": 0.06299999949987978
+    },
+    {
+      "name": "test_n_camera_architecture",
+      "passed": true,
+      "message": "Architecture supports N cameras (tested with 5)",
+      "details": {
+        "cameras": 5,
+        "camera_ids": [
+          "CAM1",
+          "CAM2",
+          "CAM3",
+          "CAM4",
+          "CAM5"
+        ]
+      },
+      "duration_ms": 0.32130000181496143
+    }
+  ]
+}

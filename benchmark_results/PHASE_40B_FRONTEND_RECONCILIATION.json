@@ -1,0 +1,174 @@
+{
+  "phase": "40B",
+  "title": "Existing Frontend + Figma Reconciliation",
+  "timestamp": "2026-08-29T03:35:00Z",
+  "existing_frontend": {
+    "directory": "frontend/",
+    "framework": "Vue 3 + TypeScript + Vite",
+    "package_manager": "npm",
+    "build_system": "Vite 8.2.0",
+    "entry_point": "src/main.js",
+    "router": "vue-router 4.6.4",
+    "state_management": "Pinia 4.0.3",
+    "styling": "CSS custom properties + CSS variables (no Tailwind)",
+    "design_system": "Glassmorphism with CSS variables, ambient lighting"
+  },
+  "figma_frontend": {
+    "directory": "figma/",
+    "framework": "React 19 + TypeScript + Vite",
+    "package_manager": "pnpm",
+    "build_system": "Vite 8.0.5",
+    "entry_point": "src/main.tsx",
+    "router": "None (manual screen switching via state)",
+    "state_management": "React useState/useEffect only",
+    "styling": "Tailwind CSS 4.0 + custom CSS variables",
+    "design_system": "Liquid-glass visual language, morph transitions, dark mode"
+  },
+  "functionality_comparison": {
+    "dashboard": {
+      "existing": "LiveDashboard.vue with CameraCard, AttendanceSummary, LiveEventTimeline, PersonDetailPanel, SystemHealthPanel",
+      "figma": "CommandCenter with CameraCard, EventRow, stats pills, attendance progress bar, alert panel, system health panel",
+      "missing_in_figma": "Camera stream display, real-time annotations on camera feed",
+      "missing_in_existing": "Liquid-glass design, morph transitions, attendance coverage progress bar, alert panel with actions"
+    },
+    "cameras": {
+      "existing": "CameraCard component with live feed placeholder, status, annotations, tracks",
+      "figma": "CameraCard in CommandCenter grid with simulated feed, person silhouettes, detection boxes, status dots",
+      "missing_in_figma": "Actual video stream integration, WebRTC/HLS player",
+      "missing_in_existing": "Simulated feed visualization, person count badges, corner crosshairs"
+    },
+    "attendance": {
+      "existing": "AttendanceSummary component, LiveEventTimeline, query via AttendanceQueryBuilder, daily Excel export",
+      "figma": "EventRow in CommandCenter, PersonDetail timeline, AttendanceEvent mock data",
+      "missing_in_figma": "Attendance summary cards, query builder, Excel export, daily resolver integration",
+      "missing_in_existing": "EventRow component, attendance coverage visualization, confidence bars"
+    },
+    "students_people": {
+      "existing": "SearchView.vue with person search, PersonDetailPanel with appearance history, replay, provenance",
+      "figma": "PersonSearch with filters, PersonCard grid, PersonDetail with timeline, camera frequency heatmap",
+      "missing_in_figma": "Replay integration, provenance panel integration, appearance history with global observation IDs",
+      "missing_in_existing": "PersonCard grid layout, filter pills, camera frequency heatmap, face quality visualization"
+    },
+    "timetable": {
+      "existing": "TimetableManagement.vue with full CRUD, Excel import, validation, session types, outside allowed",
+      "figma": "MISSING - no timetable UI in Figma",
+      "missing_in_figma": "Entire timetable management functionality",
+      "missing_in_existing": "N/A - existing has complete timetable management"
+    },
+    "replay": {
+      "existing": "ReplayView.vue with video player, track selection, playback controls, speed control",
+      "figma": "AnnotatedReplay with simulated video viewport, detection boxes, annotations timeline, track details",
+      "missing_in_figma": "Actual video player integration, HLS/WebRTC stream",
+      "missing_in_existing": "Annotation markers on progress bar, detection box visualization, track confidence bars"
+    },
+    "provenance": {
+      "existing": "ProvenancePanel component with chain visualization, integrity report, raw attestation",
+      "figma": "ProvenanceChain with node visualization, integrity report, raw attestation JSON",
+      "missing_in_figma": "Integration with actual attendance records",
+      "missing_in_existing": "Liquid-glass styling, animated chain visualization"
+    },
+    "enrollment": {
+      "existing": "MISSING - no enrollment UI in existing frontend",
+      "figma": "EnrollmentDB with enrolled persons table, new enrollment wizard (4 steps), quality checks, DB stats",
+      "missing_in_figma": "Integration with actual ArcFace database",
+      "missing_in_existing": "Entire enrollment management functionality"
+    },
+    "parent_telegram": {
+      "existing": "MISSING - no parent/telegram UI in existing frontend",
+      "figma": "MISSING - no parent/telegram UI in Figma",
+      "missing_in_figma": "Entire parent/telegram functionality",
+      "missing_in_existing": "Entire parent/telegram functionality"
+    },
+    "excel": {
+      "existing": "DailyExcelExporter integration, export from TimetableManagement",
+      "figma": "MISSING - no Excel UI in Figma",
+      "missing_in_figma": "Entire Excel export functionality",
+      "missing_in_existing": "N/A - existing has Excel export"
+    },
+    "system_health": {
+      "existing": "SystemHealthPanel with camera health, GPU status, metrics, polling + WebSocket/SSE",
+      "figma": "System health panel in CommandCenter, ProvenanceChain integrity report, GPU status in bottom bar",
+      "missing_in_figma": "Detailed camera health, GPU details, queue metrics, database metrics, polling/SSE integration",
+      "missing_in_existing": "Liquid-glass styling, animated status dots, compact health pills"
+    },
+    "realtime": {
+      "existing": "WebSocket (/api/v1/health/ws) + SSE (/api/v1/health/stream) with reconnect, sequence numbers, heartbeat",
+      "figma": "NONE - no realtime implementation",
+      "missing_in_figma": "Complete realtime architecture",
+      "missing_in_existing": "N/A - existing has complete realtime"
+    }
+  },
+  "api_integration_differences": {
+    "existing": "Pinia store with fetchSystemHealth, fetchCameraHealth, fetchGPUStatus, fetchMetrics, startHealthPolling, WebSocket/SSE connection manager",
+    "figma": "No API integration - all mock data",
+    "backend_apis_available": [
+      "/api/v1/health/system",
+      "/api/v1/health/cameras",
+      "/api/v1/health/cameras/{camera_id}",
+      "/api/v1/health/gpu",
+      "/api/v1/health/metrics",
+      "/api/v1/health/queue/stats",
+      "/api/v1/health/queue/metrics",
+      "/api/v1/health/queue/alerts",
+      "/api/v1/health/ws (WebSocket)",
+      "/api/v1/health/stream (SSE)",
+      "/api/v1/health/snapshot"
+    ],
+    "backend_apis_missing_for_figma": [
+      "Attendance query API",
+      "Student/Person search & detail API",
+      "Timetable CRUD API",
+      "Excel export API",
+      "Enrollment/ArcFace DB API",
+      "Parent/Telegram API"
+    ]
+  },
+  "websocket_sse_differences": {
+    "existing": "Full implementation with ConnectionManager, sequence numbers, heartbeat, stale detection, reconnect handling, ack/sync messages",
+    "figma": "None",
+    "reusable": "Existing WebSocket/SSE implementation can be adapted for React with minimal changes"
+  },
+  "migration_matrix": {
+    "canonical_final_architecture": "React (Figma) + TypeScript + Vite + Tailwind CSS",
+    "reason": "Figma is designated as canonical new UI per Phase 40 requirements",
+    "components_to_migrate_from_existing": [
+      "API service layer (health, attendance, student, timetable, excel, enrollment)",
+      "WebSocket/SSE client with reconnect logic",
+      "Pinia store patterns → React Context + hooks or Zustand",
+      "Attendance query builder logic",
+      "Daily resolver integration",
+      "Excel export integration",
+      "Timetable management logic"
+    ],
+    "components_to_keep_from_figma": [
+      "All UI components (design system, liquid-glass styling)",
+      "CommandCenter dashboard layout",
+      "PersonSearch with filters",
+      "PersonDetail with timeline & heatmap",
+      "AnnotatedReplay with annotations",
+      "ProvenanceChain visualization",
+      "EnrollmentDB wizard"
+    ],
+    "components_to_build": [
+      "API service layer (TypeScript)",
+      "WebSocket/SSE React hooks",
+      "React state management (Context/Zustand)",
+      "Attendance API integration",
+      "Student/Person API integration",
+      "Timetable API integration",
+      "Excel export API integration",
+      "Enrollment API integration",
+      "Parent/Telegram UI",
+      "Excel UI"
+    ]
+  },
+  "duplicate_routes": {
+    "dashboard": "Both have dashboard (LiveDashboard vs CommandCenter)",
+    "replay": "Both have replay (ReplayView vs AnnotatedReplay)",
+    "search": "Both have person search (SearchView vs PersonSearch)",
+    "timetable": "Only existing has timetable",
+    "enrollment": "Only figma has enrollment",
+    "provenance": "Both have provenance (ProvenancePanel vs ProvenanceChain)"
+  },
+  "recommendation": "Migrate existing frontend's API integration, WebSocket/SSE, and business logic into Figma's React architecture. Keep Figma's design system and UI components. Build missing UI for timetable, parent/telegram, and Excel in Figma's design language."
+}

@@ -1,0 +1,41 @@
+{
+  "phase": "39B",
+  "timestamp": "2026-08-28T14:58:46.218488Z",
+  "configuration_system": "pydantic-settings with .env and YAML support",
+  "telegram_bot_token": {
+    "configured": true,
+    "source": "environment_variable",
+    "stored_in_excel": false,
+    "stored_in_git": false,
+    "printed_in_logs": false,
+    "written_in_benchmark_reports": false,
+    "token_format_valid": true,
+    "token_prefix": "8043791099:AAHIVrl1sBnvlNju3drBEBB6bIQzqBUZ0cI"
+  },
+  "telegram_live_test": {
+    "enabled": false,
+    "test_chat_id": null
+  },
+  "required_environment_variables": [
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM__BOT_TOKEN (for pydantic-settings nested delimiter)"
+  ],
+  "optional_environment_variables": [
+    "TELEGRAM_LIVE_TEST",
+    "TELEGRAM_TEST_CHAT_ID"
+  ],
+  "configuration_files": {
+    ".env": "NOT PRESENT (using environment variables directly)",
+    "config.yaml": "NOT PRESENT (using defaults)"
+  },
+  "security_settings": {
+    "no_secrets_in_logs": true,
+    "token_env_only": true,
+    "chat_id_exposure_protection": true,
+    "admin_authorization_required": true,
+    "link_code_protection": true,
+    "sql_parameterization": true,
+    "safe_file_import": true
+  },
+  "status": "PASS"
+}

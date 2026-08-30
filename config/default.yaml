@@ -1,0 +1,55 @@
+# Default configuration for AI Attendance System
+# This file provides default values for all configuration sections.
+# Environment variables and .env file can override these values.
+
+runtime:
+  log_level: INFO
+  debug: false
+
+paths:
+  # Paths are resolved relative to project root by default
+  config_dir: config
+  models_dir: models
+  logs_dir: logs
+  data_dir: data
+  recordings_dir: recordings
+  benchmark_results_dir: benchmark_results
+
+models:
+  scrfd_dir: models/scrfd
+  arcface_dir: models/arcface
+  landmark_dir: models/landmark
+  reid_dir: models/reid
+  yolo_dir: models/yolo
+
+cameras:
+  # Camera configuration will be implemented in later phases
+  # Do NOT add camera configuration yet
+  # Do NOT add automatic camera discovery
+  # Do NOT add arbitrary RTSP fallback
+
+media:
+  # Explicit FFmpeg path (optional). If null, system PATH is used.
+  ffmpeg_path: null
+
+inference:
+  device: auto  # auto, cpu, cuda
+  batch_size: 1
+
+tracking:
+  # Tracking configuration will be implemented in later phases
+
+attendance:
+  # Attendance configuration will be implemented in later phases
+
+stranger:
+  # Stranger detection configuration will be implemented in later phases
+
+geometry:
+  # Geometry configuration will be implemented in later phases
+
+storage:
+  # Storage configuration will be implemented in later phases
+
+monitoring:
+  # Monitoring configuration will be implemented in later phases

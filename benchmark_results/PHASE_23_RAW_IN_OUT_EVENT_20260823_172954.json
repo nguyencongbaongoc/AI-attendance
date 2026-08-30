@@ -1,0 +1,195 @@
+{
+  "phase": "23",
+  "name": "RAW_IN_OUT_EVENT_ENGINE",
+  "timestamp": "2026-08-23T17:29:43.348831Z",
+  "verdict": "PASS",
+  "pytest_results": {
+    "unit": {
+      "label": "Unit Tests",
+      "test_path": "tests/unit/test_raw_in_out_event.py",
+      "exit_code": 0,
+      "passed": true,
+      "stdout": "============================= test session starts =============================\nplatform win32 -- Python 3.12.10, pytest-7.4.4, pluggy-1.6.0 -- C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\ncachedir: .pytest_cache\nrootdir: C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\nplugins: anyio-4.14.2, cov-4.1.0, mock-3.15.1\ncollecting ... collected 76 items\n\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_creation_minimal PASSED [  1%]\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_creation_out_direction PASSED [  2%]\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_zone_entry PASSED [  3%]\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_immutability PASSED [  5%]\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_serialization_roundtrip PASSED [  6%]\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_json_serialization PASSED [  7%]\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_empty_event_id PASSED [  9%]\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_empty_camera_id PASSED [ 10%]\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_invalid_direction PASSED [ 11%]\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_negative_timestamp PASSED [ 13%]\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_invalid_schema_version PASSED [ 14%]\ntests/unit/test_raw_in_out_event.py::TestDeterministicEventId::test_same_inputs_produce_same_id PASSED [ 15%]\ntests/unit/test_raw_in_out_event.py::TestDeterministicEventId::test_different_camera_produces_different_id PASSED [ 17%]\ntests/unit/test_raw_in_out_event.py::TestDeterministicEventId::test_different_track_produces_different_id PASSED [ 18%]\ntests/unit/test_raw_in_out_event.py::TestDeterministicEventId::test_different_crossing_event_produces_different_id PASSED [ 19%]\ntests/unit/test_raw_in_out_event.py::TestDeterministicEventId::test_different_geometry_version_produces_different_id PASSED [ 21%]\ntests/unit/test_raw_in_out_event.py::TestDeterministicEventId::test_different_geometry_hash_produces_different_id PASSED [ 22%]\ntests/unit/test_raw_in_out_event.py::TestDirectionMapping::test_in_direction_preserved PASSED [ 23%]\ntests/unit/test_raw_in_out_event.py::TestDirectionMapping::test_out_direction_preserved PASSED [ 25%]\ntests/unit/test_raw_in_out_event.py::TestDirectionMapping::test_event_type_mapping PASSED [ 26%]\ntests/unit/test_raw_in_out_event.py::TestIdentityExtraction::test_identity_defaults_to_unknown PASSED [ 27%]\ntests/unit/test_raw_in_out_event.py::TestIdentityExtraction::test_identity_preserves_global_observation_ref PASSED [ 28%]\ntests/unit/test_raw_in_out_event.py::TestIdentityExtraction::test_identity_none_when_no_global_observation PASSED [ 30%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_engine_creation PASSED [ 31%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_process_single_crossing_event PASSED [ 32%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_process_multiple_crossing_events PASSED [ 34%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_idempotent_processing PASSED [ 35%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_idempotent_reconstructed_event PASSED [ 36%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_camera_isolation PASSED [ 38%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_chronological_ordering PASSED [ 39%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_equal_timestamp_tiebreaking PASSED [ 40%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_historical_events_remain_independent PASSED [ 42%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_rejects_invalid_crossing_event PASSED [ 43%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_rejects_missing_direction PASSED [ 44%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_rejects_missing_camera_id PASSED [ 46%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_rejects_negative_timestamp PASSED [ 47%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_rejects_missing_geometry_config PASSED [ 48%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_rejects_missing_geometry_hash PASSED [ 50%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_engine_clear PASSED [ 51%]\ntests/unit/test_raw_in_out_event.py::TestRawEventEngine::test_has_event PASSED [ 52%]\ntests/unit/test_raw_in_out_event.py::TestValidation::test_validate_valid_event PASSED [ 53%]\ntests/unit/test_raw_in_out_event.py::TestValidation::test_validate_missing_event_id PASSED [ 55%]\ntests/unit/test_raw_in_out_event.py::TestValidation::test_validate_missing_camera_id PASSED [ 56%]\ntests/unit/test_raw_in_out_event.py::TestValidation::test_validate_missing_local_track_id PASSED [ 57%]\ntests/unit/test_raw_in_out_event.py::TestValidation::test_validate_invalid_direction PASSED [ 59%]\ntests/unit/test_raw_in_out_event.py::TestValidation::test_validate_negative_timestamp PASSED [ 60%]\ntests/unit/test_raw_in_out_event.py::TestValidation::test_validate_missing_geometry_hash PASSED [ 61%]\ntests/unit/test_raw_in_out_event.py::TestValidation::test_validate_missing_geometry_version PASSED [ 63%]\ntests/unit/test_raw_in_out_event.py::TestFactoryFunctions::test_process_crossing_events_to_raw PASSED [ 64%]\ntests/unit/test_raw_in_out_event.py::TestFactoryFunctions::test_create_raw_events_from_crossing_engine PASSED [ 65%]\ntests/unit/test_raw_in_out_event.py::TestFactoryFunctions::test_create_integrated_pipeline PASSED [ 67%]\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_provenance_preserves_crossing_event_id PASSED [ 68%]\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_provenance_preserves_geometry_version PASSED [ 69%]\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_provenance_preserves_geometry_hash PASSED [ 71%]\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_provenance_preserves_camera_id PASSED [ 72%]\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_provenance_preserves_local_track_id PASSED [ 73%]\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_provenance_preserves_global_observation_id PASSED [ 75%]\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_provenance_preserves_timestamp PASSED [ 76%]\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_provenance_preserves_trajectory_points PASSED [ 77%]\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_provenance_preserves_config_snapshot PASSED [ 78%]\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_geometry_version_immutable_across_config_changes PASSED [ 80%]\ntests/unit/test_raw_in_out_event.py::TestDeterminism::test_repeated_execution_produces_same_results PASSED [ 81%]\ntests/unit/test_raw_in_out_event.py::TestDeterminism::test_no_random_event_ids PASSED [ 82%]\ntests/unit/test_raw_in_out_event.py::TestDeterminism::test_no_wall_clock_dependency PASSED [ 84%]\ntests/unit/test_raw_in_out_event.py::TestBoundedMemory::test_engine_does_not_retain_unbounded_history PASSED [ 85%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_crossing_engine_to_raw_engine_pipeline PASSED [ 86%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_direction_preserved_through_pipeline PASSED [ 88%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_timestamp_preserved_through_pipeline PASSED [ 89%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_camera_id_preserved_through_pipeline PASSED [ 90%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_local_track_id_preserved_through_pipeline PASSED [ 92%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_global_observation_id_preserved_through_pipeline PASSED [ 93%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_geometry_id_version_preserved_through_pipeline PASSED [ 94%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_source_crossing_event_id_preserved PASSED [ 96%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_provenance_preserved_through_pipeline PASSED [ 97%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_deterministic_event_id_through_pipeline PASSED [ 98%]\ntests/unit/test_raw_in_out_event.py::TestPhase22Integration::test_duplicate_processing_idempotent_through_pipeline PASSED [100%]\n\n============================== warnings summary ===============================\ntests/unit/test_raw_in_out_event.py: 66 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\geometry\\contract.py:360: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/unit/test_raw_in_out_event.py: 66 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\geometry\\contract.py:361: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_serialization_roundtrip\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_json_serialization\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\in_out\\contract.py:227: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at=data.get(\"created_at\", datetime.utcnow().isoformat() + \"Z\"),\n\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_empty_event_id\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_empty_camera_id\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_invalid_direction\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_negative_timestamp\ntests/unit/test_raw_in_out_event.py::TestRawInOutEventContract::test_raw_event_validation_rejects_invalid_schema_version\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\in_out\\contract.py:105: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/unit/test_raw_in_out_event.py::TestProvenanceChain::test_geometry_version_immutable_across_config_changes\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\geometry\\contract.py:490: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    updated_at=datetime.utcnow().isoformat() + \"Z\",\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n====================== 76 passed, 140 warnings in 3.11s =======================\n",
+      "stderr": "",
+      "duration": 4.220507860183716
+    },
+    "integration": {
+      "label": "Integration Tests",
+      "test_path": "tests/integration/test_phase23_integration.py",
+      "exit_code": 0,
+      "passed": true,
+      "stdout": "============================= test session starts =============================\nplatform win32 -- Python 3.12.10, pytest-7.4.4, pluggy-1.6.0 -- C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\ncachedir: .pytest_cache\nrootdir: C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\nplugins: anyio-4.14.2, cov-4.1.0, mock-3.15.1\ncollecting ... collected 18 items\n\ntests/integration/test_phase23_integration.py::TestPhase22Integration::test_crossing_engine_produces_events_convertible_to_raw PASSED [  5%]\ntests/integration/test_phase23_integration.py::TestPhase22Integration::test_manual_crossing_event_conversion PASSED [ 11%]\ntests/integration/test_phase23_integration.py::TestPhase22Integration::test_multiple_cameras_independent_raw_events PASSED [ 16%]\ntests/integration/test_phase23_integration.py::TestPhase22Integration::test_direction_preserved_from_phase22 PASSED [ 22%]\ntests/integration/test_phase23_integration.py::TestPhase22Integration::test_timestamp_preserved_from_phase22 PASSED [ 27%]\ntests/integration/test_phase23_integration.py::TestPhase22Integration::test_geometry_version_preserved_from_phase22 PASSED [ 33%]\ntests/integration/test_phase23_integration.py::TestPhase22Integration::test_source_crossing_event_id_preserved PASSED [ 38%]\ntests/integration/test_phase23_integration.py::TestPhase22Integration::test_provenance_chain_preserved PASSED [ 44%]\ntests/integration/test_phase23_integration.py::TestPhase21Integration::test_global_observation_id_preserved PASSED [ 50%]\ntests/integration/test_phase23_integration.py::TestPhase21Integration::test_unknown_identity_supported PASSED [ 55%]\ntests/integration/test_phase23_integration.py::TestPhase21Integration::test_ambiguous_identity_supported PASSED [ 61%]\ntests/integration/test_phase23_integration.py::TestPhase21Integration::test_no_rerun_of_phase21_fusion PASSED [ 66%]\ntests/integration/test_phase23_integration.py::TestFactoryIntegration::test_create_integrated_pipeline PASSED [ 72%]\ntests/integration/test_phase23_integration.py::TestFactoryIntegration::test_process_tracks_through_pipeline PASSED [ 77%]\ntests/integration/test_phase23_integration.py::TestEndToEndScenarios::test_in_out_sequence_preserved PASSED [ 83%]\ntests/integration/test_phase23_integration.py::TestEndToEndScenarios::test_out_of_order_input_handled PASSED [ 88%]\ntests/integration/test_phase23_integration.py::TestEndToEndScenarios::test_equal_timestamp_deterministic_ordering PASSED [ 94%]\ntests/integration/test_phase23_integration.py::TestEndToEndScenarios::test_zone_and_line_events_coexist PASSED [100%]\n\n============================== warnings summary ===============================\ntests/integration/test_phase23_integration.py: 20 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\geometry\\contract.py:360: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/integration/test_phase23_integration.py: 20 warnings\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\geometry\\contract.py:361: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\ntests/integration/test_phase23_integration.py::TestPhase21Integration::test_global_observation_id_preserved\ntests/integration/test_phase23_integration.py::TestPhase21Integration::test_no_rerun_of_phase21_fusion\n  C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\replay\\fusion.py:193: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + \"Z\")\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================= 18 passed, 42 warnings in 3.11s =======================\n",
+      "stderr": "",
+      "duration": 4.227196216583252
+    }
+  },
+  "acceptance_checks": {
+    "raw_event_contract": {
+      "passed": true
+    },
+    "immutability": {
+      "passed": true
+    },
+    "deterministic_event_identity": {
+      "passed": true
+    },
+    "idempotency": {
+      "passed": true
+    },
+    "direction_preservation": {
+      "passed": true
+    },
+    "timestamp_preservation": {
+      "passed": true
+    },
+    "geometry_version": {
+      "passed": true
+    },
+    "provenance": {
+      "passed": true
+    },
+    "camera_isolation": {
+      "passed": true
+    },
+    "global_observation_preservation": {
+      "passed": true
+    },
+    "serialization": {
+      "passed": true
+    },
+    "determinism": {
+      "passed": true
+    },
+    "bounded_state": {
+      "passed": true
+    },
+    "phase22_integration": {
+      "passed": true
+    }
+  },
+  "raw_event_contract": {
+    "exists": true,
+    "enums_valid": true,
+    "frozen_dataclass": true
+  },
+  "immutability": {
+    "immutable": true
+  },
+  "deterministic_event_identity": {
+    "deterministic": true,
+    "format": "RIE-04c055800f036b2f",
+    "camera_isolation": true,
+    "track_isolation": true,
+    "geometry_version_isolation": true
+  },
+  "idempotency": {
+    "idempotent": true,
+    "duplicate_count": 1,
+    "successful_count": 1,
+    "event_count": 1
+  },
+  "direction_preservation": {
+    "preserved": true,
+    "in_count": 1,
+    "out_count": 1
+  },
+  "timestamp_preservation": {
+    "preserved": true,
+    "original_timestamp": 1234567890.123456,
+    "preserved_timestamp": 1234567890.123456,
+    "created_at_preserved": true
+  },
+  "geometry_version": {
+    "preserved": true,
+    "geometry_version": 3,
+    "geometry_config_hash": "2302d113da873236",
+    "geometry_id": "2302d113da873236"
+  },
+  "provenance": {
+    "preserved": true,
+    "checks": {
+      "source_crossing_event_id": true,
+      "camera_id": true,
+      "local_track_id": true,
+      "global_observation_id": true,
+      "geometry_version": true,
+      "geometry_config_hash": true,
+      "trajectory_points": true,
+      "config_snapshot": true,
+      "identity_evidence_ref": true
+    }
+  },
+  "camera_isolation": {
+    "isolated": true,
+    "cam1_events": 1,
+    "cam2_events": 1,
+    "event_ids_distinct": true
+  },
+  "global_observation_preservation": {
+    "preserved": true,
+    "global_observation_id": "GO-INTEGRATION-123",
+    "identity_evidence_ref": "GO-INTEGRATION-123"
+  },
+  "serialization": {
+    "roundtrip": true,
+    "dict_roundtrip": true,
+    "json_roundtrip": true,
+    "fields_preserved": [
+      "event_id",
+      "direction",
+      "crossing_timestamp",
+      "camera_id",
+      "local_track_id",
+      "global_observation_id",
+      "source_crossing_event_id",
+      "geometry_version",
+      "geometry_config_hash",
+      "identity_certainty",
+      "event_schema_version"
+    ]
+  },
+  "determinism": {
+    "deterministic": true,
+    "checks": {
+      "event_id": true,
+      "direction": true,
+      "crossing_timestamp": true,
+      "camera_id": true,
+      "local_track_id": true,
+      "geometry_version": true,
+      "geometry_config_hash": true
+    }
+  },
+  "bounded_state": {
+    "bounded": true,
+    "processed_ids_before_clear": 50,
+    "events_before_clear": 50,
+    "clear_works": true
+  },
+  "phase22_integration": {
+    "integrated": true,
+    "crossing_engine_type": "CrossingEngine",
+    "raw_engine_type": "RawEventEngine",
+    "camera_id": "CAM1"
+  },
+  "known_limitations": [
+    "Identity certainty defaults to UNKNOWN - Phase 21 integration for KNOWN/AMBIGUOUS not yet implemented",
+    "No cross-camera fusion in Phase 23 (by design - Phase 24 scope)",
+    "No attendance state machine (by design - Phase 24 scope)",
+    "Bounded memory relies on manual clear() - no automatic eviction policy"
+  ],
+  "phase24_readiness": {
+    "raw_events_preserved_independently": true,
+    "no_state_collapsing": true,
+    "deterministic_ids": true,
+    "provenance_complete": true,
+    "ready_for_resolution_layer": true
+  },
+  "summary": {
+    "unit_tests_passed": true,
+    "integration_tests_passed": true,
+    "acceptance_checks_passed": 14,
+    "acceptance_checks_failed": 0,
+    "total_duration": 11.46407437324524
+  }
+}

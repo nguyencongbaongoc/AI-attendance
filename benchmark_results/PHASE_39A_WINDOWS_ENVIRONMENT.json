@@ -1,0 +1,27 @@
+{
+  "phase": "39A",
+  "timestamp": "2026-08-28T14:12:18.685408Z",
+  "windows_version": "10.0.26200.9168",
+  "python_version": "3.12.10",
+  "python_executable": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv\\Scripts\\python.exe",
+  "pip_version": "26.2.1",
+  "ffmpeg_version": "9.0-full_build-www.gyan.dev",
+  "mediamtx_path": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\mediamtx\\mediamtx.exe",
+  "mediamtx_config": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\mediamtx\\mediamtx.yml",
+  "cuda_version": "13.3",
+  "nvidia_driver": "610.47",
+  "gpu": "NVIDIA GeForce GTX 1660 Ti",
+  "onnxruntime_version": "1.28.0",
+  "onnxruntime_providers": [
+    "TensorrtExecutionProvider",
+    "CUDAExecutionProvider",
+    "CPUExecutionProvider"
+  ],
+  "virtual_env": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\.venv",
+  "project_root": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance",
+  "working_directory": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance",
+  "frontend_dependencies": true,
+  "node_npm_available": true,
+  "path_dependencies": "CUDA, FFmpeg, Git, Node.js, Python in PATH",
+  "status": "PASS"
+}

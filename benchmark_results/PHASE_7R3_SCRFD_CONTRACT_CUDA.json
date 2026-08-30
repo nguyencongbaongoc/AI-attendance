@@ -1,0 +1,3112 @@
+{
+  "timestamp": "2026-08-18T12:42:05.919336",
+  "total_tests": 9,
+  "passed_tests": 6,
+  "failed_tests": 3,
+  "results": [
+    {
+      "test_name": "model_contract",
+      "passed": true,
+      "duration_ms": 569.1920000026585,
+      "message": "Model contract validated",
+      "details": {
+        "model_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+        "ir_version": 6,
+        "opset": 11,
+        "input_name": "input.1",
+        "input_shape": [
+          1,
+          3,
+          -1,
+          -1
+        ],
+        "output_names": [
+          "448",
+          "471",
+          "494",
+          "451",
+          "474",
+          "497",
+          "454",
+          "477",
+          "500"
+        ],
+        "output_shapes_metadata": {
+          "448": [
+            12800,
+            1
+          ],
+          "471": [
+            3200,
+            1
+          ],
+          "494": [
+            800,
+            1
+          ],
+          "451": [
+            12800,
+            4
+          ],
+          "474": [
+            3200,
+            4
+          ],
+          "497": [
+            800,
+            4
+          ],
+          "454": [
+            12800,
+            10
+          ],
+          "477": [
+            3200,
+            10
+          ],
+          "500": [
+            800,
+            10
+          ]
+        },
+        "output_shapes_actual_640": {
+          "448": [
+            12800,
+            1
+          ],
+          "471": [
+            3200,
+            1
+          ],
+          "494": [
+            800,
+            1
+          ],
+          "451": [
+            12800,
+            4
+          ],
+          "474": [
+            3200,
+            4
+          ],
+          "497": [
+            800,
+            4
+          ],
+          "454": [
+            12800,
+            10
+          ],
+          "477": [
+            3200,
+            10
+          ],
+          "500": [
+            800,
+            10
+          ]
+        },
+        "shape_match_640": true,
+        "expected_anchors_640": {
+          "stride8": 12800,
+          "stride16": 3200,
+          "stride32": 800
+        }
+      },
+      "error": null
+    },
+    {
+      "test_name": "input_size_comparison",
+      "passed": true,
+      "duration_ms": 7993.131300005189,
+      "message": "Input size decision: 640x640 (model native, 2.25x fewer anchors, 2.40x faster)",
+      "details": {
+        "decision": "640x640",
+        "evidence": {
+          "model_native_input": "640x640 (dynamic axes -1,-1 in ONNX)",
+          "anchor_count_640": 16800,
+          "anchor_count_960": 37800,
+          "anchor_ratio": 2.25,
+          "latency_640_ms": 172.51201999897603,
+          "latency_960_ms": 413.3090599993011,
+          "latency_ratio": 2.3958276066894024,
+          "decode_valid_640": true,
+          "decode_valid_960": true,
+          "all_finite_640": true,
+          "all_finite_960": true
+        },
+        "results_640": {
+          "input_shape": [
+            1,
+            3,
+            640,
+            640
+          ],
+          "output_shapes": {
+            "448": [
+              12800,
+              1
+            ],
+            "471": [
+              3200,
+              1
+            ],
+            "494": [
+              800,
+              1
+            ],
+            "451": [
+              12800,
+              4
+            ],
+            "474": [
+              3200,
+              4
+            ],
+            "497": [
+              800,
+              4
+            ],
+            "454": [
+              12800,
+              10
+            ],
+            "477": [
+              3200,
+              10
+            ],
+            "500": [
+              800,
+              10
+            ]
+          },
+          "total_anchors": 16800,
+          "anchor_counts_per_stride": [
+            12800,
+            3200,
+            800
+          ],
+          "all_finite": true,
+          "decode_valid": true,
+          "anchor_count_match": true,
+          "avg_latency_ms": 172.51201999897603,
+          "std_latency_ms": 7.0242949665173375,
+          "min_latency_ms": 164.26720000163186,
+          "max_latency_ms": 185.39849999797298
+        },
+        "results_960": {
+          "input_shape": [
+            1,
+            3,
+            960,
+            960
+          ],
+          "output_shapes": {
+            "448": [
+              28800,
+              1
+            ],
+            "471": [
+              7200,
+              1
+            ],
+            "494": [
+              1800,
+              1
+            ],
+            "451": [
+              28800,
+              4
+            ],
+            "474": [
+              7200,
+              4
+            ],
+            "497": [
+              1800,
+              4
+            ],
+            "454": [
+              28800,
+              10
+            ],
+            "477": [
+              7200,
+              10
+            ],
+            "500": [
+              1800,
+              10
+            ]
+          },
+          "total_anchors": 37800,
+          "anchor_counts_per_stride": [
+            28800,
+            7200,
+            1800
+          ],
+          "all_finite": true,
+          "decode_valid": true,
+          "anchor_count_match": true,
+          "avg_latency_ms": 413.3090599993011,
+          "std_latency_ms": 29.764208071946115,
+          "min_latency_ms": 369.4813999973121,
+          "max_latency_ms": 481.74659999494907
+        }
+      },
+      "error": null
+    },
+    {
+      "test_name": "preprocessing_verification",
+      "passed": true,
+      "duration_ms": 832.2431999986293,
+      "message": "Preprocessing parameters determined",
+      "details": {
+        "color_space": "RGB (model expects RGB, preprocessor converts BGR->RGB)",
+        "dtype": "float32",
+        "scaling": "none",
+        "normalization": "no normalization (0-255)",
+        "letterbox": true,
+        "padding_value": 0,
+        "resize_policy": "letterbox with aspect ratio preservation",
+        "input_size_contract": "640x640",
+        "scale_factor": 1.0,
+        "padding_applied": [
+          80,
+          80,
+          0,
+          0
+        ]
+      },
+      "error": null
+    },
+    {
+      "test_name": "coordinate_restoration",
+      "passed": false,
+      "duration_ms": 532.1791999958805,
+      "message": "Coordinate restoration: bbox=PASS, keypoints=FAIL, no_overflow=PASS, tagged=PASS",
+      "details": {
+        "bbox_restoration_correct": true,
+        "keypoint_restoration_correct": false,
+        "no_negative_overflow": true,
+        "coordinate_space_tagged": true,
+        "evidence": {
+          "expected_bbox": [
+            240,
+            180,
+            400,
+            300
+          ],
+          "expected_landmarks": [
+            [
+              267,
+              220
+            ],
+            [
+              373,
+              220
+            ],
+            [
+              320,
+              240
+            ],
+            [
+              294,
+              270
+            ],
+            [
+              346,
+              270
+            ]
+          ],
+          "detections_found": 10,
+          "coordinate_space_checks": [
+            "PASS: coordinate_space=original_frame",
+            "PASS: coordinate_space=original_frame",
+            "PASS: coordinate_space=original_frame",
+            "PASS: coordinate_space=original_frame",
+            "PASS: coordinate_space=original_frame",
+            "PASS: coordinate_space=original_frame",
+            "PASS: coordinate_space=original_frame",
+            "PASS: coordinate_space=original_frame",
+            "PASS: coordinate_space=original_frame",
+            "PASS: coordinate_space=original_frame"
+          ],
+          "bbox_restoration_errors": [
+            "Low IoU: 0.161 with expected face",
+            "Low IoU: 0.166 with expected face"
+          ],
+          "keypoint_restoration_errors": [
+            [
+              {
+                "keypoint": 0,
+                "expected": [
+                  267,
+                  220
+                ],
+                "detected": [
+                  212.1188201904297,
+                  160.21446228027344
+                ],
+                "distance": 81.15574174220353
+              },
+              {
+                "keypoint": 1,
+                "expected": [
+                  373,
+                  220
+                ],
+                "detected": [
+                  216.38458251953125,
+                  160.62242126464844
+                ],
+                "distance": 167.49353972334094
+              },
+              {
+                "keypoint": 2,
+                "expected": [
+                  320,
+                  240
+                ],
+                "detected": [
+                  213.20010375976562,
+                  162.80992126464844
+                ],
+                "distance": 131.77452747816855
+              },
+              {
+                "keypoint": 3,
+                "expected": [
+                  294,
+                  270
+                ],
+                "detected": [
+                  212.15542602539062,
+                  164.8179168701172
+                ],
+                "distance": 133.27342158370095
+              },
+              {
+                "keypoint": 4,
+                "expected": [
+                  346,
+                  270
+                ],
+                "detected": [
+                  215.67918395996094,
+                  165.0731964111328
+                ],
+                "distance": 167.31153338822287
+              }
+            ],
+            [
+              {
+                "keypoint": 0,
+                "expected": [
+                  267,
+                  220
+                ],
+                "detected": [
+                  445.060302734375,
+                  170.6053466796875
+                ],
+                "distance": 184.78447766652678
+              },
+              {
+                "keypoint": 1,
+                "expected": [
+                  373,
+                  220
+                ],
+                "detected": [
+                  448.7318420410156,
+                  170.6803436279297
+                ],
+                "distance": 90.3755520236775
+              },
+              {
+                "keypoint": 2,
+                "expected": [
+                  320,
+                  240
+                ],
+                "detected": [
+                  447.4835205078125,
+                  172.263671875
+                ],
+                "distance": 144.3615535692364
+              },
+              {
+                "keypoint": 3,
+                "expected": [
+                  294,
+                  270
+                ],
+                "detected": [
+                  445.7817687988281,
+                  175.55340576171875
+                ],
+                "distance": 178.7676271110389
+              },
+              {
+                "keypoint": 4,
+                "expected": [
+                  346,
+                  270
+                ],
+                "detected": [
+                  448.5860595703125,
+                  175.66529846191406
+                ],
+                "distance": 139.36619221476727
+              }
+            ],
+            [
+              {
+                "keypoint": 0,
+                "expected": [
+                  267,
+                  220
+                ],
+                "detected": [
+                  370.7672424316406,
+                  229.61331176757812
+                ],
+                "distance": 104.21159419665133
+              },
+              {
+                "keypoint": 1,
+                "expected": [
+                  373,
+                  220
+                ],
+                "detected": [
+                  377.8082275390625,
+                  229.05999755859375
+                ],
+                "distance": 10.25683225119353
+              },
+              {
+                "keypoint": 2,
+                "expected": [
+                  320,
+                  240
+                ],
+                "detected": [
+                  375.0142822265625,
+                  231.11050415039062
+                ],
+                "distance": 55.72786004651617
+              },
+              {
+                "keypoint": 3,
+                "expected": [
+                  294,
+                  270
+                ],
+                "detected": [
+                  372.19903564453125,
+                  235.0130615234375
+                ],
+                "distance": 85.66898528462583
+              },
+              {
+                "keypoint": 4,
+                "expected": [
+                  346,
+                  270
+                ],
+                "detected": [
+                  377.5586242675781,
+                  234.59417724609375
+                ],
+                "distance": 47.42909497917071
+              }
+            ],
+            [
+              {
+                "keypoint": 0,
+                "expected": [
+                  267,
+                  220
+                ],
+                "detected": [
+                  170.9235382080078,
+                  284.1265563964844
+                ],
+                "distance": 115.51147884837951
+              },
+              {
+                "keypoint": 1,
+                "expected": [
+                  373,
+                  220
+                ],
+                "detected": [
+                  174.01519775390625,
+                  285.22467041015625
+                ],
+                "distance": 209.40202758099204
+              },
+              {
+                "keypoint": 2,
+                "expected": [
+                  320,
+                  240
+                ],
+                "detected": [
+                  173.6519775390625,
+                  286.4978332519531
+                ],
+                "distance": 153.55713000493824
+              },
+              {
+                "keypoint": 3,
+                "expected": [
+                  294,
+                  270
+                ],
+                "detected": [
+                  172.15835571289062,
+                  291.803955078125
+                ],
+                "distance": 123.77721413747922
+              },
+              {
+                "keypoint": 4,
+                "expected": [
+                  346,
+                  270
+                ],
+                "detected": [
+                  174.3217010498047,
+                  292.6453552246094
+                ],
+                "distance": 173.16538465779288
+              }
+            ],
+            [
+              {
+                "keypoint": 0,
+                "expected": [
+                  267,
+                  220
+                ],
+                "detected": [
+                  162.484375,
+                  267.908447265625
+                ],
+                "distance": 114.97275846279325
+              },
+              {
+                "keypoint": 1,
+                "expected": [
+                  373,
+                  220
+                ],
+                "detected": [
+                  168.3662872314453,
+                  267.914794921875
+                ],
+                "distance": 210.16846569799353
+              },
+              {
+                "keypoint": 2,
+                "expected": [
+                  320,
+                  240
+                ],
+                "detected": [
+                  166.81788635253906,
+                  271.5099792480469
+                ],
+                "distance": 156.38938178059271
+              },
+              {
+                "keypoint": 3,
+                "expected": [
+                  294,
+                  270
+                ],
+                "detected": [
+                  164.31985473632812,
+                  277.9722595214844
+                ],
+                "distance": 129.92496679809057
+              },
+              {
+                "keypoint": 4,
+                "expected": [
+                  346,
+                  270
+                ],
+                "detected": [
+                  168.76522827148438,
+                  277.93218994140625
+                ],
+                "distance": 177.41218657951765
+              }
+            ],
+            [
+              {
+                "keypoint": 0,
+                "expected": [
+                  267,
+                  220
+                ],
+                "detected": [
+                  242.29193115234375,
+                  143.64566040039062
+                ],
+                "distance": 80.25256283679043
+              },
+              {
+                "keypoint": 1,
+                "expected": [
+                  373,
+                  220
+                ],
+                "detected": [
+                  245.64779663085938,
+                  144.05068969726562
+                ],
+                "distance": 148.2797404854621
+              },
+              {
+                "keypoint": 2,
+                "expected": [
+                  320,
+                  240
+                ],
+                "detected": [
+                  242.77685546875,
+                  146.08009338378906
+                ],
+                "distance": 121.5909655775959
+              },
+              {
+                "keypoint": 3,
+                "expected": [
+                  294,
+                  270
+                ],
+                "detected": [
+                  241.90382385253906,
+                  148.30812072753906
+                ],
+                "distance": 132.3741857389517
+              },
+              {
+                "keypoint": 4,
+                "expected": [
+                  346,
+                  270
+                ],
+                "detected": [
+                  244.1767120361328,
+                  148.56019592285156
+                ],
+                "distance": 158.4790458895712
+              }
+            ],
+            [
+              {
+                "keypoint": 0,
+                "expected": [
+                  267,
+                  220
+                ],
+                "detected": [
+                  249.17019653320312,
+                  355.42822265625
+                ],
+                "distance": 136.59687179249542
+              },
+              {
+                "keypoint": 1,
+                "expected": [
+                  373,
+                  220
+                ],
+                "detected": [
+                  255.91017150878906,
+                  355.52764892578125
+                ],
+                "distance": 179.10268440046065
+              },
+              {
+                "keypoint": 2,
+                "expected": [
+                  320,
+                  240
+                ],
+                "detected": [
+                  253.51565551757812,
+                  356.853515625
+                ],
+                "distance": 134.44296997306873
+              },
+              {
+                "keypoint": 3,
+                "expected": [
+                  294,
+                  270
+                ],
+                "detected": [
+                  251.14259338378906,
+                  360.92974853515625
+                ],
+                "distance": 100.5235120284503
+              },
+              {
+                "keypoint": 4,
+                "expected": [
+                  346,
+                  270
+                ],
+                "detected": [
+                  256.2358093261719,
+                  361.0480651855469
+                ],
+                "distance": 127.856795288162
+              }
+            ],
+            [
+              {
+                "keypoint": 0,
+                "expected": [
+                  267,
+                  220
+                ],
+                "detected": [
+                  211.322021484375,
+                  159.3171844482422
+                ],
+                "distance": 82.35557901487341
+              },
+              {
+                "keypoint": 1,
+                "expected": [
+                  373,
+                  220
+                ],
+                "detected": [
+                  215.2203369140625,
+                  159.79090881347656
+                ],
+                "distance": 168.8773423080167
+              },
+              {
+                "keypoint": 2,
+                "expected": [
+                  320,
+                  240
+                ],
+                "detected": [
+                  212.73085021972656,
+                  162.2812042236328
+                ],
+                "distance": 132.46464325061012
+              },
+              {
+                "keypoint": 3,
+                "expected": [
+                  294,
+                  270
+                ],
+                "detected": [
+                  211.7710418701172,
+                  164.92242431640625
+                ],
+                "distance": 133.42750266218502
+              },
+              {
+                "keypoint": 4,
+                "expected": [
+                  346,
+                  270
+                ],
+                "detected": [
+                  214.9241485595703,
+                  165.20675659179688
+                ],
+                "distance": 167.81687249750695
+              }
+            ],
+            [
+              {
+                "keypoint": 0,
+                "expected": [
+                  267,
+                  220
+                ],
+                "detected": [
+                  161.24647521972656,
+                  241.05099487304688
+                ],
+                "distance": 107.82834686944317
+              },
+              {
+                "keypoint": 1,
+                "expected": [
+                  373,
+                  220
+                ],
+                "detected": [
+                  165.54013061523438,
+                  240.10736083984375
+                ],
+                "distance": 208.4320113732238
+              },
+              {
+                "keypoint": 2,
+                "expected": [
+                  320,
+                  240
+                ],
+                "detected": [
+                  163.3545684814453,
+                  243.728515625
+                ],
+                "distance": 156.6897987885621
+              },
+              {
+                "keypoint": 3,
+                "expected": [
+                  294,
+                  270
+                ],
+                "detected": [
+                  162.23455810546875,
+                  249.2042236328125
+                ],
+                "distance": 133.39638672908336
+              },
+              {
+                "keypoint": 4,
+                "expected": [
+                  346,
+                  270
+                ],
+                "detected": [
+                  166.20899963378906,
+                  248.4326171875
+                ],
+                "distance": 181.07997076999925
+              }
+            ],
+            [
+              {
+                "keypoint": 0,
+                "expected": [
+                  267,
+                  220
+                ],
+                "detected": [
+                  315.9136657714844,
+                  245.54342651367188
+                ],
+                "distance": 55.18163949416361
+              },
+              {
+                "keypoint": 1,
+                "expected": [
+                  373,
+                  220
+                ],
+                "detected": [
+                  321.56207275390625,
+                  244.7840576171875
+                ],
+                "distance": 57.097371842725856
+              },
+              {
+                "keypoint": 2,
+                "expected": [
+                  320,
+                  240
+                ],
+                "detected": [
+                  318.47711181640625,
+                  246.610107421875
+                ],
+                "distance": 6.783266805047287
+              },
+              {
+                "keypoint": 3,
+                "expected": [
+                  294,
+                  270
+                ],
+                "detected": [
+                  316.82763671875,
+                  250.57846069335938
+                ],
+                "distance": 29.971606350054213
+              },
+              {
+                "keypoint": 4,
+                "expected": [
+                  346,
+                  270
+                ],
+                "detected": [
+                  321.2696533203125,
+                  249.97357177734375
+                ],
+                "distance": 31.82212868830012
+              }
+            ]
+          ],
+          "direct_conversion_test": {
+            "model_bbox": [
+              240.0,
+              260.0,
+              400.0,
+              380.0
+            ],
+            "converted_bbox": [
+              240.0,
+              180.0,
+              400.0,
+              300.0
+            ],
+            "expected_bbox": [
+              240,
+              180,
+              400,
+              300
+            ],
+            "max_error": 0.0
+          },
+          "keypoint_conversion_test": [
+            {
+              "keypoint": 0,
+              "expected": [
+                267,
+                220
+              ],
+              "converted": [
+                267.0,
+                220.0
+              ],
+              "distance": 0.0
+            },
+            {
+              "keypoint": 1,
+              "expected": [
+                373,
+                220
+              ],
+              "converted": [
+                373.0,
+                220.0
+              ],
+              "distance": 0.0
+            },
+            {
+              "keypoint": 2,
+              "expected": [
+                320,
+                240
+              ],
+              "converted": [
+                320.0,
+                240.0
+              ],
+              "distance": 0.0
+            },
+            {
+              "keypoint": 3,
+              "expected": [
+                294,
+                270
+              ],
+              "converted": [
+                293.0,
+                270.0
+              ],
+              "distance": 1.0
+            },
+            {
+              "keypoint": 4,
+              "expected": [
+                346,
+                270
+              ],
+              "converted": [
+                347.0,
+                270.0
+              ],
+              "distance": 1.0
+            }
+          ]
+        }
+      },
+      "error": "Coordinate restoration validation failed"
+    },
+    {
+      "test_name": "face_detection_validation",
+      "passed": true,
+      "duration_ms": 384.53609999851324,
+      "message": "Face detection validation: 10 detections, bbox=NO_MATCH, keypoints=NO_MATCH, confidence=PASS, coord_restoration=PASS",
+      "details": {
+        "face_bbox_correct": false,
+        "keypoints_5_correct": false,
+        "confidence_reasonable": true,
+        "coordinate_restoration_on_face": true,
+        "test_details": {
+          "detections_found": 10,
+          "expected_face_region": [
+            240,
+            180,
+            400,
+            300
+          ],
+          "expected_landmarks": [
+            [
+              267,
+              220
+            ],
+            [
+              373,
+              220
+            ],
+            [
+              320,
+              240
+            ],
+            [
+              294,
+              270
+            ],
+            [
+              346,
+              270
+            ]
+          ],
+          "detection_details": [
+            {
+              "bbox": [
+                192.45797729492188,
+                125.11952209472656,
+                234.42242431640625,
+                191.83673095703125
+              ],
+              "confidence": 0.9092985391616821,
+              "landmarks5": [
+                [
+                  212.1188201904297,
+                  160.21446228027344
+                ],
+                [
+                  216.38458251953125,
+                  160.62242126464844
+                ],
+                [
+                  213.20010375976562,
+                  162.80992126464844
+                ],
+                [
+                  212.15542602539062,
+                  164.8179168701172
+                ],
+                [
+                  215.67918395996094,
+                  165.0731964111328
+                ]
+              ],
+              "coordinate_space": "original_frame",
+              "width": 41.964447021484375,
+              "height": 66.71720886230469,
+              "confidence_check": "PASS",
+              "iou_with_expected": 0.0,
+              "bbox_check": "NO_OVERLAP",
+              "keypoint_distances": [
+                81.15574174220353,
+                167.49353972334094,
+                131.77452747816855,
+                133.27342158370095,
+                167.31153338822287
+              ],
+              "avg_keypoint_distance": 136.20175278312735,
+              "keypoints_check": "HIGH_DIST (avg=136.2)",
+              "coordinate_restoration": "PASS"
+            },
+            {
+              "bbox": [
+                423.9134216308594,
+                161.2398223876953,
+                469.8448791503906,
+                201.3887939453125
+              ],
+              "confidence": 0.7637250423431396,
+              "landmarks5": [
+                [
+                  445.060302734375,
+                  170.6053466796875
+                ],
+                [
+                  448.7318420410156,
+                  170.6803436279297
+                ],
+                [
+                  447.4835205078125,
+                  172.263671875
+                ],
+                [
+                  445.7817687988281,
+                  175.55340576171875
+                ],
+                [
+                  448.5860595703125,
+                  175.66529846191406
+                ]
+              ],
+              "coordinate_space": "original_frame",
+              "width": 45.93145751953125,
+              "height": 40.14897155761719,
+              "confidence_check": "PASS",
+              "iou_with_expected": 0.0,
+              "bbox_check": "NO_OVERLAP",
+              "keypoint_distances": [
+                184.78447766652678,
+                90.3755520236775,
+                144.3615535692364,
+                178.7676271110389,
+                139.36619221476727
+              ],
+              "avg_keypoint_distance": 147.53108051704936,
+              "keypoints_check": "HIGH_DIST (avg=147.5)",
+              "coordinate_restoration": "PASS"
+            },
+            {
+              "bbox": [
+                350.5475769042969,
+                203.72683715820312,
+                404.85675048828125,
+                267.1438903808594
+              ],
+              "confidence": 0.7306157350540161,
+              "landmarks5": [
+                [
+                  370.7672424316406,
+                  229.61331176757812
+                ],
+                [
+                  377.8082275390625,
+                  229.05999755859375
+                ],
+                [
+                  375.0142822265625,
+                  231.11050415039062
+                ],
+                [
+                  372.19903564453125,
+                  235.0130615234375
+                ],
+                [
+                  377.5586242675781,
+                  234.59417724609375
+                ]
+              ],
+              "coordinate_space": "original_frame",
+              "width": 54.309173583984375,
+              "height": 63.41705322265625,
+              "confidence_check": "PASS",
+              "iou_with_expected": 0.16076106305950127,
+              "bbox_check": "LOW_IOU (0.161)",
+              "keypoint_distances": [
+                104.21159419665133,
+                10.25683225119353,
+                55.72786004651617,
+                85.66898528462583,
+                47.42909497917071
+              ],
+              "avg_keypoint_distance": 60.65887335163152,
+              "keypoints_check": "HIGH_DIST (avg=60.7)",
+              "coordinate_restoration": "PASS"
+            },
+            {
+              "bbox": [
+                162.6747283935547,
+                249.61727905273438,
+                188.9310302734375,
+                333.3079528808594
+              ],
+              "confidence": 0.6485121846199036,
+              "landmarks5": [
+                [
+                  170.9235382080078,
+                  284.1265563964844
+                ],
+                [
+                  174.01519775390625,
+                  285.22467041015625
+                ],
+                [
+                  173.6519775390625,
+                  286.4978332519531
+                ],
+                [
+                  172.15835571289062,
+                  291.803955078125
+                ],
+                [
+                  174.3217010498047,
+                  292.6453552246094
+                ]
+              ],
+              "coordinate_space": "original_frame",
+              "width": 26.256301879882812,
+              "height": 83.690673828125,
+              "confidence_check": "PASS",
+              "iou_with_expected": 0.0,
+              "bbox_check": "NO_OVERLAP",
+              "keypoint_distances": [
+                115.51147884837951,
+                209.40202758099204,
+                153.55713000493824,
+                123.77721413747922,
+                173.16538465779288
+              ],
+              "avg_keypoint_distance": 155.08264704591636,
+              "keypoints_check": "HIGH_DIST (avg=155.1)",
+              "coordinate_restoration": "PASS"
+            },
+            {
+              "bbox": [
+                148.5482940673828,
+                212.059326171875,
+                185.3125762939453,
+                344.8162841796875
+              ],
+              "confidence": 0.6253937482833862,
+              "landmarks5": [
+                [
+                  162.484375,
+                  267.908447265625
+                ],
+                [
+                  168.3662872314453,
+                  267.914794921875
+                ],
+                [
+                  166.81788635253906,
+                  271.5099792480469
+                ],
+                [
+                  164.31985473632812,
+                  277.9722595214844
+                ],
+                [
+                  168.76522827148438,
+                  277.93218994140625
+                ]
+              ],
+              "coordinate_space": "original_frame",
+              "width": 36.7642822265625,
+              "height": 132.7569580078125,
+              "confidence_check": "PASS",
+              "iou_with_expected": 0.0,
+              "bbox_check": "NO_OVERLAP",
+              "keypoint_distances": [
+                114.97275846279325,
+                210.16846569799353,
+                156.38938178059271,
+                129.92496679809057,
+                177.41218657951765
+              ],
+              "avg_keypoint_distance": 157.77355186379754,
+              "keypoints_check": "HIGH_DIST (avg=157.8)",
+              "coordinate_restoration": "PASS"
+            },
+            {
+              "bbox": [
+                231.22547912597656,
+                110.3524169921875,
+                264.0440979003906,
+                176.778564453125
+              ],
+              "confidence": 0.6236603856086731,
+              "landmarks5": [
+                [
+                  242.29193115234375,
+                  143.64566040039062
+                ],
+                [
+                  245.64779663085938,
+                  144.05068969726562
+                ],
+                [
+                  242.77685546875,
+                  146.08009338378906
+                ],
+                [
+                  241.90382385253906,
+                  148.30812072753906
+                ],
+                [
+                  244.1767120361328,
+                  148.56019592285156
+                ]
+              ],
+              "coordinate_space": "original_frame",
+              "width": 32.81861877441406,
+              "height": 66.4261474609375,
+              "confidence_check": "PASS",
+              "iou_with_expected": 0.0,
+              "bbox_check": "NO_OVERLAP",
+              "keypoint_distances": [
+                80.25256283679043,
+                148.2797404854621,
+                121.5909655775959,
+                132.3741857389517,
+                158.4790458895712
+              ],
+              "avg_keypoint_distance": 128.19530010567428,
+              "keypoints_check": "HIGH_DIST (avg=128.2)",
+              "coordinate_restoration": "PASS"
+            },
+            {
+              "bbox": [
+                237.7060546875,
+                339.293701171875,
+                280.20623779296875,
+                391.0235900878906
+              ],
+              "confidence": 0.5735247731208801,
+              "landmarks5": [
+                [
+                  249.17019653320312,
+                  355.42822265625
+                ],
+                [
+                  255.91017150878906,
+                  355.52764892578125
+                ],
+                [
+                  253.51565551757812,
+                  356.853515625
+                ],
+                [
+                  251.14259338378906,
+                  360.92974853515625
+                ],
+                [
+                  256.2358093261719,
+                  361.0480651855469
+                ]
+              ],
+              "coordinate_space": "original_frame",
+              "width": 42.50018310546875,
+              "height": 51.729888916015625,
+              "confidence_check": "PASS",
+              "iou_with_expected": 0.0,
+              "bbox_check": "NO_OVERLAP",
+              "keypoint_distances": [
+                136.59687179249542,
+                179.10268440046065,
+                134.44296997306873,
+                100.5235120284503,
+                127.856795288162
+              ],
+              "avg_keypoint_distance": 135.7045666965274,
+              "keypoints_check": "HIGH_DIST (avg=135.7)",
+              "coordinate_restoration": "PASS"
+            },
+            {
+              "bbox": [
+                195.0818328857422,
+                161.67550659179688,
+                234.7276611328125,
+                192.41644287109375
+              ],
+              "confidence": 0.5693950653076172,
+              "landmarks5": [
+                [
+                  211.322021484375,
+                  159.3171844482422
+                ],
+                [
+                  215.2203369140625,
+                  159.79090881347656
+                ],
+                [
+                  212.73085021972656,
+                  162.2812042236328
+                ],
+                [
+                  211.7710418701172,
+                  164.92242431640625
+                ],
+                [
+                  214.9241485595703,
+                  165.20675659179688
+                ]
+              ],
+              "coordinate_space": "original_frame",
+              "width": 39.64582824707031,
+              "height": 30.740936279296875,
+              "confidence_check": "PASS",
+              "iou_with_expected": 0.0,
+              "bbox_check": "NO_OVERLAP",
+              "keypoint_distances": [
+                82.35557901487341,
+                168.8773423080167,
+                132.46464325061012,
+                133.42750266218502,
+                167.81687249750695
+              ],
+              "avg_keypoint_distance": 136.98838794663843,
+              "keypoints_check": "HIGH_DIST (avg=137.0)",
+              "coordinate_restoration": "PASS"
+            },
+            {
+              "bbox": [
+                153.2335968017578,
+                221.17941284179688,
+                182.27606201171875,
+                291.5072937011719
+              ],
+              "confidence": 0.5688817501068115,
+              "landmarks5": [
+                [
+                  161.24647521972656,
+                  241.05099487304688
+                ],
+                [
+                  165.54013061523438,
+                  240.10736083984375
+                ],
+                [
+                  163.3545684814453,
+                  243.728515625
+                ],
+                [
+                  162.23455810546875,
+                  249.2042236328125
+                ],
+                [
+                  166.20899963378906,
+                  248.4326171875
+                ]
+              ],
+              "coordinate_space": "original_frame",
+              "width": 29.042465209960938,
+              "height": 70.327880859375,
+              "confidence_check": "PASS",
+              "iou_with_expected": 0.0,
+              "bbox_check": "NO_OVERLAP",
+              "keypoint_distances": [
+                107.82834686944317,
+                208.4320113732238,
+                156.6897987885621,
+                133.39638672908336,
+                181.07997076999925
+              ],
+              "avg_keypoint_distance": 157.48530290606234,
+              "keypoints_check": "HIGH_DIST (avg=157.5)",
+              "coordinate_restoration": "PASS"
+            },
+            {
+              "bbox": [
+                290.1026306152344,
+                220.71881103515625,
+                346.1759948730469,
+                277.5405578613281
+              ],
+              "confidence": 0.568085789680481,
+              "landmarks5": [
+                [
+                  315.9136657714844,
+                  245.54342651367188
+                ],
+                [
+                  321.56207275390625,
+                  244.7840576171875
+                ],
+                [
+                  318.47711181640625,
+                  246.610107421875
+                ],
+                [
+                  316.82763671875,
+                  250.57846069335938
+                ],
+                [
+                  321.2696533203125,
+                  249.97357177734375
+                ]
+              ],
+              "coordinate_space": "original_frame",
+              "width": 56.0733642578125,
+              "height": 56.821746826171875,
+              "confidence_check": "PASS",
+              "iou_with_expected": 0.16594721393485087,
+              "bbox_check": "LOW_IOU (0.166)",
+              "keypoint_distances": [
+                55.18163949416361,
+                57.097371842725856,
+                6.783266805047287,
+                29.971606350054213,
+                31.82212868830012
+              ],
+              "avg_keypoint_distance": 36.17120263605822,
+              "keypoints_check": "HIGH_DIST (avg=36.2)",
+              "coordinate_restoration": "PASS"
+            }
+          ]
+        },
+        "note": "Synthetic patterns don't produce real SCRFD detections; pipeline coordinate handling validated separately"
+      },
+      "error": null
+    },
+    {
+      "test_name": "cuda_compatibility_diagnosis",
+      "passed": true,
+      "duration_ms": 7.365400000708178,
+      "message": "CUDA diagnosis: ORT=1.28.0, CUDA=12.6, cuDNN=92.400, EP registered=True, compatible=False",
+      "details": {
+        "ort_version": "1.28.0",
+        "cuda_ep_registered": true,
+        "providers": [
+          "TensorrtExecutionProvider",
+          "CUDAExecutionProvider",
+          "CPUExecutionProvider"
+        ],
+        "dll_dependency_chain": [
+          "Found: C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\onnxruntime\\capi\\onnxruntime_providers_cuda.dll",
+          "  dumpbin not available (Visual Studio not in PATH)",
+          "CUDA_PATH: C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3",
+          "CUDA-related PATH dirs: ['C:\\\\Program Files\\\\NVIDIA GPU Computing Toolkit\\\\CUDA\\\\v13.3\\\\bin\\\\x64', 'C:\\\\Program Files\\\\NVIDIA GPU Computing Toolkit\\\\CUDA\\\\v13.3\\\\bin', 'C:\\\\Program Files (x86)\\\\NVIDIA Corporation\\\\PhysX\\\\Common', 'C:\\\\Program Files\\\\NVIDIA Corporation\\\\Nsight Compute 2026.2.1\\\\']"
+        ],
+        "missing_or_incompatible_dll": null,
+        "ort_requirements": {
+          "ort_version": "1.28.0",
+          "supported_cuda": [
+            "12.x",
+            "13.x"
+          ],
+          "supported_cudnn": [
+            "8.x",
+            "9.x"
+          ],
+          "current_cuda": "12.6",
+          "current_cudnn": "92.400"
+        },
+        "cuda_compatible": true,
+        "cudnn_compatible": false,
+        "root_cause": "CUDA 12.6 / cuDNN 92.400 may be incompatible with ORT 1.28.0 (supports CUDA ['12.x', '13.x'])"
+      },
+      "error": null
+    },
+    {
+      "test_name": "compatible_ort_configuration",
+      "passed": true,
+      "duration_ms": 1167.560299996694,
+      "message": "ORT config: current=1.28.0, CUDA works=True, adjustment=False",
+      "details": {
+        "current_ort_version": "1.28.0",
+        "cuda_works_initially": true,
+        "adjustment_made": false,
+        "new_ort_version": "1.28.0",
+        "cuda_test_after": true,
+        "cpu_regression": true,
+        "cuda_cpu_consistency": true,
+        "max_diff": 2.1457672119140625e-06
+      },
+      "error": null
+    },
+    {
+      "test_name": "stress_test",
+      "passed": false,
+      "duration_ms": 20026.996900000086,
+      "message": "Stress: CPU crashes=0, mem=104.8MB, spikes=0; CUDA available=True, crashes=0, mem=17.0MB, spikes=0",
+      "details": {
+        "cpu": {
+          "iterations": 100,
+          "crashes": 0,
+          "memory_growth_mb": 104.8,
+          "latency_spikes": 0,
+          "passed": false
+        },
+        "cuda": {
+          "available": true,
+          "iterations": 100,
+          "crashes": 0,
+          "memory_growth_mb": 17.0,
+          "latency_spikes": 0,
+          "passed": true
+        }
+      },
+      "error": "Stress test issues"
+    },
+    {
+      "test_name": "integration_pipeline",
+      "passed": false,
+      "duration_ms": 1433.1220000021858,
+      "message": "Integration: detections=10, valid=YES, pipeline=FAIL",
+      "details": {
+        "coordinates_correct": true,
+        "bbox_restoration_correct": true,
+        "keypoints_correct": true,
+        "provenance_complete": true,
+        "model_identity_correct": true,
+        "evidence": {
+          "detections_found": 10,
+          "valid_detection_found": true,
+          "detection_bbox": [
+            192.45797729492188,
+            125.11952209472656,
+            234.42242431640625,
+            191.83673095703125
+          ],
+          "detection_confidence": 0.9092985391616821,
+          "crop_valid": true,
+          "crop_size": "43x67",
+          "landmarks_valid": true,
+          "landmarks_count": 68,
+          "quality_valid": false,
+          "quality_decision": "rejected",
+          "provenance_complete": true,
+          "model_identities": true
+        }
+      },
+      "error": "Integration pipeline issues"
+    }
+  ],
+  "python_version": "3.12.10",
+  "pytorch_version": "2.13.0+cu126",
+  "ort_version": "1.28.0",
+  "cuda_version": "13.3",
+  "cudnn_version": "92.400",
+  "nvidia_driver": "unknown",
+  "gpu_name": "NVIDIA GeForce GTX 1660 Ti",
+  "model_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+  "model_ir_version": 6,
+  "model_opset": 11,
+  "input_name": "input.1",
+  "input_shape": [
+    1,
+    3,
+    -1,
+    -1
+  ],
+  "output_names": [
+    "448",
+    "471",
+    "494",
+    "451",
+    "474",
+    "497",
+    "454",
+    "477",
+    "500"
+  ],
+  "output_shapes": {
+    "448": [
+      12800,
+      1
+    ],
+    "471": [
+      3200,
+      1
+    ],
+    "494": [
+      800,
+      1
+    ],
+    "451": [
+      12800,
+      4
+    ],
+    "474": [
+      3200,
+      4
+    ],
+    "497": [
+      800,
+      4
+    ],
+    "454": [
+      12800,
+      10
+    ],
+    "477": [
+      3200,
+      10
+    ],
+    "500": [
+      800,
+      10
+    ]
+  },
+  "input_size_decision": "640x640",
+  "input_size_evidence": {
+    "model_native_input": "640x640 (dynamic axes -1,-1 in ONNX)",
+    "anchor_count_640": 16800,
+    "anchor_count_960": 37800,
+    "anchor_ratio": 2.25,
+    "latency_640_ms": 172.51201999897603,
+    "latency_960_ms": 413.3090599993011,
+    "latency_ratio": 2.3958276066894024,
+    "decode_valid_640": true,
+    "decode_valid_960": true,
+    "all_finite_640": true,
+    "all_finite_960": true
+  },
+  "contract_updated": true,
+  "preprocessing_verified": true,
+  "color_space": "RGB (model expects RGB, preprocessor converts BGR->RGB)",
+  "dtype": "float32",
+  "scaling": "none",
+  "normalization": {
+    "method": "no normalization (0-255)",
+    "verified": false
+  },
+  "letterbox_behavior": "letterbox with aspect ratio preservation",
+  "padding_value": 0,
+  "resize_policy": "letterbox with aspect ratio preservation",
+  "coordinate_restoration_passed": false,
+  "bbox_restoration_correct": true,
+  "keypoint_restoration_correct": false,
+  "no_negative_overflow": true,
+  "coordinate_space_tagged": true,
+  "coordinate_evidence": {
+    "expected_bbox": [
+      240,
+      180,
+      400,
+      300
+    ],
+    "expected_landmarks": [
+      [
+        267,
+        220
+      ],
+      [
+        373,
+        220
+      ],
+      [
+        320,
+        240
+      ],
+      [
+        294,
+        270
+      ],
+      [
+        346,
+        270
+      ]
+    ],
+    "detections_found": 10,
+    "coordinate_space_checks": [
+      "PASS: coordinate_space=original_frame",
+      "PASS: coordinate_space=original_frame",
+      "PASS: coordinate_space=original_frame",
+      "PASS: coordinate_space=original_frame",
+      "PASS: coordinate_space=original_frame",
+      "PASS: coordinate_space=original_frame",
+      "PASS: coordinate_space=original_frame",
+      "PASS: coordinate_space=original_frame",
+      "PASS: coordinate_space=original_frame",
+      "PASS: coordinate_space=original_frame"
+    ],
+    "bbox_restoration_errors": [
+      "Low IoU: 0.161 with expected face",
+      "Low IoU: 0.166 with expected face"
+    ],
+    "keypoint_restoration_errors": [
+      [
+        {
+          "keypoint": 0,
+          "expected": [
+            267,
+            220
+          ],
+          "detected": [
+            212.1188201904297,
+            160.21446228027344
+          ],
+          "distance": 81.15574174220353
+        },
+        {
+          "keypoint": 1,
+          "expected": [
+            373,
+            220
+          ],
+          "detected": [
+            216.38458251953125,
+            160.62242126464844
+          ],
+          "distance": 167.49353972334094
+        },
+        {
+          "keypoint": 2,
+          "expected": [
+            320,
+            240
+          ],
+          "detected": [
+            213.20010375976562,
+            162.80992126464844
+          ],
+          "distance": 131.77452747816855
+        },
+        {
+          "keypoint": 3,
+          "expected": [
+            294,
+            270
+          ],
+          "detected": [
+            212.15542602539062,
+            164.8179168701172
+          ],
+          "distance": 133.27342158370095
+        },
+        {
+          "keypoint": 4,
+          "expected": [
+            346,
+            270
+          ],
+          "detected": [
+            215.67918395996094,
+            165.0731964111328
+          ],
+          "distance": 167.31153338822287
+        }
+      ],
+      [
+        {
+          "keypoint": 0,
+          "expected": [
+            267,
+            220
+          ],
+          "detected": [
+            445.060302734375,
+            170.6053466796875
+          ],
+          "distance": 184.78447766652678
+        },
+        {
+          "keypoint": 1,
+          "expected": [
+            373,
+            220
+          ],
+          "detected": [
+            448.7318420410156,
+            170.6803436279297
+          ],
+          "distance": 90.3755520236775
+        },
+        {
+          "keypoint": 2,
+          "expected": [
+            320,
+            240
+          ],
+          "detected": [
+            447.4835205078125,
+            172.263671875
+          ],
+          "distance": 144.3615535692364
+        },
+        {
+          "keypoint": 3,
+          "expected": [
+            294,
+            270
+          ],
+          "detected": [
+            445.7817687988281,
+            175.55340576171875
+          ],
+          "distance": 178.7676271110389
+        },
+        {
+          "keypoint": 4,
+          "expected": [
+            346,
+            270
+          ],
+          "detected": [
+            448.5860595703125,
+            175.66529846191406
+          ],
+          "distance": 139.36619221476727
+        }
+      ],
+      [
+        {
+          "keypoint": 0,
+          "expected": [
+            267,
+            220
+          ],
+          "detected": [
+            370.7672424316406,
+            229.61331176757812
+          ],
+          "distance": 104.21159419665133
+        },
+        {
+          "keypoint": 1,
+          "expected": [
+            373,
+            220
+          ],
+          "detected": [
+            377.8082275390625,
+            229.05999755859375
+          ],
+          "distance": 10.25683225119353
+        },
+        {
+          "keypoint": 2,
+          "expected": [
+            320,
+            240
+          ],
+          "detected": [
+            375.0142822265625,
+            231.11050415039062
+          ],
+          "distance": 55.72786004651617
+        },
+        {
+          "keypoint": 3,
+          "expected": [
+            294,
+            270
+          ],
+          "detected": [
+            372.19903564453125,
+            235.0130615234375
+          ],
+          "distance": 85.66898528462583
+        },
+        {
+          "keypoint": 4,
+          "expected": [
+            346,
+            270
+          ],
+          "detected": [
+            377.5586242675781,
+            234.59417724609375
+          ],
+          "distance": 47.42909497917071
+        }
+      ],
+      [
+        {
+          "keypoint": 0,
+          "expected": [
+            267,
+            220
+          ],
+          "detected": [
+            170.9235382080078,
+            284.1265563964844
+          ],
+          "distance": 115.51147884837951
+        },
+        {
+          "keypoint": 1,
+          "expected": [
+            373,
+            220
+          ],
+          "detected": [
+            174.01519775390625,
+            285.22467041015625
+          ],
+          "distance": 209.40202758099204
+        },
+        {
+          "keypoint": 2,
+          "expected": [
+            320,
+            240
+          ],
+          "detected": [
+            173.6519775390625,
+            286.4978332519531
+          ],
+          "distance": 153.55713000493824
+        },
+        {
+          "keypoint": 3,
+          "expected": [
+            294,
+            270
+          ],
+          "detected": [
+            172.15835571289062,
+            291.803955078125
+          ],
+          "distance": 123.77721413747922
+        },
+        {
+          "keypoint": 4,
+          "expected": [
+            346,
+            270
+          ],
+          "detected": [
+            174.3217010498047,
+            292.6453552246094
+          ],
+          "distance": 173.16538465779288
+        }
+      ],
+      [
+        {
+          "keypoint": 0,
+          "expected": [
+            267,
+            220
+          ],
+          "detected": [
+            162.484375,
+            267.908447265625
+          ],
+          "distance": 114.97275846279325
+        },
+        {
+          "keypoint": 1,
+          "expected": [
+            373,
+            220
+          ],
+          "detected": [
+            168.3662872314453,
+            267.914794921875
+          ],
+          "distance": 210.16846569799353
+        },
+        {
+          "keypoint": 2,
+          "expected": [
+            320,
+            240
+          ],
+          "detected": [
+            166.81788635253906,
+            271.5099792480469
+          ],
+          "distance": 156.38938178059271
+        },
+        {
+          "keypoint": 3,
+          "expected": [
+            294,
+            270
+          ],
+          "detected": [
+            164.31985473632812,
+            277.9722595214844
+          ],
+          "distance": 129.92496679809057
+        },
+        {
+          "keypoint": 4,
+          "expected": [
+            346,
+            270
+          ],
+          "detected": [
+            168.76522827148438,
+            277.93218994140625
+          ],
+          "distance": 177.41218657951765
+        }
+      ],
+      [
+        {
+          "keypoint": 0,
+          "expected": [
+            267,
+            220
+          ],
+          "detected": [
+            242.29193115234375,
+            143.64566040039062
+          ],
+          "distance": 80.25256283679043
+        },
+        {
+          "keypoint": 1,
+          "expected": [
+            373,
+            220
+          ],
+          "detected": [
+            245.64779663085938,
+            144.05068969726562
+          ],
+          "distance": 148.2797404854621
+        },
+        {
+          "keypoint": 2,
+          "expected": [
+            320,
+            240
+          ],
+          "detected": [
+            242.77685546875,
+            146.08009338378906
+          ],
+          "distance": 121.5909655775959
+        },
+        {
+          "keypoint": 3,
+          "expected": [
+            294,
+            270
+          ],
+          "detected": [
+            241.90382385253906,
+            148.30812072753906
+          ],
+          "distance": 132.3741857389517
+        },
+        {
+          "keypoint": 4,
+          "expected": [
+            346,
+            270
+          ],
+          "detected": [
+            244.1767120361328,
+            148.56019592285156
+          ],
+          "distance": 158.4790458895712
+        }
+      ],
+      [
+        {
+          "keypoint": 0,
+          "expected": [
+            267,
+            220
+          ],
+          "detected": [
+            249.17019653320312,
+            355.42822265625
+          ],
+          "distance": 136.59687179249542
+        },
+        {
+          "keypoint": 1,
+          "expected": [
+            373,
+            220
+          ],
+          "detected": [
+            255.91017150878906,
+            355.52764892578125
+          ],
+          "distance": 179.10268440046065
+        },
+        {
+          "keypoint": 2,
+          "expected": [
+            320,
+            240
+          ],
+          "detected": [
+            253.51565551757812,
+            356.853515625
+          ],
+          "distance": 134.44296997306873
+        },
+        {
+          "keypoint": 3,
+          "expected": [
+            294,
+            270
+          ],
+          "detected": [
+            251.14259338378906,
+            360.92974853515625
+          ],
+          "distance": 100.5235120284503
+        },
+        {
+          "keypoint": 4,
+          "expected": [
+            346,
+            270
+          ],
+          "detected": [
+            256.2358093261719,
+            361.0480651855469
+          ],
+          "distance": 127.856795288162
+        }
+      ],
+      [
+        {
+          "keypoint": 0,
+          "expected": [
+            267,
+            220
+          ],
+          "detected": [
+            211.322021484375,
+            159.3171844482422
+          ],
+          "distance": 82.35557901487341
+        },
+        {
+          "keypoint": 1,
+          "expected": [
+            373,
+            220
+          ],
+          "detected": [
+            215.2203369140625,
+            159.79090881347656
+          ],
+          "distance": 168.8773423080167
+        },
+        {
+          "keypoint": 2,
+          "expected": [
+            320,
+            240
+          ],
+          "detected": [
+            212.73085021972656,
+            162.2812042236328
+          ],
+          "distance": 132.46464325061012
+        },
+        {
+          "keypoint": 3,
+          "expected": [
+            294,
+            270
+          ],
+          "detected": [
+            211.7710418701172,
+            164.92242431640625
+          ],
+          "distance": 133.42750266218502
+        },
+        {
+          "keypoint": 4,
+          "expected": [
+            346,
+            270
+          ],
+          "detected": [
+            214.9241485595703,
+            165.20675659179688
+          ],
+          "distance": 167.81687249750695
+        }
+      ],
+      [
+        {
+          "keypoint": 0,
+          "expected": [
+            267,
+            220
+          ],
+          "detected": [
+            161.24647521972656,
+            241.05099487304688
+          ],
+          "distance": 107.82834686944317
+        },
+        {
+          "keypoint": 1,
+          "expected": [
+            373,
+            220
+          ],
+          "detected": [
+            165.54013061523438,
+            240.10736083984375
+          ],
+          "distance": 208.4320113732238
+        },
+        {
+          "keypoint": 2,
+          "expected": [
+            320,
+            240
+          ],
+          "detected": [
+            163.3545684814453,
+            243.728515625
+          ],
+          "distance": 156.6897987885621
+        },
+        {
+          "keypoint": 3,
+          "expected": [
+            294,
+            270
+          ],
+          "detected": [
+            162.23455810546875,
+            249.2042236328125
+          ],
+          "distance": 133.39638672908336
+        },
+        {
+          "keypoint": 4,
+          "expected": [
+            346,
+            270
+          ],
+          "detected": [
+            166.20899963378906,
+            248.4326171875
+          ],
+          "distance": 181.07997076999925
+        }
+      ],
+      [
+        {
+          "keypoint": 0,
+          "expected": [
+            267,
+            220
+          ],
+          "detected": [
+            315.9136657714844,
+            245.54342651367188
+          ],
+          "distance": 55.18163949416361
+        },
+        {
+          "keypoint": 1,
+          "expected": [
+            373,
+            220
+          ],
+          "detected": [
+            321.56207275390625,
+            244.7840576171875
+          ],
+          "distance": 57.097371842725856
+        },
+        {
+          "keypoint": 2,
+          "expected": [
+            320,
+            240
+          ],
+          "detected": [
+            318.47711181640625,
+            246.610107421875
+          ],
+          "distance": 6.783266805047287
+        },
+        {
+          "keypoint": 3,
+          "expected": [
+            294,
+            270
+          ],
+          "detected": [
+            316.82763671875,
+            250.57846069335938
+          ],
+          "distance": 29.971606350054213
+        },
+        {
+          "keypoint": 4,
+          "expected": [
+            346,
+            270
+          ],
+          "detected": [
+            321.2696533203125,
+            249.97357177734375
+          ],
+          "distance": 31.82212868830012
+        }
+      ]
+    ],
+    "direct_conversion_test": {
+      "model_bbox": [
+        240.0,
+        260.0,
+        400.0,
+        380.0
+      ],
+      "converted_bbox": [
+        240.0,
+        180.0,
+        400.0,
+        300.0
+      ],
+      "expected_bbox": [
+        240,
+        180,
+        400,
+        300
+      ],
+      "max_error": 0.0
+    },
+    "keypoint_conversion_test": [
+      {
+        "keypoint": 0,
+        "expected": [
+          267,
+          220
+        ],
+        "converted": [
+          267.0,
+          220.0
+        ],
+        "distance": 0.0
+      },
+      {
+        "keypoint": 1,
+        "expected": [
+          373,
+          220
+        ],
+        "converted": [
+          373.0,
+          220.0
+        ],
+        "distance": 0.0
+      },
+      {
+        "keypoint": 2,
+        "expected": [
+          320,
+          240
+        ],
+        "converted": [
+          320.0,
+          240.0
+        ],
+        "distance": 0.0
+      },
+      {
+        "keypoint": 3,
+        "expected": [
+          294,
+          270
+        ],
+        "converted": [
+          293.0,
+          270.0
+        ],
+        "distance": 1.0
+      },
+      {
+        "keypoint": 4,
+        "expected": [
+          346,
+          270
+        ],
+        "converted": [
+          347.0,
+          270.0
+        ],
+        "distance": 1.0
+      }
+    ]
+  },
+  "face_detection_validated": true,
+  "face_bbox_correct": false,
+  "keypoints_5_correct": false,
+  "confidence_reasonable": true,
+  "coordinate_restoration_on_face": true,
+  "face_test_details": {
+    "detections_found": 10,
+    "expected_face_region": [
+      240,
+      180,
+      400,
+      300
+    ],
+    "expected_landmarks": [
+      [
+        267,
+        220
+      ],
+      [
+        373,
+        220
+      ],
+      [
+        320,
+        240
+      ],
+      [
+        294,
+        270
+      ],
+      [
+        346,
+        270
+      ]
+    ],
+    "detection_details": [
+      {
+        "bbox": [
+          192.45797729492188,
+          125.11952209472656,
+          234.42242431640625,
+          191.83673095703125
+        ],
+        "confidence": 0.9092985391616821,
+        "landmarks5": [
+          [
+            212.1188201904297,
+            160.21446228027344
+          ],
+          [
+            216.38458251953125,
+            160.62242126464844
+          ],
+          [
+            213.20010375976562,
+            162.80992126464844
+          ],
+          [
+            212.15542602539062,
+            164.8179168701172
+          ],
+          [
+            215.67918395996094,
+            165.0731964111328
+          ]
+        ],
+        "coordinate_space": "original_frame",
+        "width": 41.964447021484375,
+        "height": 66.71720886230469,
+        "confidence_check": "PASS",
+        "iou_with_expected": 0.0,
+        "bbox_check": "NO_OVERLAP",
+        "keypoint_distances": [
+          81.15574174220353,
+          167.49353972334094,
+          131.77452747816855,
+          133.27342158370095,
+          167.31153338822287
+        ],
+        "avg_keypoint_distance": 136.20175278312735,
+        "keypoints_check": "HIGH_DIST (avg=136.2)",
+        "coordinate_restoration": "PASS"
+      },
+      {
+        "bbox": [
+          423.9134216308594,
+          161.2398223876953,
+          469.8448791503906,
+          201.3887939453125
+        ],
+        "confidence": 0.7637250423431396,
+        "landmarks5": [
+          [
+            445.060302734375,
+            170.6053466796875
+          ],
+          [
+            448.7318420410156,
+            170.6803436279297
+          ],
+          [
+            447.4835205078125,
+            172.263671875
+          ],
+          [
+            445.7817687988281,
+            175.55340576171875
+          ],
+          [
+            448.5860595703125,
+            175.66529846191406
+          ]
+        ],
+        "coordinate_space": "original_frame",
+        "width": 45.93145751953125,
+        "height": 40.14897155761719,
+        "confidence_check": "PASS",
+        "iou_with_expected": 0.0,
+        "bbox_check": "NO_OVERLAP",
+        "keypoint_distances": [
+          184.78447766652678,
+          90.3755520236775,
+          144.3615535692364,
+          178.7676271110389,
+          139.36619221476727
+        ],
+        "avg_keypoint_distance": 147.53108051704936,
+        "keypoints_check": "HIGH_DIST (avg=147.5)",
+        "coordinate_restoration": "PASS"
+      },
+      {
+        "bbox": [
+          350.5475769042969,
+          203.72683715820312,
+          404.85675048828125,
+          267.1438903808594
+        ],
+        "confidence": 0.7306157350540161,
+        "landmarks5": [
+          [
+            370.7672424316406,
+            229.61331176757812
+          ],
+          [
+            377.8082275390625,
+            229.05999755859375
+          ],
+          [
+            375.0142822265625,
+            231.11050415039062
+          ],
+          [
+            372.19903564453125,
+            235.0130615234375
+          ],
+          [
+            377.5586242675781,
+            234.59417724609375
+          ]
+        ],
+        "coordinate_space": "original_frame",
+        "width": 54.309173583984375,
+        "height": 63.41705322265625,
+        "confidence_check": "PASS",
+        "iou_with_expected": 0.16076106305950127,
+        "bbox_check": "LOW_IOU (0.161)",
+        "keypoint_distances": [
+          104.21159419665133,
+          10.25683225119353,
+          55.72786004651617,
+          85.66898528462583,
+          47.42909497917071
+        ],
+        "avg_keypoint_distance": 60.65887335163152,
+        "keypoints_check": "HIGH_DIST (avg=60.7)",
+        "coordinate_restoration": "PASS"
+      },
+      {
+        "bbox": [
+          162.6747283935547,
+          249.61727905273438,
+          188.9310302734375,
+          333.3079528808594
+        ],
+        "confidence": 0.6485121846199036,
+        "landmarks5": [
+          [
+            170.9235382080078,
+            284.1265563964844
+          ],
+          [
+            174.01519775390625,
+            285.22467041015625
+          ],
+          [
+            173.6519775390625,
+            286.4978332519531
+          ],
+          [
+            172.15835571289062,
+            291.803955078125
+          ],
+          [
+            174.3217010498047,
+            292.6453552246094
+          ]
+        ],
+        "coordinate_space": "original_frame",
+        "width": 26.256301879882812,
+        "height": 83.690673828125,
+        "confidence_check": "PASS",
+        "iou_with_expected": 0.0,
+        "bbox_check": "NO_OVERLAP",
+        "keypoint_distances": [
+          115.51147884837951,
+          209.40202758099204,
+          153.55713000493824,
+          123.77721413747922,
+          173.16538465779288
+        ],
+        "avg_keypoint_distance": 155.08264704591636,
+        "keypoints_check": "HIGH_DIST (avg=155.1)",
+        "coordinate_restoration": "PASS"
+      },
+      {
+        "bbox": [
+          148.5482940673828,
+          212.059326171875,
+          185.3125762939453,
+          344.8162841796875
+        ],
+        "confidence": 0.6253937482833862,
+        "landmarks5": [
+          [
+            162.484375,
+            267.908447265625
+          ],
+          [
+            168.3662872314453,
+            267.914794921875
+          ],
+          [
+            166.81788635253906,
+            271.5099792480469
+          ],
+          [
+            164.31985473632812,
+            277.9722595214844
+          ],
+          [
+            168.76522827148438,
+            277.93218994140625
+          ]
+        ],
+        "coordinate_space": "original_frame",
+        "width": 36.7642822265625,
+        "height": 132.7569580078125,
+        "confidence_check": "PASS",
+        "iou_with_expected": 0.0,
+        "bbox_check": "NO_OVERLAP",
+        "keypoint_distances": [
+          114.97275846279325,
+          210.16846569799353,
+          156.38938178059271,
+          129.92496679809057,
+          177.41218657951765
+        ],
+        "avg_keypoint_distance": 157.77355186379754,
+        "keypoints_check": "HIGH_DIST (avg=157.8)",
+        "coordinate_restoration": "PASS"
+      },
+      {
+        "bbox": [
+          231.22547912597656,
+          110.3524169921875,
+          264.0440979003906,
+          176.778564453125
+        ],
+        "confidence": 0.6236603856086731,
+        "landmarks5": [
+          [
+            242.29193115234375,
+            143.64566040039062
+          ],
+          [
+            245.64779663085938,
+            144.05068969726562
+          ],
+          [
+            242.77685546875,
+            146.08009338378906
+          ],
+          [
+            241.90382385253906,
+            148.30812072753906
+          ],
+          [
+            244.1767120361328,
+            148.56019592285156
+          ]
+        ],
+        "coordinate_space": "original_frame",
+        "width": 32.81861877441406,
+        "height": 66.4261474609375,
+        "confidence_check": "PASS",
+        "iou_with_expected": 0.0,
+        "bbox_check": "NO_OVERLAP",
+        "keypoint_distances": [
+          80.25256283679043,
+          148.2797404854621,
+          121.5909655775959,
+          132.3741857389517,
+          158.4790458895712
+        ],
+        "avg_keypoint_distance": 128.19530010567428,
+        "keypoints_check": "HIGH_DIST (avg=128.2)",
+        "coordinate_restoration": "PASS"
+      },
+      {
+        "bbox": [
+          237.7060546875,
+          339.293701171875,
+          280.20623779296875,
+          391.0235900878906
+        ],
+        "confidence": 0.5735247731208801,
+        "landmarks5": [
+          [
+            249.17019653320312,
+            355.42822265625
+          ],
+          [
+            255.91017150878906,
+            355.52764892578125
+          ],
+          [
+            253.51565551757812,
+            356.853515625
+          ],
+          [
+            251.14259338378906,
+            360.92974853515625
+          ],
+          [
+            256.2358093261719,
+            361.0480651855469
+          ]
+        ],
+        "coordinate_space": "original_frame",
+        "width": 42.50018310546875,
+        "height": 51.729888916015625,
+        "confidence_check": "PASS",
+        "iou_with_expected": 0.0,
+        "bbox_check": "NO_OVERLAP",
+        "keypoint_distances": [
+          136.59687179249542,
+          179.10268440046065,
+          134.44296997306873,
+          100.5235120284503,
+          127.856795288162
+        ],
+        "avg_keypoint_distance": 135.7045666965274,
+        "keypoints_check": "HIGH_DIST (avg=135.7)",
+        "coordinate_restoration": "PASS"
+      },
+      {
+        "bbox": [
+          195.0818328857422,
+          161.67550659179688,
+          234.7276611328125,
+          192.41644287109375
+        ],
+        "confidence": 0.5693950653076172,
+        "landmarks5": [
+          [
+            211.322021484375,
+            159.3171844482422
+          ],
+          [
+            215.2203369140625,
+            159.79090881347656
+          ],
+          [
+            212.73085021972656,
+            162.2812042236328
+          ],
+          [
+            211.7710418701172,
+            164.92242431640625
+          ],
+          [
+            214.9241485595703,
+            165.20675659179688
+          ]
+        ],
+        "coordinate_space": "original_frame",
+        "width": 39.64582824707031,
+        "height": 30.740936279296875,
+        "confidence_check": "PASS",
+        "iou_with_expected": 0.0,
+        "bbox_check": "NO_OVERLAP",
+        "keypoint_distances": [
+          82.35557901487341,
+          168.8773423080167,
+          132.46464325061012,
+          133.42750266218502,
+          167.81687249750695
+        ],
+        "avg_keypoint_distance": 136.98838794663843,
+        "keypoints_check": "HIGH_DIST (avg=137.0)",
+        "coordinate_restoration": "PASS"
+      },
+      {
+        "bbox": [
+          153.2335968017578,
+          221.17941284179688,
+          182.27606201171875,
+          291.5072937011719
+        ],
+        "confidence": 0.5688817501068115,
+        "landmarks5": [
+          [
+            161.24647521972656,
+            241.05099487304688
+          ],
+          [
+            165.54013061523438,
+            240.10736083984375
+          ],
+          [
+            163.3545684814453,
+            243.728515625
+          ],
+          [
+            162.23455810546875,
+            249.2042236328125
+          ],
+          [
+            166.20899963378906,
+            248.4326171875
+          ]
+        ],
+        "coordinate_space": "original_frame",
+        "width": 29.042465209960938,
+        "height": 70.327880859375,
+        "confidence_check": "PASS",
+        "iou_with_expected": 0.0,
+        "bbox_check": "NO_OVERLAP",
+        "keypoint_distances": [
+          107.82834686944317,
+          208.4320113732238,
+          156.6897987885621,
+          133.39638672908336,
+          181.07997076999925
+        ],
+        "avg_keypoint_distance": 157.48530290606234,
+        "keypoints_check": "HIGH_DIST (avg=157.5)",
+        "coordinate_restoration": "PASS"
+      },
+      {
+        "bbox": [
+          290.1026306152344,
+          220.71881103515625,
+          346.1759948730469,
+          277.5405578613281
+        ],
+        "confidence": 0.568085789680481,
+        "landmarks5": [
+          [
+            315.9136657714844,
+            245.54342651367188
+          ],
+          [
+            321.56207275390625,
+            244.7840576171875
+          ],
+          [
+            318.47711181640625,
+            246.610107421875
+          ],
+          [
+            316.82763671875,
+            250.57846069335938
+          ],
+          [
+            321.2696533203125,
+            249.97357177734375
+          ]
+        ],
+        "coordinate_space": "original_frame",
+        "width": 56.0733642578125,
+        "height": 56.821746826171875,
+        "confidence_check": "PASS",
+        "iou_with_expected": 0.16594721393485087,
+        "bbox_check": "LOW_IOU (0.166)",
+        "keypoint_distances": [
+          55.18163949416361,
+          57.097371842725856,
+          6.783266805047287,
+          29.971606350054213,
+          31.82212868830012
+        ],
+        "avg_keypoint_distance": 36.17120263605822,
+        "keypoints_check": "HIGH_DIST (avg=36.2)",
+        "coordinate_restoration": "PASS"
+      }
+    ]
+  },
+  "cuda_diagnosis": {
+    "ort_version": "1.28.0",
+    "cuda_ep_registered": true,
+    "providers": [
+      "TensorrtExecutionProvider",
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "dll_dependency_chain": [
+      "Found: C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\onnxruntime\\capi\\onnxruntime_providers_cuda.dll",
+      "  dumpbin not available (Visual Studio not in PATH)",
+      "CUDA_PATH: C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3",
+      "CUDA-related PATH dirs: ['C:\\\\Program Files\\\\NVIDIA GPU Computing Toolkit\\\\CUDA\\\\v13.3\\\\bin\\\\x64', 'C:\\\\Program Files\\\\NVIDIA GPU Computing Toolkit\\\\CUDA\\\\v13.3\\\\bin', 'C:\\\\Program Files (x86)\\\\NVIDIA Corporation\\\\PhysX\\\\Common', 'C:\\\\Program Files\\\\NVIDIA Corporation\\\\Nsight Compute 2026.2.1\\\\']"
+    ],
+    "missing_or_incompatible_dll": null,
+    "ort_requirements": {
+      "ort_version": "1.28.0",
+      "supported_cuda": [
+        "12.x",
+        "13.x"
+      ],
+      "supported_cudnn": [
+        "8.x",
+        "9.x"
+      ],
+      "current_cuda": "12.6",
+      "current_cudnn": "92.400"
+    },
+    "cuda_compatible": true,
+    "cudnn_compatible": false,
+    "root_cause": "CUDA 12.6 / cuDNN 92.400 may be incompatible with ORT 1.28.0 (supports CUDA ['12.x', '13.x'])"
+  },
+  "dll_dependency_chain": [
+    "Found: C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\onnxruntime\\capi\\onnxruntime_providers_cuda.dll",
+    "  dumpbin not available (Visual Studio not in PATH)",
+    "CUDA_PATH: C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3",
+    "CUDA-related PATH dirs: ['C:\\\\Program Files\\\\NVIDIA GPU Computing Toolkit\\\\CUDA\\\\v13.3\\\\bin\\\\x64', 'C:\\\\Program Files\\\\NVIDIA GPU Computing Toolkit\\\\CUDA\\\\v13.3\\\\bin', 'C:\\\\Program Files (x86)\\\\NVIDIA Corporation\\\\PhysX\\\\Common', 'C:\\\\Program Files\\\\NVIDIA Corporation\\\\Nsight Compute 2026.2.1\\\\']"
+  ],
+  "missing_or_incompatible_dll": null,
+  "ort_adjustment_made": false,
+  "ort_versions": {
+    "current": "1.28.0"
+  },
+  "cuda_test_after_adjustment": true,
+  "cpu_regression_after_adjustment": true,
+  "cuda_cpu_consistency_after": true,
+  "cpu_stress_passed": false,
+  "cuda_stress_passed": true,
+  "cpu_crashes": 0,
+  "cuda_crashes": 0,
+  "cpu_memory_growth_mb": 104.8,
+  "cuda_memory_growth_mb": 17.0,
+  "cpu_latency_spikes": 0,
+  "cuda_latency_spikes": 0,
+  "integration_passed": false,
+  "coordinates_correct": true,
+  "integration_bbox_restoration_correct": true,
+  "keypoints_correct": true,
+  "provenance_complete": true,
+  "model_identity_correct": true,
+  "failures_reported": [
+    "coordinate_restoration: Coordinate restoration: bbox=PASS, keypoints=FAIL, no_overflow=PASS, tagged=PASS",
+    "  Error: Coordinate restoration validation failed",
+    "stress_test: Stress: CPU crashes=0, mem=104.8MB, spikes=0; CUDA available=True, crashes=0, mem=17.0MB, spikes=0",
+    "  Error: Stress test issues",
+    "integration_pipeline: Integration: detections=10, valid=YES, pipeline=FAIL",
+    "  Error: Integration pipeline issues"
+  ],
+  "final_verdict": "FAIL",
+  "ready_for_detector_replacement": true,
+  "recommended_replacement": "RetinaFace (ONNX, well-supported, CUDA compatible)",
+  "remaining_limitations": [
+    "Coordinate restoration not fully validated",
+    "Face bbox validation on synthetic patterns inconclusive (expected)"
+  ]
+}

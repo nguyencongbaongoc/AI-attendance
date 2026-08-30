@@ -1,0 +1,77 @@
+{
+  "timing_analysis": {
+    "tracking": {
+      "mean_ms": 0.056206000026577385,
+      "p50_ms": 0.050799999371520244,
+      "p95_ms": 0.09839999984251335,
+      "p99_ms": 0.12260000039532315,
+      "max_ms": 0.12260000039532315
+    },
+    "association": {
+      "mean_ms": 0.008135999960359186,
+      "p50_ms": 0.0070000005507608876,
+      "p95_ms": 0.018900000213761814,
+      "p99_ms": 0.023499999770137947,
+      "max_ms": 0.023499999770137947
+    },
+    "arcface_embedding": {
+      "mean_ms": 0.00021800002286909148,
+      "p50_ms": 0.00019999970390927047,
+      "p95_ms": 0.0005000001692678779,
+      "p99_ms": 0.0006999998731771484,
+      "max_ms": 0.0006999998731771484
+    },
+    "temporal_evidence": {
+      "mean_ms": 0.0009800000043469481,
+      "p50_ms": 0.0009000004865811206,
+      "p95_ms": 0.0015999994502635673,
+      "p99_ms": 0.00199999976757681,
+      "max_ms": 0.00199999976757681
+    },
+    "attendance_decision": {
+      "mean_ms": 0.00013800005035591312,
+      "p50_ms": 9.999985195463523e-05,
+      "p95_ms": 0.00020000061340397224,
+      "p99_ms": 0.0006000000212225132,
+      "max_ms": 0.0006000000212225132
+    },
+    "total_downstream": {
+      "mean_ms": 0.06567800006450852,
+      "p50_ms": 0.05909999981668079,
+      "p95_ms": 0.11100000028818613,
+      "p99_ms": 0.14090000058786245,
+      "max_ms": 0.14090000058786245
+    }
+  },
+  "budget_analysis": {
+    "detection_latency_ms": 31.9,
+    "downstream_latency_ms": 0.06567800006450852,
+    "total_pipeline_latency_ms": 31.965678000064507,
+    "budget_725_fps_ms": 138.0,
+    "budget_10_fps_ms": 100.0,
+    "budget_15_fps_ms": 66.7,
+    "budget_20_fps_ms": 50.0,
+    "headroom_725_fps_ms": 106.03432199993549,
+    "headroom_10_fps_ms": 68.03432199993549,
+    "headroom_15_fps_ms": 34.734321999935496,
+    "headroom_20_fps_ms": 18.034321999935493,
+    "downstream_percentage": 0.20546412331493794
+  },
+  "bottlenecks": [],
+  "recommendations": [
+    {
+      "priority": "LOW",
+      "issue": "Downstream stages add 0.1ms latency",
+      "current": "Tracking: 0.1ms, Association: 0.0ms",
+      "recommended": "Downstream is not the primary bottleneck - focus on detection pipeline",
+      "impact": "Minimal - downstream is already fast"
+    },
+    {
+      "priority": "LOW",
+      "issue": "ArcFace embedding not measured (requires face crops)",
+      "current": "Skipped in this analysis",
+      "recommended": "Measure ArcFace separately with aligned face crops",
+      "impact": "ArcFace typically 5-10ms per face on GPU"
+    }
+  ]
+}

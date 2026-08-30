@@ -1,0 +1,187 @@
+{
+  "phase": "38C.1T.1",
+  "title": "Verify and Materialize Administrative Excel Template",
+  "timestamp": "2026-08-28T17:31:53+07:00",
+  "repository_root": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance",
+  "data_directory": "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\data",
+  "template_search_result": {
+    "searched_path": "data/templates/student_parent_timetable_template.xlsx",
+    "found": false,
+    "repository_wide_search": false,
+    "reason_missing": "data/templates/ directory did not exist; template was never materialized in Phase 38C.1T"
+  },
+  "created_template": {
+    "exact_path": "data/templates/student_parent_timetable_template.xlsx",
+    "sheets": [
+      {
+        "name": "STUDENTS",
+        "columns": [
+          "student_id",
+          "student_name",
+          "class_name",
+          "enrollment_status",
+          "notes"
+        ],
+        "row_count": 3,
+        "description": "Canonical student identity matching enrollment database person_id (HS001, HS002, HS003)"
+      },
+      {
+        "name": "PARENTS",
+        "columns": [
+          "parent_id",
+          "parent_name",
+          "relationship",
+          "telegram_username",
+          "telegram_profile_link",
+          "telegram_chat_id",
+          "telegram_enabled",
+          "notification_preferences",
+          "notes"
+        ],
+        "row_count": 3,
+        "description": "Parent Registry contract fields; parent_id auto-generated (PAR-xxxxxxxx); telegram_chat_id is ONLY routing identifier"
+      },
+      {
+        "name": "STUDENT_PARENTS",
+        "columns": [
+          "link_id",
+          "student_id",
+          "parent_id",
+          "relationship",
+          "is_primary",
+          "notes"
+        ],
+        "row_count": 4,
+        "description": "Many-to-many student-parent links; link_id auto-generated (LNK-xxxxxxxx); preserves multiple parents per student and multiple students per parent"
+      },
+      {
+        "name": "TIMETABLE",
+        "columns": [
+          "student_id",
+          "class_name",
+          "day",
+          "session_type",
+          "entry_time",
+          "exit_time",
+          "session_id",
+          "person_name",
+          "subject",
+          "location",
+          "expected_location",
+          "outside_allowed",
+          "entry_window_start",
+          "entry_window_end",
+          "late_tolerance",
+          "exit_window_start",
+          "exit_window_end",
+          "timetable_version"
+        ],
+        "row_count": 9,
+        "description": "Exact schema accepted by TimetableLoader.load_from_excel(); REQUIRED: student_id, class_name, day, session_type, entry_time, exit_time; OPTIONAL with defaults: session_id, person_name, subject, location, expected_location, outside_allowed, entry_window_start, entry_window_end, late_tolerance, exit_window_start, exit_window_end, timetable_version"
+      },
+      {
+        "name": "TELEGRAM_CONFIG_GUIDE",
+        "columns": [
+          "parameter_name",
+          "description",
+          "configuration_location",
+          "placeholder_example",
+          "security_warning"
+        ],
+        "row_count": 5,
+        "description": "Configuration guide only; NEVER contains real secrets; documents TELEGRAM_BOT_TOKEN (env only), TELEGRAM_LIVE_TEST, TELEGRAM_TEST_CHAT_ID, telegram_chat_id (PARENTS sheet), Link Code"
+      }
+    ]
+  },
+  "validation_results": {
+    "sheets_exist": [
+      "STUDENTS",
+      "PARENTS",
+      "STUDENT_PARENTS",
+      "TIMETABLE",
+      "TELEGRAM_CONFIG_GUIDE"
+    ],
+    "headers_correct": {
+      "STUDENTS": true,
+      "PARENTS": true,
+      "STUDENT_PARENTS": true,
+      "TIMETABLE": true,
+      "TELEGRAM_CONFIG_GUIDE": true
+    },
+    "no_secrets": true,
+    "timetable_loader_compatible": true,
+    "errors": [],
+    "warnings": [
+      "Example telegram_chat_id in PARENTS: 123456789 (ensure replaced with real data)",
+      "Example telegram_chat_id in PARENTS: 987654321 (ensure replaced with real data)"
+    ]
+  },
+  "timetable_loader_schema_verification": {
+    "required_columns_present": [
+      "student_id",
+      "class_name",
+      "day",
+      "session_type",
+      "entry_time",
+      "exit_time"
+    ],
+    "optional_columns_present": [
+      "session_id",
+      "person_name",
+      "subject",
+      "location",
+      "expected_location",
+      "outside_allowed",
+      "entry_window_start",
+      "entry_window_end",
+      "late_tolerance",
+      "exit_window_start",
+      "exit_window_end",
+      "timetable_version"
+    ],
+    "session_type_values_documented": [
+      "classroom",
+      "break",
+      "outside_lesson",
+      "lab",
+      "other",
+      "morning",
+      "afternoon",
+      "full_day",
+      "evening"
+    ],
+    "day_values_documented": [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday"
+    ],
+    "time_format_documented": "HH:MM:SS or HH:MM or seconds from midnight",
+    "loader_compatibility": "FULL - all required columns present, optional columns match TimetableLoader.OPTIONAL_COLUMNS"
+  },
+  "security_verification": {
+    "no_real_bot_token": true,
+    "no_real_chat_ids_in_excel": true,
+    "placeholder_examples_only": true,
+    "security_warnings_present": true,
+    "token_pattern_scan_passed": true
+  },
+  "files_created": [
+    "data/templates/student_parent_timetable_template.xlsx",
+    "scripts/create_admin_template.py"
+  ],
+  "files_modified": [],
+  "databases_unmodified": [
+    "data/enrollment_db/",
+    "data/parent_registry.db",
+    "data/attendance.db"
+  ],
+  "telegram_messages_sent": false,
+  "template_status": "CREATED_AND_VALIDATED",
+  "exact_template_path": "data/templates/student_parent_timetable_template.xlsx",
+  "phase_38c2_status": "NOT_STARTED",
+  "phase_39_status": "NOT_STARTED"
+}

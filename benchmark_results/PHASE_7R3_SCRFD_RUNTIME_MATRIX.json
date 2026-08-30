@@ -1,0 +1,116 @@
+{
+  "timestamp": "2026-08-18T12:42:05.919336",
+  "model": "scrfd_10g_bnkps",
+  "model_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+  "environment": {
+    "python": "3.12.10",
+    "pytorch": "2.13.0+cu126",
+    "ort": "1.28.0",
+    "cuda": "13.3",
+    "cudnn": "92.400",
+    "driver": "unknown",
+    "gpu": "NVIDIA GeForce GTX 1660 Ti"
+  },
+  "task1_input_size": {
+    "decision": "640x640",
+    "evidence": {
+      "model_native_input": "640x640 (dynamic axes -1,-1 in ONNX)",
+      "anchor_count_640": 16800,
+      "anchor_count_960": 37800,
+      "anchor_ratio": 2.25,
+      "latency_640_ms": 172.51201999897603,
+      "latency_960_ms": 413.3090599993011,
+      "latency_ratio": 2.3958276066894024,
+      "decode_valid_640": true,
+      "decode_valid_960": true,
+      "all_finite_640": true,
+      "all_finite_960": true
+    },
+    "contract_updated": true
+  },
+  "task2_preprocessing": {
+    "verified": true,
+    "color_space": "RGB (model expects RGB, preprocessor converts BGR->RGB)",
+    "dtype": "float32",
+    "scaling": "none",
+    "normalization": {
+      "method": "no normalization (0-255)",
+      "verified": false
+    },
+    "letterbox": "letterbox with aspect ratio preservation",
+    "padding_value": 0,
+    "resize_policy": "letterbox with aspect ratio preservation"
+  },
+  "task3_coordinates": {
+    "passed": false,
+    "bbox_restoration": true,
+    "keypoint_restoration": false,
+    "no_overflow": true,
+    "space_tagged": true
+  },
+  "task4_face_detection": {
+    "validated": true,
+    "bbox_correct": false,
+    "keypoints_correct": false,
+    "confidence_reasonable": true,
+    "coord_restoration": true
+  },
+  "task5_cuda_diagnosis": {
+    "dll_chain": [
+      "Found: C:\\Users\\Nguyen Cong Thong\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\onnxruntime\\capi\\onnxruntime_providers_cuda.dll",
+      "  dumpbin not available (Visual Studio not in PATH)",
+      "CUDA_PATH: C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3",
+      "CUDA-related PATH dirs: ['C:\\\\Program Files\\\\NVIDIA GPU Computing Toolkit\\\\CUDA\\\\v13.3\\\\bin\\\\x64', 'C:\\\\Program Files\\\\NVIDIA GPU Computing Toolkit\\\\CUDA\\\\v13.3\\\\bin', 'C:\\\\Program Files (x86)\\\\NVIDIA Corporation\\\\PhysX\\\\Common', 'C:\\\\Program Files\\\\NVIDIA Corporation\\\\Nsight Compute 2026.2.1\\\\']"
+    ],
+    "missing_dll": null,
+    "cuda_compatible": true,
+    "cudnn_compatible": false,
+    "root_cause": "CUDA 12.6 / cuDNN 92.400 may be incompatible with ORT 1.28.0 (supports CUDA ['12.x', '13.x'])"
+  },
+  "task6_ort_config": {
+    "adjustment_made": false,
+    "ort_version": "1.28.0",
+    "cuda_test_after": true,
+    "cpu_regression": true,
+    "cuda_cpu_consistency": true
+  },
+  "task7_stress": {
+    "cpu": {
+      "passed": false,
+      "crashes": 0,
+      "memory_growth_mb": 104.8,
+      "latency_spikes": 0
+    },
+    "cuda": {
+      "passed": true,
+      "crashes": 0,
+      "memory_growth_mb": 17.0,
+      "latency_spikes": 0
+    }
+  },
+  "task8_integration": {
+    "passed": false,
+    "coordinates": true,
+    "bbox_restoration": true,
+    "keypoints": true,
+    "provenance": true,
+    "model_identity": true
+  },
+  "task9_failures": [
+    "coordinate_restoration: Coordinate restoration: bbox=PASS, keypoints=FAIL, no_overflow=PASS, tagged=PASS",
+    "  Error: Coordinate restoration validation failed",
+    "stress_test: Stress: CPU crashes=0, mem=104.8MB, spikes=0; CUDA available=True, crashes=0, mem=17.0MB, spikes=0",
+    "  Error: Stress test issues",
+    "integration_pipeline: Integration: detections=10, valid=YES, pipeline=FAIL",
+    "  Error: Integration pipeline issues"
+  ],
+  "task10_verdict": {
+    "final_verdict": "FAIL",
+    "ready_for_detector_replacement": true,
+    "recommended_replacement": "RetinaFace (ONNX, well-supported, CUDA compatible)",
+    "limitations": [
+      "Coordinate restoration not fully validated",
+      "Face bbox validation on synthetic patterns inconclusive (expected)"
+    ]
+  }
+}

@@ -1,0 +1,349 @@
+{
+  "timestamp": "2026-08-21T02:22:47.930565",
+  "total_tests": 20,
+  "passed_tests": 20,
+  "failed_tests": 0,
+  "skipped_tests": 0,
+  "results": [
+    {
+      "test_name": "quality_contract",
+      "passed": true,
+      "duration_ms": 0.08370000068680383,
+      "message": "Quality contract structure validated",
+      "details": {
+        "enums": "validated",
+        "metric_serialization": "validated",
+        "thresholds_serialization": "validated",
+        "result_serialization": "validated",
+        "provenance_serialization": "validated"
+      },
+      "error": null
+    },
+    {
+      "test_name": "face_geometry_metrics",
+      "passed": true,
+      "duration_ms": 106.63399999975809,
+      "message": "Face geometry metrics validated",
+      "details": {
+        "normal_face_passed": true,
+        "small_face_failed": true,
+        "inter_eye_with_landmarks": true,
+        "inter_eye_without_landmarks_na": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "detection_confidence",
+      "passed": true,
+      "duration_ms": 59.147699999812176,
+      "message": "Detection confidence consumption validated",
+      "details": {
+        "high_confidence_passed": true,
+        "low_confidence_failed": true,
+        "boundary_confidence_passed": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "sharpness_metric",
+      "passed": true,
+      "duration_ms": 66.43020000046818,
+      "message": "Sharpness metric (Laplacian variance) validated",
+      "details": {
+        "sharp_face_passed": true,
+        "blurry_face_failed": true,
+        "metric_deterministic": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "brightness_exposure_metric",
+      "passed": true,
+      "duration_ms": 55.76680000012857,
+      "message": "Brightness/exposure metric validated",
+      "details": {
+        "normal_brightness_passed": true,
+        "over_exposed_failed": true,
+        "under_exposed_failed": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "boundary_contact",
+      "passed": true,
+      "duration_ms": 67.2751000001881,
+      "message": "Boundary contact from ORIGINAL_FRAME coordinates validated",
+      "details": {
+        "center_face_passed": true,
+        "left_edge_failed": true,
+        "right_edge_failed": true,
+        "top_edge_failed": true,
+        "bottom_edge_failed": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "occlusion_metric",
+      "passed": true,
+      "duration_ms": 70.19459999901301,
+      "message": "Occlusion metric validated (NOT_AVAILABLE when no model)",
+      "details": {
+        "no_model_not_available": true,
+        "low_occlusion_passed": true,
+        "high_occlusion_failed": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "pose_integration",
+      "passed": true,
+      "duration_ms": 59.81900000006135,
+      "message": "Pose integration (consumes Phase 15) validated",
+      "details": {
+        "normal_pose_passed": true,
+        "hard_pose_failed_marginal": true,
+        "invalid_pose_unusable": true,
+        "no_pose_not_available": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "quality_classification",
+      "passed": true,
+      "duration_ms": 84.50259999881382,
+      "message": "Quality classification (GOOD/MARGINAL/UNUSABLE) with reasons validated",
+      "details": {
+        "good_classification": true,
+        "marginal_hard_pose": true,
+        "marginal_few_failures": true,
+        "unusable_invalid_pose": true,
+        "unusable_many_failures": true,
+        "explainable_reasons": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "evidence_eligibility",
+      "passed": true,
+      "duration_ms": 61.04050000067218,
+      "message": "Evidence eligibility policy validated",
+      "details": {
+        "good_eligible": true,
+        "marginal_not_eligible_single_frame": true,
+        "unusable_not_eligible": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "provenance_preservation",
+      "passed": true,
+      "duration_ms": 55.1249000000098,
+      "message": "Full provenance chain preserved",
+      "details": {
+        "source_frame": true,
+        "person_crop": true,
+        "face_crop": true,
+        "model_info": true,
+        "pose_info": true,
+        "quality_id": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "determinism",
+      "passed": true,
+      "duration_ms": 57.20619999920018,
+      "message": "Determinism validated - identical results across runs",
+      "details": {
+        "runs_compared": 5,
+        "all_identical": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "multiple_faces_independence",
+      "passed": true,
+      "duration_ms": 79.04950000011013,
+      "message": "Multiple faces assessed independently",
+      "details": {
+        "face_1_good": true,
+        "face_2_marginal": true,
+        "face_3_unusable": true,
+        "unique_quality_ids": true,
+        "independent_provenance": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "negative_geometry",
+      "passed": true,
+      "duration_ms": 54.94089999956486,
+      "message": "Negative geometry tests passed",
+      "details": {
+        "zero_size_rejected": true,
+        "nan_bbox_rejected": true,
+        "negative_bbox_rejected": true,
+        "invalid_confidence_handled": true,
+        "missing_optional_metrics_na": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "boundary_cases",
+      "passed": true,
+      "duration_ms": 128.86739999885322,
+      "message": "Boundary cases handled correctly",
+      "details": {
+        "minimum_face": true,
+        "corner_face": true,
+        "large_face": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "memory_safety",
+      "passed": true,
+      "duration_ms": 214.95789999971748,
+      "message": "Memory safety validated - no unbounded accumulation",
+      "details": {
+        "iterations": 100,
+        "no_accumulation": true,
+        "gc_collected": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "phase16_compatibility",
+      "passed": true,
+      "duration_ms": 137.01159999982337,
+      "message": "Phase 16 compatibility validated - full pipeline works",
+      "details": {
+        "person_crop_from_4k": true,
+        "face_crop_from_4k": true,
+        "quality_from_adaptive_crop": true,
+        "provenance_chain_complete": true,
+        "phase15_pose_consumed": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "safety_offline_only",
+      "passed": true,
+      "duration_ms": 2.446399999826099,
+      "message": "Safety validated - offline only, no camera/streaming",
+      "details": {
+        "no_camera_imports": true,
+        "no_streaming_protocols": true,
+        "synthetic_data_only": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "configurable_thresholds",
+      "passed": true,
+      "duration_ms": 80.1632000002428,
+      "message": "Configurable thresholds validated",
+      "details": {
+        "custom_thresholds_applied": true,
+        "default_thresholds_work": true,
+        "thresholds_serialized": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "small_face_policy",
+      "passed": true,
+      "duration_ms": 59.19749999884516,
+      "message": "Small face policy validated - crop preserved, person not rejected",
+      "details": {
+        "person_crop_preserved": true,
+        "face_quality_unusable": true,
+        "no_person_rejection": true,
+        "evidence_eligible_false": true
+      },
+      "error": null
+    }
+  ],
+  "verdict": "PASS",
+  "quality_contract": {
+    "quality_classes": [
+      "good",
+      "marginal",
+      "unusable"
+    ],
+    "metric_statuses": [
+      "passed",
+      "failed",
+      "not_available"
+    ],
+    "evidence_eligibility": {
+      "good": true,
+      "marginal": false,
+      "unusable": false
+    }
+  },
+  "quality_metrics": {
+    "face_width": "pixels",
+    "face_height": "pixels",
+    "face_area": "pixels\u00b2",
+    "inter_eye_distance": "pixels",
+    "detection_confidence": "ratio [0,1]",
+    "sharpness": "Laplacian variance",
+    "brightness": "intensity [0,255]",
+    "boundary_contact": "ratio [0,1]",
+    "occlusion": "ratio [0,1] or NOT_AVAILABLE",
+    "pose": "consumed from Phase 15 (NORMAL/HARD_POSE/INVALID)"
+  },
+  "thresholds_config": {
+    "min_face_width": 64,
+    "min_face_height": 64,
+    "min_face_area": 4096,
+    "min_inter_eye_distance": 15.0,
+    "min_detection_confidence": 0.55,
+    "min_sharpness": 100.0,
+    "brightness_min": 30.0,
+    "brightness_max": 220.0,
+    "max_boundary_contact_ratio": 0.15,
+    "max_occlusion_ratio": 0.3
+  },
+  "classification_policy": {
+    "GOOD": "All available metrics PASSED, pose NORMAL",
+    "MARGINAL": "Few non-critical failures OR HARD_POSE with <=2 other failures",
+    "UNUSABLE": "Critical failure (pose INVALID, zero geometry) OR many failures"
+  },
+  "provenance_status": {
+    "source_frame": true,
+    "person_crop": true,
+    "face_crop": true,
+    "model_info": true,
+    "pose_info": true,
+    "quality_id": true
+  },
+  "determinism_status": {
+    "verified": true,
+    "runs_tested": 5
+  },
+  "memory_status": {
+    "no_unbounded_accumulation": true,
+    "iterations_tested": 100
+  },
+  "safety_status": {
+    "no_camera": true,
+    "no_streaming": true,
+    "synthetic_only": true
+  },
+  "phase16_compatibility": {
+    "adaptive_crop_result_input": true,
+    "provenance_chain_preserved": true,
+    "phase15_pose_consumed": true
+  },
+  "limitations": [
+    "Thresholds are engineering heuristics, not production-calibrated",
+    "Occlusion metric is NOT_AVAILABLE (no occlusion model integrated)",
+    "Inter-eye distance requires 5-point landmarks from detector",
+    "Pose angles require Phase 15 1K3D68 inference",
+    "Sharpness/brightness measured on synthetic data - no accuracy claims",
+    "Quality assessment is single-frame; temporal aggregation in Phase 18"
+  ],
+  "readiness_for_phase18": true
+}

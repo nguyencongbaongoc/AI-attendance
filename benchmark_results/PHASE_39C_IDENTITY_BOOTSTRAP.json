@@ -1,0 +1,41 @@
+{
+  "phase": "39C",
+  "timestamp": "2026-08-28T15:07:03.926410Z",
+  "enrollment_database": {
+    "path": "data/enrollment_db/",
+    "embeddings_file": "embeddings.npy",
+    "metadata_file": "embeddings.npy.metadata.json"
+  },
+  "embeddings_verification": {
+    "shape": [
+      9,
+      512
+    ],
+    "dtype": "float32",
+    "dimensions": 512,
+    "embedding_count": 9,
+    "normalization": "L2",
+    "model_id": "arcface",
+    "model_filename": "glintr100.onnx",
+    "model_sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf"
+  },
+  "person_ids": [
+    "HS001",
+    "HS002",
+    "HS003"
+  ],
+  "metadata_consistency": {
+    "schema_version": "1.0",
+    "embedding_dimension": 512,
+    "embedding_count": 9,
+    "person_ids_match": true,
+    "sample_provenance_count": 9,
+    "creation_timestamp": "2026-08-23T14:01:36.441284Z"
+  },
+  "enrollment_ui": {
+    "canonical_mechanism": true,
+    "future_student_flow": "HS004 -> enrollment -> ArcFace -> embedding -> metadata -> embeddings.npy",
+    "embedding_array_index_not_business_identity": true
+  },
+  "status": "PASS"
+}

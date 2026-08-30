@@ -1,0 +1,73 @@
+# Virtual environment
+.venv/
+venv/
+env/
+.venv2/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Data (generated at runtime)
+data/
+recordings/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Models (do not commit model files)
+models/scrfd/*
+models/arcface/*
+models/landmark/*
+models/reid/*
+models/yolo/*
+
+# Keep model directory structure
+!models/scrfd/.gitkeep
+!models/arcface/.gitkeep
+!models/landmark/.gitkeep
+!models/reid/.gitkeep
+!models/yolo/.gitkeep
+!models/README.md
+.venv/
+.venv2/
+venv/
+__pycache__/
+*.dll
+*.pt
+*.h5
+models/
+*.onnx

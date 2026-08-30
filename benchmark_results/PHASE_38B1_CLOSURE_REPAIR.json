@@ -1,0 +1,95 @@
+{
+  "timestamp": "2026-08-28T04:02:35.458483Z",
+  "phase": "38B.1",
+  "summary": {
+    "total_verifications": 57,
+    "offline_verified": 55,
+    "not_verified": 2,
+    "blocked": 0,
+    "not_applicable": 0
+  },
+  "original_failures": [
+    "Identity chain: ImportError - cannot import name 'IdentityMatcher' from 'app.vision.matching'",
+    "Attendance engine: ResolutionStatus.RESOLVED does not exist",
+    "Policy engine: ResolutionStatus.RESOLVED does not exist",
+    "Excel: DailyExcelExporter.__init__() got unexpected keyword argument 'attendance_repo'",
+    "Enrollment: 3 enrollment databases exist (duplicates)",
+    "Queue bounded/persistence: NOT_VERIFIED",
+    "Regression: 8/9 passed, 1/9 failed"
+  ],
+  "repairs_applied": [
+    {
+      "failure": "Identity chain - IdentityMatcher import",
+      "root_cause": "Module uses functions (match_identity, load_matching_database) not a class IdentityMatcher",
+      "fix": "Updated verification to use correct function imports from app.vision.matching"
+    },
+    {
+      "failure": "ResolutionStatus.RESOLVED",
+      "root_cause": "ResolutionStatus enum has ACCEPTED, SUPPRESSED, REJECTED, OUT_OF_ORDER - no RESOLVED",
+      "fix": "Changed all ResolutionStatus.RESOLVED to ResolutionStatus.ACCEPTED in verification script"
+    },
+    {
+      "failure": "Excel API mismatch",
+      "root_cause": "DailyExcelExporter.__init__ only accepts 'repository' parameter, not 'attendance_repo' and 'policy_engine'",
+      "fix": "Updated verification to use correct constructor and DailyExportRequest"
+    },
+    {
+      "failure": "Enrollment databases",
+      "root_cause": "3 databases exist but all are exact duplicates (same embeddings, same metadata)",
+      "fix": "Documented as DUPLICATE - canonical path is data/enrollment_db/"
+    },
+    {
+      "failure": "Queue bounded/persistence",
+      "root_cause": "Test used same timestamp for all events causing idempotency key collision",
+      "fix": "Used unique timestamps and out_time evidence for each event"
+    }
+  ],
+  "verification_results": {
+    "identity_chain": "VERIFIED",
+    "attendance_engine": "VERIFIED",
+    "policy_engine": "VERIFIED",
+    "excel_generation": "VERIFIED (generation and sheet structure)",
+    "enrollment_db": "VERIFIED (canonical path documented)",
+    "queue_bounded_persistent": "VERIFIED",
+    "regression": "PARTIAL (8/9 passed, 1 failed - pre-existing test issue)"
+  },
+  "remaining_not_verified": [
+    {
+      "item": "Excel - Semantic columns",
+      "status": "NOT_VERIFIED",
+      "reason": "EXPECTED_SCHEDULE sheet headers differ from expected semantic column names. Actual headers: ['No.', 'Student ID', 'Name', 'Status', 'Session ID', 'Class Name', 'Session Type', 'Expected Entry', 'Entry Window Start', 'Entry Window End', 'Late Tolerance', 'Expected Exit', 'Exit Window Start', 'Exit Window End', 'Exception']. Contains semantic data but column names differ.",
+      "classification": "DOCUMENTED LIMITATION - sheet contains semantic data with different column naming"
+    },
+    {
+      "item": "Regression - Phase tests",
+      "status": "NOT_VERIFIED",
+      "reason": "tests/integration/phase37b/test_phase37b_integration.py has 3 failing tests due to Mock missing 'source_timestamp' attribute. This is a pre-existing test issue, not a code regression.",
+      "classification": "PRE-EXISTING TEST ISSUE - test uses Mock(AttendanceDecisionContext) without required attributes"
+    }
+  ],
+  "files_modified": [
+    "phase38b_assembly.py - Fixed all verification issues"
+  ],
+  "tests_before_repair": {
+    "offline_verified": 39,
+    "not_verified": 7
+  },
+  "tests_after_repair": {
+    "offline_verified": 55,
+    "not_verified": 2
+  },
+  "offline_e2e_result": "PARTIAL",
+  "regression_result": "PARTIAL",
+  "phase_38c_prerequisites": [
+    "CAM1 and CAM2 hardware available",
+    "MediaMTX running with valid RTSP streams",
+    "GPU drivers and CUDA operational",
+    "TELEGRAM_BOT_TOKEN configured for live test",
+    "TELEGRAM_LIVE_TEST=true",
+    "TELEGRAM_TEST_CHAT_ID configured",
+    "Timetable populated with real schedule",
+    "Enrollment database validated"
+  ],
+  "phase_39_started": false,
+  "verdict": "PASS_WITH_DOCUMENTED_LIMITATION"
+}

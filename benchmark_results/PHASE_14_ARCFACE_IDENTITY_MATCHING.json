@@ -1,0 +1,262 @@
+{
+  "phase": 14,
+  "name": "ArcFace Identity Matching",
+  "status": "PASS",
+  "date": "2026-08-20",
+  "environment": {
+    "os": "Windows 11",
+    "python": "3.12.10",
+    "cuda_available": true,
+    "gpu": "NVIDIA"
+  },
+  "matching_contract": {
+    "statuses": ["MATCH", "UNKNOWN", "AMBIGUOUS"],
+    "identity_match_result_fields": [
+      "status",
+      "person_id",
+      "similarity",
+      "matched_sample_id",
+      "candidate_count",
+      "threshold",
+      "ambiguity_margin",
+      "database_schema_version",
+      "model_identity",
+      "provenance"
+    ],
+    "query_embedding_contract": {
+      "embedding_shape": [512],
+      "embedding_dtype": "float32",
+      "normalization": "L2",
+      "provenance_optional": true
+    },
+    "matching_config": {
+      "match_threshold": 0.5,
+      "ambiguity_margin": 0.05,
+      "person_aggregation_policy": "best_sample"
+    }
+  },
+  "database_validation": {
+    "required_checks": [
+      "shape (N, 512)",
+      "dtype float32",
+      "finite values",
+      "L2 normalized (atol=1e-5)",
+      "schema_version 1.0",
+      "embedding_dimension 512",
+      "dtype float32",
+      "normalization L2",
+      "model_id arcface",
+      "model_filename glintr100.onnx",
+      "model_sha256 non-empty",
+      "embedding_count matches array",
+      "sample_provenance length matches embedding_count"
+    ],
+    "rejection_behavior": "ValueError with descriptive message, no silent repair"
+  },
+  "query_validation": {
+    "required_checks": [
+      "shape (512,)",
+      "dtype float32",
+      "finite values",
+      "non-zero norm",
+      "L2 normalized (atol=1e-4)"
+    ],
+    "rejection_behavior": "ValueError immediately"
+  },
+  "cosine_similarity": {
+    "formula": "dot(query, database_embedding)",
+    "implementation": "vectorized NumPy dot product",
+    "validation": "finite values, range [-1, 1] with 1e-6 tolerance"
+  },
+  "person_aggregation": {
+    "default_policy": "best_sample",
+    "available_policies": ["best_sample", "average"],
+    "ambiguity_evaluation_level": "person",
+    "note": "Multiple samples for same person do NOT trigger ambiguity"
+  },
+  "decision_logic": {
+    "UNKNOWN": "best_person_similarity < match_threshold",
+    "AMBIGUOUS": "best_person_similarity >= match_threshold AND (best - second_best) < ambiguity_margin",
+    "MATCH": "best_person_similarity >= match_threshold AND (best - second_best) >= ambiguity_margin"
+  },
+  "thresholds": {
+    "match_threshold": 0.5,
+    "ambiguity_margin": 0.05,
+    "note": "Engineering baselines, not accuracy claims. Real validation data required for production."
+  },
+  "provenance": {
+    "MATCH": [
+      "query_provenance",
+      "database_model_id",
+      "database_model_filename",
+      "database_model_sha256",
+      "database_schema_version",
+      "matching_time_ms",
+      "person_aggregation_policy",
+      "decision: match",
+      "matched_person_id",
+      "matched_sample_id",
+      "matched_similarity",
+      "sample_count_for_person",
+      "all_person_matches (top 5)"
+    ],
+    "UNKNOWN": [
+      "decision: below_threshold",
+      "best_person_id",
+      "best_person_similarity",
+      "all_person_matches (top 5)"
+    ],
+    "AMBIGUOUS": [
+      "decision: ambiguous",
+      "best_person_id",
+      "best_person_similarity",
+      "second_best_person_id",
+      "second_best_person_similarity",
+      "margin",
+      "all_person_matches (top 5)"
+    ]
+  },
+  "determinism": {
+    "guaranteed": true,
+    "same_query_same_database_same_config": "identical results",
+    "database_order_independent": true,
+    "tie_handling": "deterministic",
+    "person_aggregation_sorting": "explicit by (person_id, similarity)"
+  },
+  "order_independence": {
+    "verified": true,
+    "shuffling_database": "identical decision",
+    "identical_person_id": true,
+    "identical_similarity_within_tolerance": true
+  },
+  "database_integrity": {
+    "rejected_cases": [
+      "corrupted .npy",
+      "corrupted metadata JSON",
+      "wrong model_id",
+      "wrong model_filename",
+      "empty model_sha256",
+      "wrong embedding dimension",
+      "wrong dtype",
+      "NaN/Inf values",
+      "non-normalized embeddings",
+      "incompatible schema_version"
+    ],
+    "rejection_behavior": "ValueError with descriptive message"
+  },
+  "performance_memory": {
+    "bounded_memory": "1000 embeddings, 10 queries - no growth",
+    "no_database_mutation": "verified",
+    "no_unbounded_candidate_accumulation": "100 queries - constant candidate_count",
+    "similarity_computation": "O(N) vectorized NumPy dot product"
+  },
+  "safety_boundaries": {
+    "phase_14_offline_only": true,
+    "verified_no_access": [
+      "camera",
+      "CameraCapture",
+      "cv2.VideoCapture",
+      "MediaMTX",
+      "RTSP",
+      "RTMP",
+      "live FFmpeg",
+      "subprocess",
+      "attendance",
+      "IN/OUT",
+      "schedule",
+      "Excel",
+      "openpyxl",
+      "1K3D68",
+      "model weight modification"
+    ]
+  },
+  "test_results": {
+    "phase14_targeted_tests": {
+      "total": 91,
+      "passed": 91,
+      "failed": 0,
+      "skipped": 0
+    },
+    "full_regression": {
+      "total": 836,
+      "passed": 828,
+      "failed": 0,
+      "skipped": 8
+    },
+    "test_coverage": {
+      "Matching Contract": 14,
+      "Database Validation": 8,
+      "Query Validation": 6,
+      "Cosine Similarity": 6,
+      "Best Candidate": 1,
+      "Person-Level Matching": 3,
+      "Unknown Threshold": 2,
+      "Ambiguity": 3,
+      "Same-Person Multiple Samples": 2,
+      "Unknown Case": 2,
+      "Ambiguous Case": 3,
+      "Order Independence": 2,
+      "Determinism": 2,
+      "Provenance": 4,
+      "Database Integrity": 10,
+      "Performance/Memory": 3,
+      "Safety": 10,
+      "Integration": 3,
+      "Negative Cases": 7,
+      "Total": 91
+    }
+  },
+  "files_created": {
+    "implementation": [
+      "app/vision/matching_contract.py",
+      "app/vision/matching.py"
+    ],
+    "tests": [
+      "tests/unit/test_phase14_matching.py"
+    ]
+  },
+  "phase_boundary_verification": {
+    "phase14_does_not_implement": [
+      "MediaMTX",
+      "RTMP",
+      "RTSP",
+      "StreamKeeper",
+      "CameraCapture",
+      "IPC",
+      "Scheduler",
+      "SCRFD inference",
+      "ArcFace inference",
+      "1K3D68",
+      "ReID",
+      "YOLO",
+      "Tracking",
+      "Identity",
+      "Attendance",
+      "Line crossing",
+      "Stranger detection",
+      "Annotation",
+      "API",
+      "Database"
+    ],
+    "phase14_only_implements": [
+      "Offline identity matching against Phase 13 database",
+      "MATCH / UNKNOWN / AMBIGUOUS decisions",
+      "Database validation",
+      "Query validation",
+      "Person-level aggregation",
+      "Provenance preservation"
+    ]
+  },
+  "known_limitations": [
+    "Threshold calibration: defaults are engineering baselines, need real validation data",
+    "Approximate nearest neighbor: exact comparison only, consider FAISS/ANN for >10K embeddings",
+    "Single-query API: no batch matching yet",
+    "No score calibration: raw cosine similarity used"
+  ],
+  "final_verdict": {
+    "phase": 14,
+    "status": "PASS",
+    "ready_for_phase_15": true,
+    "summary": "All targeted tests pass (91/91). Full regression passes (828/828, 8 skipped). Safety boundaries verified. Database validation works. Matching logic correct. Determinism guaranteed. Provenance preserved. Memory bounded. No phase boundary violations."
+  }
+}

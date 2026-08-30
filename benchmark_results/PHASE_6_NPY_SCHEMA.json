@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.0",
+  "description": "NPY Artifact Schema for Phase 6 Data Pipeline",
+  "artifact_structure": {
+    "data.npy": "NumPy array containing preprocessed model input tensor (NCHW format)",
+    "data.npy.metadata.json": "JSON metadata file with full provenance information"
+  },
+  "metadata_fields": {
+    "model_id": {
+      "type": "string",
+      "required": true,
+      "description": "Unique model identifier (e.g., 'scrfd', 'arcface')"
+    },
+    "model_sha256": {
+      "type": "string",
+      "required": true,
+      "description": "Full SHA256 hash of the model file used for preprocessing"
+    },
+    "preprocessing_version": {
+      "type": "string",
+      "required": true,
+      "description": "Version of preprocessing pipeline (e.g., 'v1.0')"
+    },
+    "contract_version": {
+      "type": "string",
+      "required": true,
+      "description": "Version of model contract (e.g., '1.0')"
+    },
+    "tensor_shape": {
+      "type": "array",
+      "items": { "type": "integer" },
+      "required": true,
+      "description": "Shape of the preprocessed tensor in NCHW format [batch, channels, height, width]"
+    },
+    "tensor_dtype": {
+      "type": "string",
+      "required": true,
+      "description": "Data type of the tensor (e.g., 'float32', 'uint8')"
+    },
+    "source_type": {
+      "type": "string",
+      "required": true,
+      "enum": ["image", "video"],
+      "description": "Type of input source"
+    },
+    "source_id": {
+      "type": "string",
+      "required": true,
+      "description": "File path or identifier of the source"
+    },
+    "frame_index": {
+      "type": "integer",
+      "required": true,
+      "description": "Frame index (0 for image, 0..N for video)"
+    },
+    "original_width": {
+      "type": "integer",
+      "required": true,
+      "description": "Original width of the source frame in pixels"
+    },
+    "original_height": {
+      "type": "integer",
+      "required": true,
+      "description": "Original height of the source frame in pixels"
+    },
+    "color_space": {
+      "type": "string",
+      "required": true,
+      "enum": ["rgb", "bgr", "gray"],
+      "description": "Color space of the preprocessed tensor"
+    },
+    "tensor_layout": {
+      "type": "string",
+      "required": true,
+      "enum": ["nchw", "nhwc"],
+      "description": "Tensor layout format"
+    },
+    "resize_mode": {
+      "type": "string",
+      "required": true,
+      "enum": ["fit", "crop", "stretch", "letterbox"],
+      "description": "Resize mode used during preprocessing"
+    },
+    "scale_factor": {
+      "type": ["number", "null"],
+      "required": false,
+      "description": "Scale factor applied during resize (if applicable)"
+    },
+    "padding_applied": {
+      "type": ["array", "null"],
+      "items": { "type": "integer" },
+      "required": false,
+      "description": "Padding applied as [top, bottom, left, right] (if applicable)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "required": true,
+      "description": "ISO 8601 timestamp of artifact creation"
+    },
+    "conversions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "required": true,
+      "description": "List of conversions applied in order (e.g., 'bgr_to_rgb', 'letterbox_resize_100x100_to_960x960')"
+    },
+    "extra": {
+      "type": "object",
+      "required": false,
+      "description": "Additional metadata"
+    }
+  },
+  "validation_rules": {
+    "model_id": "Must match a registered model in ModelRegistry",
+    "model_sha256": "Must match the actual SHA256 of the model file",
+    "preprocessing_version": "Must match the current preprocessing version for the model",
+    "contract_version": "Must match the model contract version",
+    "tensor_shape": "Must exactly match the model's target_shape from contract",
+    "tensor_dtype": "Must match the model's dtype from contract",
+    "source_type": "Must be 'image' or 'video'",
+    "frame_index": "Must be >= 0, 0 for images",
+    "color_space": "Must match the model's color_space from contract",
+    "tensor_layout": "Must match the model's tensor_layout from contract",
+    "resize_mode": "Must match the model's resize_mode from contract"
+  },
+  "compatibility": {
+    "description": "An NPY artifact is compatible with a model if and only if:",
+    "rules": [
+      "model_id matches exactly",
+      "preprocessing_version matches exactly",
+      "contract_version matches exactly",
+      "tensor_shape matches exactly",
+      "tensor_dtype matches exactly",
+      "color_space matches exactly",
+      "tensor_layout matches exactly"
+    ]
+  },
+  "example": {
+    "model_id": "scrfd",
+    "model_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+    "preprocessing_version": "v1.0",
+    "contract_version": "1.0",
+    "tensor_shape": [1, 3, 960, 960],
+    "tensor_dtype": "float32",
+    "source_type": "image",
+    "source_id": "test.jpg",
+    "frame_index": 0,
+    "original_width": 100,
+    "original_height": 100,
+    "color_space": "rgb",
+    "tensor_layout": "nchw",
+    "resize_mode": "letterbox",
+    "scale_factor": 9.6,
+    "padding_applied": [0, 0, 0, 0],
+    "created_at": "2026-08-16T21:09:03.095236",
+    "conversions": [
+      "bgr_to_rgb",
+      "letterbox_resize_100x100_to_960x960",
+      "uint8_to_float32",
+      "hwc_to_chw",
+      "add_batch_dim"
+    ],
+    "extra": {}
+  }
+}

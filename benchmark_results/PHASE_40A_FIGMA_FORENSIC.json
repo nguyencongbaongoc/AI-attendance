@@ -1,0 +1,118 @@
+{
+  "phase": "40A",
+  "title": "Figma Forensic Audit",
+  "timestamp": "2026-08-29T03:30:00Z",
+  "figma_directory": "figma/",
+  "framework": "React 19 + TypeScript + Vite",
+  "package_manager": "pnpm",
+  "build_system": "Vite 8.0.5",
+  "entry_point": "src/main.tsx",
+  "routes": [
+    "command (Live Command Center)",
+    "search (Person Search)",
+    "person (Person Detail)",
+    "replay (Annotated Replay)",
+    "provenance (Provenance Chain)",
+    "enrollment (Enrollment / ArcFace DB)"
+  ],
+  "pages": 6,
+  "components": [
+    "Badge",
+    "StatusDot",
+    "ConfidenceBar",
+    "Skeleton",
+    "MonoLabel",
+    "MonoValue",
+    "SectionTitle",
+    "GlassButton",
+    "GlassInput",
+    "CameraCard",
+    "EventRow",
+    "CommandCenter",
+    "PersonSearch",
+    "PersonCard",
+    "PersonDetail",
+    "AnnotatedReplay",
+    "ProvenanceChain",
+    "EnrollmentDB"
+  ],
+  "state_management": "React useState/useEffect (no external store)",
+  "api_clients": "None - all mock data in App.tsx",
+  "websocket_sse_clients": "None - no realtime integration",
+  "mock_data": {
+    "CAMERAS": 6 cameras (CAM-001 to CAM-006),
+    "EVENTS": 7 attendance events,
+    "PERSONS": 8 persons (students + staff)
+  },
+  "static_assets": "None (all inline SVG, CSS-in-JS via Tailwind)",
+  "environment_configuration": "Vite config uses FIGMA_PUBLIC_URL env var, PORT defaults to 8443",
+  "authentication_assumptions": "None - no auth implementation",
+  "responsive_behavior": "CSS Grid/Flexbox with Tailwind responsive classes",
+  "build_command": "pnpm build",
+  "development_command": "pnpm dev (port 8443)",
+  "production_command": "pnpm preview (port 8443)",
+  "styling": "Tailwind CSS 4.0 + custom CSS variables",
+  "design_system": "Liquid-glass visual language, morph transitions, dark mode",
+  "key_findings": [
+    "Complete mock data - no real API integration",
+    "No WebSocket/SSE client implementation",
+    "No authentication/authorization",
+    "No environment-based API configuration",
+    "All data hardcoded in App.tsx (1554 lines)",
+    "Single-file architecture - no component separation",
+    "Uses Figma-specific Vite plugins (figma-make-kit, error overlay replay)",
+    "Port 8443 conflicts with potential backend port 8000",
+    "No TypeScript interfaces for backend contracts",
+    "No API service layer"
+  ],
+  "mapping": {
+    "Dashboard": {
+      "figma_component": "CommandCenter",
+      "backend_api": "/api/v1/health/system, /api/v1/health/cameras, /api/v1/health/metrics",
+      "data_contract": "SystemHealthResponse, CameraHealthResponse, MetricsResponse",
+      "realtime_source": "WebSocket /api/v1/health/ws or SSE /api/v1/health/stream"
+    },
+    "Cameras": {
+      "figma_component": "CameraCard (in CommandCenter)",
+      "backend_api": "/api/v1/health/cameras, /api/v1/health/cameras/{camera_id}",
+      "data_contract": "CameraHealthResponse",
+      "realtime_source": "WebSocket health updates"
+    },
+    "Attendance": {
+      "figma_component": "EventRow, PersonCard, PersonDetail",
+      "backend_api": "MISSING - no attendance API endpoints exist",
+      "data_contract": "MISSING",
+      "realtime_source": "MISSING"
+    },
+    "Students": {
+      "figma_component": "PersonSearch, PersonCard, PersonDetail, EnrollmentDB",
+      "backend_api": "MISSING - no student/enrollment API endpoints exist",
+      "data_contract": "MISSING",
+      "realtime_source": "MISSING"
+    },
+    "Timetable": {
+      "figma_component": "MISSING - no timetable UI",
+      "backend_api": "MISSING - no timetable API endpoints exist",
+      "data_contract": "MISSING",
+      "realtime_source": "MISSING"
+    },
+    "Parent/Telegram": {
+      "figma_component": "MISSING - no parent/telegram UI",
+      "backend_api": "/api/v1/health/queue/stats, /api/v1/health/queue/metrics, /api/v1/health/queue/alerts",
+      "data_contract": "QueueMetricsResponse, AlertResponse",
+      "realtime_source": "WebSocket health updates"
+    },
+    "Excel": {
+      "figma_component": "MISSING - no Excel UI",
+      "backend_api": "MISSING - no Excel export API endpoints exist",
+      "data_contract": "MISSING",
+      "realtime_source": "MISSING"
+    },
+    "System Health": {
+      "figma_component": "System Health panel in CommandCenter, ProvenanceChain",
+      "backend_api": "/api/v1/health/system, /api/v1/health/gpu, /api/v1/health/metrics",
+      "data_contract": "SystemHealthResponse, GPUStatusResponse, MetricsResponse",
+      "realtime_source": "WebSocket /api/v1/health/ws or SSE /api/v1/health/stream"
+    }
+  }
+}

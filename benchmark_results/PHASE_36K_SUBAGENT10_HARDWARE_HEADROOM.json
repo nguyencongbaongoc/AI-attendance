@@ -1,0 +1,187 @@
+{
+  "hardware_specs": {
+    "gpu": "GTX 1660 Ti 6GB",
+    "gpu_cuda_cores": 1536,
+    "gpu_base_clock_mhz": 1500,
+    "gpu_boost_clock_mhz": 1770,
+    "gpu_memory_gb": 6,
+    "gpu_memory_type": "GDDR6",
+    "gpu_memory_bandwidth_gbps": 288,
+    "gpu_tdp_w": 120,
+    "cpu": "i5-11400F",
+    "cpu_cores": 6,
+    "cpu_threads": 12,
+    "cpu_base_clock_ghz": 2.6,
+    "cpu_boost_clock_ghz": 4.4,
+    "cpu_tdp_w": 65,
+    "system_ram_gb": 16,
+    "pcie_gen": 3,
+    "pcie_lanes": 16
+  },
+  "gpu_analysis": {
+    "name": "NVIDIA GeForce GTX 1660 Ti",
+    "graphics_clock_mhz": 1500,
+    "sm_clock_mhz": 1500,
+    "mem_clock_mhz": 5750,
+    "temperature_c": 44,
+    "power_w": 30.024,
+    "power_limit_w": 120.0,
+    "power_utilization_pct": 25.020000000000003,
+    "memory_used_mb": 1057.83203125,
+    "memory_total_mb": 6144.0,
+    "memory_utilization_pct": 17.217318216959633,
+    "gpu_utilization_pct": 1,
+    "memory_utilization_pct_nvml": 1,
+    "pcie_throughput_kbps": null,
+    "pcie_replay_counter": null
+  },
+  "cpu_analysis": {
+    "per_core_utilization": [
+      21.7,
+      4.8,
+      41.8,
+      3.1,
+      15.4,
+      1.6,
+      7.9,
+      21.5,
+      15.4,
+      9.5,
+      10.8,
+      4.6
+    ],
+    "avg_utilization": 13.174999999999999,
+    "max_core_utilization": 41.8,
+    "per_core_freq_mhz": [
+      2592.0
+    ],
+    "per_core_times": [
+      {
+        "user": 1.4,
+        "system": 17.6,
+        "idle": 67.6
+      },
+      {
+        "user": 0.0,
+        "system": 3.1,
+        "idle": 96.9
+      },
+      {
+        "user": 6.0,
+        "system": 10.4,
+        "idle": 80.6
+      },
+      {
+        "user": 0.0,
+        "system": 0.0,
+        "idle": 100.0
+      },
+      {
+        "user": 0.0,
+        "system": 9.2,
+        "idle": 89.2
+      },
+      {
+        "user": 1.6,
+        "system": 4.7,
+        "idle": 93.8
+      },
+      {
+        "user": 1.5,
+        "system": 4.5,
+        "idle": 91.0
+      },
+      {
+        "user": 3.1,
+        "system": 3.1,
+        "idle": 93.8
+      },
+      {
+        "user": 4.4,
+        "system": 14.7,
+        "idle": 75.0
+      },
+      {
+        "user": 7.8,
+        "system": 0.0,
+        "idle": 92.2
+      },
+      {
+        "user": 4.7,
+        "system": 6.2,
+        "idle": 89.1
+      },
+      {
+        "user": 0.0,
+        "system": 1.5,
+        "idle": 96.9
+      }
+    ]
+  },
+  "memory_analysis": {
+    "total_gb": 15.88421630859375,
+    "available_gb": 5.397418975830078,
+    "used_gb": 10.486797332763672,
+    "percent_used": 66.0,
+    "swap_total_gb": 12.0,
+    "swap_used_gb": 0.10366058349609375,
+    "swap_percent": 0.9
+  },
+  "thermal_power": {},
+  "bottleneck_assessment": [
+    "GPU compute underutilized: 0.0% (not compute-bound)",
+    "VRAM OK: 17.2% used",
+    "CPU OK: 0.0%",
+    "Thermal OK: 0.0°C",
+    "Power OK: 0.0%"
+  ],
+  "theoretical_limits": {
+    "gtx1660ti_fp32_tflops": 5.4,
+    "scrfd_model_only_fps": 70,
+    "scrfd_full_pipeline_fps": 31,
+    "current_production_fps": 7.25,
+    "gap_model_vs_pipeline": 2.2580645161290325,
+    "gap_pipeline_vs_production": 4.275862068965517,
+    "gpu_compute_headroom_pct": 55.714285714285715
+  },
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "issue": "GPU compute significantly underutilized (31% vs 70% theoretical)",
+      "current": "GPU utilization: 0.0%",
+      "recommended": "Overlap GPU preprocessing with inference using CUDA streams; optimize ORT enqueue overhead",
+      "impact": "Could achieve 40-50 FPS on detection pipeline"
+    },
+    {
+      "priority": "HIGH",
+      "issue": "ORT enqueue overhead dominates (15ms = 48% of pipeline)",
+      "current": "ORT enqueue: 15.3ms per frame",
+      "recommended": "Pre-bind output buffers, reuse OrtValues, use CUDA Graph for inference",
+      "impact": "Could reduce enqueue to 2-3ms, gaining 10-15 FPS"
+    },
+    {
+      "priority": "HIGH",
+      "issue": "CPU postprocessing (SCRFD decoding) is 39% of pipeline",
+      "current": "Decoding: 12.6ms per frame",
+      "recommended": "Move anchor generation to GPU, use vectorized NumPy, or TensorRT postprocessing",
+      "impact": "Could reduce decoding to 3-5ms, gaining 5-8 FPS"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "CAM1/CAM2 serialization loses 47.5% throughput",
+      "current": "Serialized: 23 FPS combined vs 44 FPS theoretical parallel",
+      "recommended": "Implement parallel camera processing with separate detector instances",
+      "impact": "Could double combined throughput to 40+ FPS"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "Software decoder → NumPy → GPU upload adds 5.4ms",
+      "current": "CPU→GPU transfer: 5.4ms per frame",
+      "recommended": "Use NVDEC with CUDA output to keep frames on GPU",
+      "impact": "Could eliminate 5.4ms transfer per frame"
+    }
+  ],
+  "sustained_load": {
+    "error": "cannot assign to field 'frame_index'"
+  }
+}

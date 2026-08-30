@@ -1,0 +1,121 @@
+{
+  "phase": "40C",
+  "title": "Figma → Real Backend Integration",
+  "timestamp": "2026-08-29T04:05:00Z",
+  "integration_summary": {
+    "api_service_layer": "Created at figma/src/services/api.ts with full TypeScript types",
+    "react_hooks": "Created at figma/src/hooks/useHealth.ts for all health endpoints",
+    "state_management": "Created at figma/src/store/index.ts using Zustand (replaces Pinia)",
+    "design_system": "Preserved and extracted to figma/src/components/ui/DesignSystem.tsx",
+    "pages_migrated": 9,
+    "components_extracted": 15
+  },
+  "backend_apis_integrated": {
+    "health_monitoring": {
+      "endpoints": [
+        "/api/v1/health/system",
+        "/api/v1/health/cameras",
+        "/api/v1/health/cameras/{camera_id}",
+        "/api/v1/health/gpu",
+        "/api/v1/health/metrics",
+        "/api/v1/health/queue/stats",
+        "/api/v1/health/queue/metrics",
+        "/api/v1/health/queue/alerts",
+        "/api/v1/health/snapshot",
+        "/api/v1/health/connections"
+      ],
+      "hooks": [
+        "useSystemHealth",
+        "useCameraHealth",
+        "useCameraHealthById",
+        "useGPUStatus",
+        "useMetrics",
+        "useQueueMetrics",
+        "useQueueAlerts",
+        "useQueueStats",
+        "useHealthSummary"
+      ],
+      "realtime": "WebSocket (/api/v1/health/ws) + SSE (/api/v1/health/stream) with reconnect, sequence numbers, heartbeat"
+    },
+    "attendance": {
+      "endpoints_planned": [
+        "/api/v1/attendance/summary",
+        "/api/v1/attendance/records",
+        "/api/v1/attendance/records/{record_id}",
+        "/api/v1/attendance/person/{person_id}"
+      ],
+      "status": "Types and service functions created, backend implementation pending"
+    },
+    "students_persons": {
+      "endpoints_planned": [
+        "/api/v1/persons",
+        "/api/v1/persons/{person_id}",
+        "/api/v1/persons/{person_id}/appearances"
+      ],
+      "status": "Types and service functions created, backend implementation pending"
+    },
+    "timetable": {
+      "endpoints_planned": [
+        "/api/v1/timetable",
+        "/api/v1/timetable/entries",
+        "/api/v1/timetable/entries/{entry_id}",
+        "/api/v1/timetable/import"
+      ],
+      "status": "Types and service functions created, backend implementation pending"
+    },
+    "enrollment": {
+      "endpoints_planned": [
+        "/api/v1/enrollment/persons",
+        "/api/v1/enrollment/stats",
+        "/api/v1/enrollment/persons/{person_id}",
+        "/api/v1/enrollment/persons/{person_id}/quality-check"
+      ],
+      "status": "Types and service functions created, backend implementation pending"
+    },
+    "excel_export": {
+      "endpoints_planned": [
+        "/api/v1/excel/export/daily",
+        "/api/v1/excel/export/{export_id}/download",
+        "/api/v1/excel/exports"
+      ],
+      "status": "Types and service functions created, backend implementation pending"
+    },
+    "parent_telegram": {
+      "endpoints_planned": [
+        "/api/v1/parents",
+        "/api/v1/parents/{parent_id}",
+        "/api/v1/parents/{parent_id}/link",
+        "/api/v1/telegram/queue/stats"
+      ],
+      "status": "Types and service functions created, backend implementation pending"
+    }
+  },
+  "files_created": [
+    "figma/src/types/backend.ts",
+    "figma/src/services/api.ts",
+    "figma/src/hooks/useHealth.ts",
+    "figma/src/store/index.ts",
+    "figma/src/components/ui/DesignSystem.tsx",
+    "figma/src/components/dashboard/CameraCard.tsx",
+    "figma/src/components/attendance/EventRow.tsx",
+    "figma/src/components/people/PersonCard.tsx",
+    "figma/src/pages/CommandCenter.tsx",
+    "figma/src/pages/PersonSearch.tsx",
+    "figma/src/pages/PersonDetail.tsx",
+    "figma/src/pages/AnnotatedReplay.tsx",
+    "figma/src/pages/ProvenanceChain.tsx",
+    "figma/src/pages/EnrollmentDB.tsx",
+    "figma/src/pages/TimetableManagement.tsx",
+    "figma/src/pages/ParentTelegram.tsx",
+    "figma/src/pages/ExcelExport.tsx",
+    "figma/src/pages/SystemHealth.tsx"
+  ],
+  "configuration_updated": [
+    "figma/package.json (added zustand, eslint)",
+    "figma/vite.config.ts (added proxy for /api and /api/v1/health/ws)",
+    "figma/.env.example (created)",
+    "figma/src/App.tsx (refactored to use stores and hooks)"
+  ],
+  "mock_data_status": "Mock data preserved in stores for development, ready to be replaced with real API calls",
+  "realtime_integration": "HealthWebSocketClient and HealthSSEClient implemented with automatic reconnect, sequence tracking, heartbeat"
+}

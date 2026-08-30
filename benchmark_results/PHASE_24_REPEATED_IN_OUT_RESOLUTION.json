@@ -1,0 +1,164 @@
+{
+  "phase": "24",
+  "name": "Repeated IN/OUT Resolution",
+  "timestamp": "2026-08-22T05:36:49.277198Z",
+  "verdict": "PASS",
+  "unit_tests": {
+    "passed": 0,
+    "failed": 0,
+    "errors": 0
+  },
+  "integration_tests": {
+    "passed": 0,
+    "failed": 0,
+    "errors": 0
+  },
+  "acceptance_checks": {
+    "total": 26,
+    "passed": 26,
+    "failed": 0,
+    "details": {
+      "state_machine_unknown_in": {
+        "passed": true,
+        "details": "UNKNOWN + IN -> inside"
+      },
+      "state_machine_unknown_out": {
+        "passed": true,
+        "details": "UNKNOWN + OUT -> outside"
+      },
+      "state_machine_inside_out": {
+        "passed": true,
+        "details": "INSIDE + OUT -> outside"
+      },
+      "state_machine_outside_in": {
+        "passed": true,
+        "details": "OUTSIDE + IN -> inside"
+      },
+      "repeated_in_suppressed": {
+        "passed": true,
+        "details": "3 IN events -> 1 accepted, 2 suppressed"
+      },
+      "repeated_out_suppressed": {
+        "passed": true,
+        "details": "3 OUT events -> 1 accepted, 2 suppressed"
+      },
+      "in_out_in_sequence": {
+        "passed": true,
+        "details": "IN->OUT->IN -> 3 transitions"
+      },
+      "initial_out_reject": {
+        "passed": true,
+        "details": "REJECT policy -> 1 rejected, final state: unknown"
+      },
+      "initial_out_accept": {
+        "passed": true,
+        "details": "ACCEPT policy -> outside"
+      },
+      "temporal_ordering_sort": {
+        "passed": true,
+        "details": "Out-of-order sorted to: [1000.0, 2000.0, 3000.0]"
+      },
+      "equal_timestamp_tiebreak": {
+        "passed": true,
+        "details": "Equal timestamps tie-broken by event_id: ['RIE-A', 'RIE-B']"
+      },
+      "multi_track_isolation": {
+        "passed": true,
+        "details": "track_A: outside, track_B: inside"
+      },
+      "multi_camera_isolation": {
+        "passed": true,
+        "details": "CAM1: outside (2 transitions), CAM2: outside (1 transitions)"
+      },
+      "provenance_preserved": {
+        "passed": true,
+        "details": "All provenance fields preserved"
+      },
+      "idempotency": {
+        "passed": true,
+        "details": "Same events produce identical resolution IDs"
+      },
+      "duplicate_event_id_suppressed": {
+        "passed": true,
+        "details": "Duplicate event_id -> 1 accepted, 1 suppressed"
+      },
+      "resolution_result_serialization": {
+        "passed": true,
+        "details": "ResolutionResult round-trip successful"
+      },
+      "resolved_transition_serialization": {
+        "passed": true,
+        "details": "ResolvedTransition round-trip successful"
+      },
+      "resolver_config_serialization": {
+        "passed": true,
+        "details": "ResolverConfig round-trip successful"
+      },
+      "determinism": {
+        "passed": true,
+        "details": "Resolution IDs match: RES-cb97ddb1a3e298c9"
+      },
+      "rapid_reversal_protection": {
+        "passed": true,
+        "details": "Rapid reversal (0.5s) suppressed: 1 suppressed"
+      },
+      "rapid_reversal_disabled_by_default": {
+        "passed": true,
+        "details": "Rapid reversal (1ms) not suppressed by default: 2 accepted"
+      },
+      "bounded_track_states": {
+        "passed": true,
+        "details": "100 track states created, clear works: True"
+      },
+      "bounded_track_states_cleared": {
+        "passed": true,
+        "details": "Clear removes all track states"
+      },
+      "config_hash_deterministic": {
+        "passed": true,
+        "details": "Same config produces same hash: ee5325714edc32b2"
+      },
+      "config_hash_different": {
+        "passed": true,
+        "details": "Different configs produce different hashes: ee5325714edc32b2 vs cab9873eac82b712"
+      }
+    }
+  },
+  "state_machine_behavior": {
+    "unknown_in_to_inside": true,
+    "unknown_out_to_outside": true,
+    "inside_out_to_outside": true,
+    "outside_in_to_inside": true
+  },
+  "repeated_event_behavior": {
+    "repeated_in_suppressed": true,
+    "repeated_out_suppressed": true
+  },
+  "initial_out_policy": {
+    "reject_policy": true,
+    "accept_policy": true
+  },
+  "temporal_ordering": {
+    "sort_policy": true,
+    "equal_timestamp_tiebreak": true
+  },
+  "multi_track_isolation": true,
+  "multi_camera_isolation": true,
+  "provenance_preservation": true,
+  "idempotency": true,
+  "serialization": {
+    "resolution_result": true,
+    "resolved_transition": true,
+    "resolver_config": true
+  },
+  "determinism": true,
+  "rapid_reversal_protection": {
+    "enabled": true,
+    "disabled_by_default": true
+  },
+  "bounded_memory": {
+    "track_states": true,
+    "cleared": true
+  },
+  "phase_22_23_24_integration": true
+}

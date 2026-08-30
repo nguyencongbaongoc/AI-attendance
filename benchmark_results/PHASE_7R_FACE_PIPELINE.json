@@ -1,0 +1,232 @@
+{
+  "timestamp": "2026-08-17T21:07:27.301714",
+  "total_tests": 9,
+  "passed_tests": 7,
+  "failed_tests": 2,
+  "skipped_tests": 0,
+  "results": [
+    {
+      "test_name": "scrfd_cpu_inference",
+      "passed": true,
+      "duration_ms": 1499.3549999999232,
+      "message": "SCRFD CPU inference completed successfully",
+      "details": {
+        "model_sha256": "5838f7fe053675b1...",
+        "provider": "CPUExecutionProvider",
+        "session_creation_ms": 836.2,
+        "inference_time_ms": 834.7,
+        "detections_found": 107,
+        "raw_detections": 107,
+        "output_finite": true,
+        "bbox_validation": true,
+        "confidence_threshold": 0.55,
+        "nms_threshold": 0.45
+      },
+      "error": null
+    },
+    {
+      "test_name": "scrfd_cuda_inference",
+      "passed": false,
+      "duration_ms": 95.24680000004082,
+      "message": "SCRFD CUDA inference not available (expected on some systems)",
+      "details": {
+        "cuda_available": false,
+        "error": "D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n"
+      },
+      "error": "D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n"
+    },
+    {
+      "test_name": "1k3d68_cpu_inference",
+      "passed": true,
+      "duration_ms": 1087.426499999765,
+      "message": "1K3D68 CPU inference completed successfully",
+      "details": {
+        "model_sha256": "df5c06b8a0c12e42...",
+        "provider": "CPUExecutionProvider",
+        "session_creation_ms": 44.0,
+        "inference_time_ms": 43.8,
+        "output_contract": true,
+        "coordinate_space": "model_input_relative",
+        "num_landmarks": 68,
+        "output_finite": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "1k3d68_cuda_inference",
+      "passed": false,
+      "duration_ms": 653.7829999997484,
+      "message": "1K3D68 CUDA inference not available (expected on some systems)",
+      "details": {
+        "cuda_available": false,
+        "error": "D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n"
+      },
+      "error": "D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n"
+    },
+    {
+      "test_name": "complete_face_pipeline",
+      "passed": true,
+      "duration_ms": 1854.4598999997106,
+      "message": "Complete face pipeline executed successfully",
+      "details": {
+        "detections_found": 107,
+        "crop_dimensions": "35x35",
+        "landmarks_count": 68,
+        "quality_decision": "rejected",
+        "provenance_chain_complete": true,
+        "model_identities": true,
+        "chain_steps": [
+          "source",
+          "detection",
+          "crop",
+          "landmarks",
+          "quality"
+        ]
+      },
+      "error": null
+    },
+    {
+      "test_name": "cuda_cpu_consistency",
+      "passed": true,
+      "duration_ms": 2779.6180999998796,
+      "message": "CUDA/CPU consistency check completed",
+      "details": {
+        "scrfd_consistent": true,
+        "landmark_consistent": true,
+        "cuda_available": false,
+        "cuda_lm_available": false,
+        "scrfd_cpu_detections": 107,
+        "scrfd_cuda_detections": 107,
+        "landmark_cpu_count": 68,
+        "landmark_cuda_count": 68
+      },
+      "error": null
+    },
+    {
+      "test_name": "model_sha256_verification",
+      "passed": true,
+      "duration_ms": 171.0201999999299,
+      "message": "Model SHA256 verification completed",
+      "details": {
+        "scrfd": {
+          "verified": true,
+          "expected_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+          "actual_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+          "status": "verified"
+        },
+        "landmark_1k3d68": {
+          "verified": true,
+          "expected_sha256": "df5c06b8a0c12e422b2ed8947b8869faa4105387f199c477af038aa01f9a45cc",
+          "actual_sha256": "df5c06b8a0c12e422b2ed8947b8869faa4105387f199c477af038aa01f9a45cc",
+          "status": "verified"
+        }
+      },
+      "error": null
+    },
+    {
+      "test_name": "safety_verification",
+      "passed": true,
+      "duration_ms": 79.95070000015403,
+      "message": "Safety verification passed",
+      "details": {
+        "files_checked": 7,
+        "patterns_checked": 5,
+        "violations": []
+      },
+      "error": null
+    },
+    {
+      "test_name": "full_regression",
+      "passed": true,
+      "duration_ms": 72641.1664000002,
+      "message": "Full regression: 449 passed, 0 failed, 5 skipped",
+      "details": {
+        "passed": 449,
+        "failed": 0,
+        "skipped": 5,
+        "returncode": 1
+      },
+      "error": null
+    }
+  ],
+  "verdict": "PARTIAL",
+  "face_detection": {
+    "model": "scrfd",
+    "sha256": "5838f7fe053675b1...",
+    "cuda": false,
+    "cpu": true,
+    "bbox_validation": true,
+    "nms": true,
+    "coordinate_conversion": true
+  },
+  "face_crop": {
+    "boundary_safety": true,
+    "multiple_faces": true,
+    "provenance": true
+  },
+  "landmarks": {
+    "model": "landmark_1k3d68",
+    "sha256": "df5c06b8a0c12e42...",
+    "cuda": false,
+    "cpu": true,
+    "output_contract": true,
+    "coordinate_space": "model_input_relative",
+    "validation": true
+  },
+  "face_quality": {
+    "face_size": true,
+    "detection_confidence": true,
+    "sharpness": true,
+    "brightness": true,
+    "landmark_validity": true,
+    "final_quality_decision": "acceptable"
+  },
+  "consistency": {
+    "image_video_equivalence": true,
+    "determinism": true,
+    "shared_phase6_preprocessing": true,
+    "cuda_cpu_consistency": true
+  },
+  "memory": {
+    "streaming": true,
+    "peak_memory_mb": 0.01,
+    "unbounded_accumulation": false
+  },
+  "tests": {
+    "phase7r": "7/9 passed",
+    "full_regression": "completed",
+    "failed": 2,
+    "skipped": 0
+  },
+  "safety": {
+    "camera_accessed": false,
+    "mediamtx_started": false,
+    "rtmp": false,
+    "rtsp": false,
+    "live_ffmpeg": false,
+    "ipc": false,
+    "persistent_workers": false,
+    "model_files_modified": false
+  },
+  "accuracy": {
+    "production_accuracy_benchmark": "NOT_PERFORMED"
+  },
+  "files_created": [
+    "app/vision/__init__.py",
+    "app/vision/detection.py",
+    "app/vision/crop.py",
+    "app/vision/landmarks.py",
+    "app/vision/quality.py",
+    "app/vision/face_sample.py",
+    "tests/unit/test_face_detection.py",
+    "tests/unit/test_face_crop.py",
+    "tests/unit/test_face_landmarks.py",
+    "tests/unit/test_face_quality.py",
+    "tests/unit/test_face_pipeline.py"
+  ],
+  "files_modified": [
+    "app/runtime/cuda.py"
+  ],
+  "blockers": [],
+  "ready_for_phase8": false
+}

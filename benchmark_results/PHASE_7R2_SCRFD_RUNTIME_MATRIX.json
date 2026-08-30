@@ -1,0 +1,75 @@
+{
+  "timestamp": "2026-08-17T21:46:56.633973",
+  "model": "scrfd_10g_bnkps",
+  "model_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+  "environment": {
+    "python": "3.12.10",
+    "pytorch": "2.13.0+cu126",
+    "ort": "1.17.0",
+    "cuda": "13.3",
+    "cudnn": "92.400",
+    "driver": "unknown",
+    "gpu": "NVIDIA GeForce GTX 1660 Ti"
+  },
+  "contract": {
+    "input_height": 960,
+    "input_width": 960,
+    "resize_mode": "letterbox",
+    "color_space": "rgb",
+    "normalization_verified": "False",
+    "mismatch": "Model native 640x640 vs Contract 960x960"
+  },
+  "cpu": {
+    "inference": true,
+    "decoding": true,
+    "deterministic": true,
+    "stress_100": true,
+    "memory_stable": true
+  },
+  "cuda": {
+    "available": false,
+    "inference": false,
+    "decoding": false,
+    "consistency": false,
+    "stress_100": false,
+    "memory_stable": false
+  },
+  "synthetic_patterns": {
+    "blank_640": true,
+    "noise_640": true,
+    "noise_1080p": true,
+    "noise_4k": true,
+    "face_1": true,
+    "face_3": true
+  },
+  "integration": {
+    "pipeline": true,
+    "coordinates": false,
+    "bbox_restoration": false,
+    "keypoints": true,
+    "provenance": true
+  },
+  "root_cause": {
+    "category": "C",
+    "evidence": [
+      "standalone_cuda_inference: CUDA session creation failed",
+      "  Error: D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n",
+      "cuda_stress_100_iter: CUDA session creation failed",
+      "  Error: D:\\a\\_work\\1\\s\\onnxruntime\\python\\onnxruntime_pybind_state.cc:857 onnxruntime::python::CreateExecutionProviderInstance CUDA_PATH is set but CUDA wasnt able to be loaded. Please install the correct version of CUDA andcuDNN as mentioned in the GPU requirements page  (https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements),  make sure they're in the PATH, and that your GPU is supported.\n",
+      "cuda_cpu_consistency: CUDA not available for consistency test"
+    ],
+    "repairs": [
+      "CUDA EP LoadLibrary error 126 - missing CUDA/cuDNN DLLs in PATH",
+      "Added PyTorch lib to PATH and DLL directories"
+    ]
+  },
+  "verdict": "PARTIAL",
+  "ready_for_detector_replacement": false,
+  "recommended_replacement": null,
+  "limitations": [
+    "CUDA inference unavailable (LoadLibrary error 126 for onnxruntime_providers_cuda.dll)",
+    "Preprocessing contract uses 960x960, model native is 640x640 (2.25x anchor mismatch)",
+    "Normalization parameters NOT_VERIFIED for SCRFD",
+    "CUDAExecutionProvider registered but fails to load (CUDA/cuDNN version mismatch)"
+  ]
+}

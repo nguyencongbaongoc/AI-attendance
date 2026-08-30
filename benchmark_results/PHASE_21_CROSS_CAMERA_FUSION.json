@@ -1,0 +1,323 @@
+{
+  "verdict": "PASS",
+  "total_tests": 23,
+  "passed": 23,
+  "failed": 0,
+  "categories": {
+    "contract": 7,
+    "association": 5,
+    "evidence": 8,
+    "state": 0,
+    "provenance": 1,
+    "determinism": 0,
+    "memory": 1,
+    "architecture": 0,
+    "integration": 1
+  },
+  "test_results": [
+    {
+      "name": "test_global_observation_contract",
+      "passed": true,
+      "message": "GlobalObservation contract exists and is valid",
+      "details": {
+        "fields_verified": [
+          "global_observation_id",
+          "observations",
+          "association_state",
+          "association_evidence",
+          "temporal_start",
+          "temporal_end",
+          "temporal_span",
+          "camera_ids",
+          "local_track_ids",
+          "primary_identity_candidate",
+          "identity_confidence",
+          "identity_state",
+          "config_snapshot",
+          "model_versions",
+          "created_at",
+          "version"
+        ]
+      },
+      "duration_ms": 0.07860000187065452
+    },
+    {
+      "name": "test_global_observation_id_uniqueness",
+      "passed": true,
+      "message": "global_observation_id is stable and unique",
+      "details": {
+        "id1": "GO-cd5c724c3b44",
+        "id2": "GO-cd5c724c3b44",
+        "id3": "GO-cffeaad640a7"
+      },
+      "duration_ms": 0.3619999988586642
+    },
+    {
+      "name": "test_single_camera_preservation",
+      "passed": true,
+      "message": "Single-camera observations preserved but not associated",
+      "details": {
+        "window_size": 5
+      },
+      "duration_ms": 0.10910000128205866
+    },
+    {
+      "name": "test_two_camera_association",
+      "passed": true,
+      "message": "Two-camera association works with compatible timestamps",
+      "details": {
+        "global_obs_id": "GO-cd5c724c3b44",
+        "state": "associated",
+        "timestamp_delta": 0.09999999999999964
+      },
+      "duration_ms": 0.12730000162264332
+    },
+    {
+      "name": "test_timestamp_compatibility",
+      "passed": true,
+      "message": "Timestamp association works within tolerance",
+      "details": {
+        "timestamp_delta": 0.3,
+        "tolerance": 0.5
+      },
+      "duration_ms": 0.12460000289138407
+    },
+    {
+      "name": "test_timestamp_incompatibility",
+      "passed": true,
+      "message": "Timestamp incompatibility correctly prevents association",
+      "details": {
+        "timestamp_delta": 1.0,
+        "tolerance": 0.5,
+        "global_observations_produced": 0
+      },
+      "duration_ms": 0.06990000110818073
+    },
+    {
+      "name": "test_geometry_unavailable",
+      "passed": true,
+      "message": "Geometry evidence correctly marked unavailable",
+      "details": {
+        "geometry_compatible": null,
+        "provenance": "unavailable"
+      },
+      "duration_ms": 0.12980000610696152
+    },
+    {
+      "name": "test_geometry_conflict_unavailable",
+      "passed": true,
+      "message": "Geometry conflict handled when unavailable",
+      "details": {
+        "geometry_compatible": false,
+        "provenance": "not_calibrated"
+      },
+      "duration_ms": 0.11210000229766592
+    },
+    {
+      "name": "test_direction_unavailable",
+      "passed": true,
+      "message": "Direction evidence correctly marked unavailable",
+      "details": {
+        "direction_compatible": null,
+        "provenance": "not_available"
+      },
+      "duration_ms": 0.1112000027205795
+    },
+    {
+      "name": "test_direction_unavailable",
+      "passed": true,
+      "message": "Direction evidence correctly marked unavailable",
+      "details": {
+        "direction_compatible": null,
+        "provenance": "not_available"
+      },
+      "duration_ms": 0.12659999629249796
+    },
+    {
+      "name": "test_track_continuity_preservation",
+      "passed": true,
+      "message": "Local track IDs preserved, not merged",
+      "details": {
+        "local_track_ids": [
+          "CAM1:track_A17",
+          "CAM2:track_B04"
+        ]
+      },
+      "duration_ms": 0.13970000145491213
+    },
+    {
+      "name": "test_identity_evidence_contribution",
+      "passed": true,
+      "message": "Identity evidence contributes to association",
+      "details": {
+        "identity_support": 0.5,
+        "candidates": [
+          "person_123"
+        ],
+        "primary_identity": "person_123"
+      },
+      "duration_ms": 0.18740000086836517
+    },
+    {
+      "name": "test_ambiguous_identity",
+      "passed": true,
+      "message": "Ambiguous identity recorded in evidence",
+      "details": {
+        "identity_support": 0.0,
+        "candidates": [
+          "person_123",
+          "person_456"
+        ],
+        "conflict_recorded": true
+      },
+      "duration_ms": 0.149200001033023
+    },
+    {
+      "name": "test_insufficient_evidence_not_forced",
+      "passed": true,
+      "message": "Insufficient evidence results in INSUFFICIENT_EVIDENCE state",
+      "details": {
+        "state": "insufficient_evidence",
+        "score": 0.05000000000000071
+      },
+      "duration_ms": 0.12879999849246815
+    },
+    {
+      "name": "test_multi_camera_association",
+      "passed": true,
+      "message": "Multi-camera association works (3 cameras)",
+      "details": {
+        "camera_ids": [
+          "CAM1",
+          "CAM2",
+          "CAM3"
+        ],
+        "track_count": 3
+      },
+      "duration_ms": 0.1610000035725534
+    },
+    {
+      "name": "test_provenance_preservation",
+      "passed": true,
+      "message": "Full provenance chain preserved",
+      "details": {
+        "detection_id": "det_001",
+        "face_crop_id": "crop_001",
+        "hypothesis_id": "hyp_abc123",
+        "track_provenance": {
+          "track1": "CAM1:track_A17",
+          "track2": "CAM2:track_B04"
+        }
+      },
+      "duration_ms": 0.11980000272160396
+    },
+    {
+      "name": "test_deterministic_association",
+      "passed": true,
+      "message": "Association is deterministic across runs",
+      "details": {
+        "global_obs_id": "GO-ed84bab22747",
+        "state": "associated",
+        "runs": 5
+      },
+      "duration_ms": 0.5612000022665597
+    },
+    {
+      "name": "test_duplicate_idempotency",
+      "passed": true,
+      "message": "Duplicate observations rejected (idempotent)",
+      "details": {
+        "first_add": true,
+        "second_add": false,
+        "window_size": 1
+      },
+      "duration_ms": 0.06749999738531187
+    },
+    {
+      "name": "test_out_of_order_timestamps",
+      "passed": true,
+      "message": "Out-of-order timestamps handled with sort policy",
+      "details": {
+        "window_order": [
+          "o_early",
+          "o_late"
+        ]
+      },
+      "duration_ms": 0.14229999942472205
+    },
+    {
+      "name": "test_bounded_memory",
+      "passed": true,
+      "message": "Observation windows respect memory bounds",
+      "details": {
+        "window_size": 5,
+        "max_window": 5
+      },
+      "duration_ms": 0.12739999510813504
+    },
+    {
+      "name": "test_conflicting_candidates",
+      "passed": true,
+      "message": "Conflicting candidates handled",
+      "details": {
+        "global_observations": 1,
+        "states": [
+          "ambiguous"
+        ]
+      },
+      "duration_ms": 0.12969999806955457
+    },
+    {
+      "name": "test_n_camera_architecture",
+      "passed": true,
+      "message": "Architecture supports N cameras (tested with 5)",
+      "details": {
+        "camera_count": 5,
+        "cameras": [
+          "CAM1",
+          "CAM2",
+          "CAM3",
+          "CAM4",
+          "CAM5"
+        ]
+      },
+      "duration_ms": 0.2739000046858564
+    },
+    {
+      "name": "test_phase20_integration_gate",
+      "passed": true,
+      "message": "Phase 21 consumes Phase 20 replay outputs",
+      "details": {
+        "frames_processed": 20,
+        "observations_added": 20,
+        "global_observations": 1,
+        "cameras": [
+          "CAM1",
+          "CAM2"
+        ]
+      },
+      "duration_ms": 6437.986300006742
+    }
+  ],
+  "global_observation_contract": "verified",
+  "association_policy": "evidence_based_explicit_states",
+  "timestamp_behavior": "replay_timestamps_with_configurable_tolerance",
+  "geometry_behavior": "unavailable_when_not_calibrated",
+  "direction_behavior": "unavailable_when_not_available",
+  "identity_evidence_behavior": "contributes_as_supporting_evidence",
+  "ambiguity_behavior": "explicit_AMBIGUOUS_state",
+  "provenance": "full_chain_preserved",
+  "determinism": "verified",
+  "idempotency": "verified",
+  "out_of_order_behavior": "sort_policy",
+  "bounded_memory": "verified",
+  "n_camera_support": "verified",
+  "phase_20_integration": "passed",
+  "known_limitations": [
+    "Geometry association requires calibrated camera relationship (Phase 22)",
+    "Direction association requires track direction vectors (future phase)",
+    "Identity matching requires enrollment database (Phase 13/14)",
+    "Test videos are synthetic (no real faces)"
+  ],
+  "phase_22_readiness": true
+}

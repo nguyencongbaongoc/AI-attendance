@@ -1,0 +1,47 @@
+import json
+from pathlib import Path
+
+# Update task progress for Phase 31
+task_progress = {
+    'phase': '31',
+    'objective': 'OFFLINE FULL END-TO-END GATE',
+    'steps': [
+        {'id': '1', 'name': 'Forensic Pipeline Map - Inspect Phase 20-30 interfaces', 'status': 'completed', 'details': 'Trace contracts between all phases'},
+        {'id': '2', 'name': 'Subagent A: Trace Phase 20 -> Phase 19', 'status': 'completed', 'details': 'Replay to matching pipeline'},
+        {'id': '3', 'name': 'Subagent B: Trace Phase 19 -> Phase 21 -> Phase 22', 'status': 'completed', 'details': 'Matching to fusion to geometry'},
+        {'id': '4', 'name': 'Subagent C: Trace Phase 22 -> Phase 23 -> Phase 24', 'status': 'completed', 'details': 'Geometry to raw events to resolution'},
+        {'id': '5', 'name': 'Subagent D: Trace Phase 24 -> Phase 25 -> Phase 26', 'status': 'completed', 'details': 'Resolution to persistence to attendance engine'},
+        {'id': '6', 'name': 'Subagent E: Trace Phase 26 -> Phase 29 -> Phase 30', 'status': 'completed', 'details': 'Attendance to immediate output to Excel'},
+        {'id': '7', 'name': 'Subagent F: Audit Phase 27 replay/evidence/provenance', 'status': 'completed', 'details': 'Annotated replay and video evidence'},
+        {'id': '8', 'name': 'Test Data Strategy - Verify existing fixtures', 'status': 'completed', 'details': 'Phase 20 test videos, enrollment DB'},
+        {'id': '9', 'name': 'Two-Camera Verification - CAM1 and CAM2', 'status': 'completed', 'details': 'Both cameras process, isolation preserved'},
+        {'id': '10', 'name': 'Phase 15-19 Chain Verification', 'status': 'completed', 'details': 'Face detection -> crop -> quality -> temporal -> matching'},
+        {'id': '11', 'name': 'Phase 21 Integration Verification', 'status': 'completed', 'details': 'GlobalObservation, camera isolation, provenance'},
+        {'id': '12', 'name': 'Phase 22 Integration Verification', 'status': 'completed', 'details': 'ORIGINAL_FRAME coords, line crossing, provenance'},
+        {'id': '13', 'name': 'Phase 23 Integration Verification', 'status': 'completed', 'details': 'CrossingEvent -> RawInOutEvent, deterministic IDs'},
+        {'id': '14', 'name': 'Phase 24 Integration Verification', 'status': 'completed', 'details': 'State machine, repeated suppression, provenance'},
+        {'id': '15', 'name': 'Phase 25 Persistence Verification', 'status': 'completed', 'details': 'SQLite, idempotency, restart recovery'},
+        {'id': '16', 'name': 'Phase 26 Attendance Decision Verification', 'status': 'completed', 'details': 'PRESENT/LATE/LEFT/ABSENT/UNKNOWN, provenance'},
+        {'id': '17', 'name': 'Phase 29 Immediate Output Verification', 'status': 'completed', 'details': 'Event bus, deduplication, bounded memory'},
+        {'id': '18', 'name': 'Phase 30 Excel Export Verification', 'status': 'completed', 'details': 'Workbook, sheets, provenance, no DB mutation'},
+        {'id': '19', 'name': 'Phase 27 Evidence Verification', 'status': 'completed', 'details': 'Annotated replay, appearance, video segments'},
+        {'id': '20', 'name': 'End-to-End Provenance Chain', 'status': 'completed', 'details': 'Full traceability from video to Excel'},
+        {'id': '21', 'name': 'Idempotency Gate - Run twice', 'status': 'completed', 'details': 'No duplicate logical records'},
+        {'id': '22', 'name': 'Determinism Gate - Run twice', 'status': 'completed', 'details': 'Same outputs for same inputs'},
+        {'id': '23', 'name': 'Two-Camera Cross-Camera Test', 'status': 'completed', 'details': 'CAM1/CAM2 isolation, fusion correctness'},
+        {'id': '24', 'name': 'Negative Tests', 'status': 'completed', 'details': 'Missing video, corrupt frame, unknown identity, etc.'},
+        {'id': '25', 'name': 'Memory/Bounding Gate', 'status': 'completed', 'details': 'Bounded buffers, event history, deduplication'},
+        {'id': '26', 'name': 'Create pytest integration suite', 'status': 'completed', 'details': 'tests/integration/test_phase31_offline_full_e2e.py'},
+        {'id': '27', 'name': 'Create acceptance script', 'status': 'in_progress', 'details': 'scripts/phase31_offline_full_e2e.py'},
+        {'id': '28', 'name': 'Generate reports', 'status': 'pending', 'details': 'PHASE_31_OFFLINE_FULL_E2E.json and .md'},
+        {'id': '29', 'name': 'Final verdict and Phase 32 readiness', 'status': 'pending', 'details': 'PASS/PASS WITH LIMITATIONS/FAIL'},
+    ]
+}
+
+# Save to a tracking file
+tracking_file = Path('benchmark_results/PHASE_31_TASK_PROGRESS.json')
+tracking_file.parent.mkdir(exist_ok=True)
+with open(tracking_file, 'w') as f:
+    json.dump(task_progress, f, indent=2)
+
+print('Task progress updated:', tracking_file)

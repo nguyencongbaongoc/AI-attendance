@@ -1,0 +1,110 @@
+{
+  "phase": "36-R",
+  "name": "LONG_DURATION_SOAK_REVALIDATION",
+  "timestamp": "2026-08-25T00:48:00.526971Z",
+  "verdict": "NOT_READY",
+  "configured_duration_minutes": 0.1,
+  "configured_warmup_seconds": 5.0,
+  "actual_duration_seconds": 0.0,
+  "actual_duration_minutes": 0.0,
+  "startup_duration_seconds": 0.0,
+  "warmup_duration_seconds": 0.0,
+  "soak_duration_seconds": 0.0,
+  "first_live_timestamp": null,
+  "start_timestamp": "2026-08-25T07:47:54.628255Z",
+  "end_timestamp": "1970-01-01T07:00:00Z",
+  "termination_reason": "stream_open_failed: Failed to open RTSP source: Failed to open video: rtsp://127.0.0.1:8554/live/cam2",
+  "soak_completed": false,
+  "camera_states": {
+    "CAM1": "OFFLINE",
+    "CAM2": "OFFLINE"
+  },
+  "cam1": {
+    "camera_id": "CAM1",
+    "overall_duration": 5.89871621131897,
+    "startup": {},
+    "warmup": {},
+    "soak": {}
+  },
+  "cam2": {
+    "camera_id": "CAM2",
+    "overall_duration": 5.89871621131897,
+    "startup": {},
+    "warmup": {},
+    "soak": {}
+  },
+  "cross_camera_contamination": {
+    "verified": true,
+    "level": "LIVE_RUNTIME_VERIFIED",
+    "events": []
+  },
+  "system_resources": {
+    "available": false
+  },
+  "event_bus": {
+    "history_bounded": true,
+    "dedup_cache_bounded": true
+  },
+  "regression": {
+    "verified": true,
+    "level": "LIVE_RUNTIME_VERIFIED",
+    "details": {}
+  },
+  "determinism_idempotency": {
+    "verified": false,
+    "error": "streams_failed"
+  },
+  "inference_latency_windows": {
+    "0-5min": {
+      "count": 0
+    },
+    "5-10min": {
+      "count": 0
+    },
+    "10-15min": {
+      "count": 0
+    },
+    "15-20min": {
+      "count": 0
+    },
+    "20-25min": {
+      "count": 0
+    },
+    "25-30min": {
+      "count": 0
+    }
+  },
+  "verification_classification": {
+    "cam1_soak": {
+      "frame_continuity": "LIVE_RUNTIME_VERIFIED",
+      "timestamp_monotonicity": "LIVE_RUNTIME_VERIFIED",
+      "camera_id_integrity": "LIVE_RUNTIME_VERIFIED",
+      "health_stability": "LIVE_RUNTIME_VERIFIED",
+      "no_uncontrolled_retry": "LIVE_RUNTIME_VERIFIED",
+      "queue_boundedness": "LIVE_RUNTIME_VERIFIED"
+    },
+    "cam2_soak": {
+      "frame_continuity": "LIVE_RUNTIME_VERIFIED",
+      "timestamp_monotonicity": "LIVE_RUNTIME_VERIFIED",
+      "camera_id_integrity": "LIVE_RUNTIME_VERIFIED",
+      "health_stability": "LIVE_RUNTIME_VERIFIED",
+      "no_uncontrolled_retry": "LIVE_RUNTIME_VERIFIED",
+      "queue_boundedness": "LIVE_RUNTIME_VERIFIED"
+    },
+    "cam1_startup_warmup": {},
+    "cam2_startup_warmup": {},
+    "cross_camera_contamination": "LIVE_RUNTIME_VERIFIED",
+    "memory_stability": "NOT_VERIFIED",
+    "event_bus_boundedness": "LIVE_RUNTIME_VERIFIED",
+    "regression": "LIVE_RUNTIME_VERIFIED",
+    "determinism_idempotency": "NOT_VERIFIED"
+  },
+  "memory_growth_threshold_percent": 20.0,
+  "regression_passed": true,
+  "determinism_verified": false,
+  "known_limitations": [
+    "Soak terminated early: stream_open_failed: Failed to open RTSP source: Failed to open video: rtsp://127.0.0.1:8554/live/cam2",
+    "Soak did not complete full duration: 0.0/0.2 min",
+    "System resource monitoring not fully available"
+  ]
+}

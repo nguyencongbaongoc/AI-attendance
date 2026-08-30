@@ -1,0 +1,375 @@
+{
+  "timestamp": "2026-08-21T02:54:25.619065Z",
+  "total_tests": 20,
+  "passed_tests": 20,
+  "failed_tests": 0,
+  "skipped_tests": 0,
+  "results": [
+    {
+      "test_name": "similarity_contract",
+      "passed": true,
+      "duration_ms": 0.6306999998741958,
+      "message": "Similarity contract validated",
+      "details": {
+        "metric": "cosine_similarity",
+        "higher_is_better": true,
+        "range": "[0, 1] clamped",
+        "normalization": "L2",
+        "distance_metric": "none"
+      },
+      "error": null
+    },
+    {
+      "test_name": "calibration_data_contracts",
+      "passed": true,
+      "duration_ms": 0.02099999983329326,
+      "message": "Calibration data contracts validated",
+      "details": {
+        "genuine_pair": "validated",
+        "impostor_pair": "validated",
+        "calibration_sample": "validated",
+        "serialization": "validated"
+      },
+      "error": null
+    },
+    {
+      "test_name": "score_collection",
+      "passed": true,
+      "duration_ms": 0.2532999997129082,
+      "message": "Score collection validated",
+      "details": {
+        "genuine_count": 100,
+        "impostor_count": 100,
+        "genuine_mean": 0.7459784310812912,
+        "impostor_mean": 0.3373862986969257,
+        "genuine_std": 0.061822726000462694,
+        "impostor_std": 0.10371264925479673
+      },
+      "error": null
+    },
+    {
+      "test_name": "metric_calculator",
+      "passed": true,
+      "duration_ms": 0.04040000021632295,
+      "message": "Metric calculator validated",
+      "details": {
+        "far": "validated",
+        "frr": "validated",
+        "tpr": "validated",
+        "fpr": "validated",
+        "precision": "validated",
+        "accuracy": "validated",
+        "empty_impostor": "handled",
+        "empty_genuine": "handled"
+      },
+      "error": null
+    },
+    {
+      "test_name": "threshold_sweep",
+      "passed": true,
+      "duration_ms": 0.2102999997077859,
+      "message": "Threshold sweep validated",
+      "details": {
+        "thresholds_tested": 5,
+        "sorted": true,
+        "tpr_monotonic": true,
+        "far_monotonic": true,
+        "serialization": "validated"
+      },
+      "error": null
+    },
+    {
+      "test_name": "eer_calculation",
+      "passed": true,
+      "duration_ms": 8.374000000003434,
+      "message": "EER calculation validated",
+      "details": {
+        "separated_eer": 0.0,
+        "separated_threshold": 0.4480286220422601,
+        "overlapping_eer": 0.25,
+        "overlapping_threshold": 0.5465049047896698,
+        "insufficient_data_handled": true,
+        "serialization": "validated"
+      },
+      "error": null
+    },
+    {
+      "test_name": "threshold_selection",
+      "passed": true,
+      "duration_ms": 4.44100000004255,
+      "message": "Threshold selection policy validated",
+      "details": {
+        "eer_policy": "validated",
+        "target_far_policy": "validated",
+        "target_frr_policy": "validated",
+        "balanced_policy": "validated",
+        "invalid_policy": "returns_none",
+        "empty_sweep": "returns_none"
+      },
+      "error": null
+    },
+    {
+      "test_name": "ambiguity_margin",
+      "passed": true,
+      "duration_ms": 0.19399999973757076,
+      "message": "Ambiguity margin evaluation validated",
+      "details": {
+        "margin_candidates": 5,
+        "evaluation_complete": true,
+        "includes_far_frr_tpr": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "unknown_policy",
+      "passed": true,
+      "duration_ms": 0.0113999999484804,
+      "message": "UNKNOWN policy validated",
+      "details": {
+        "mixed_scores": "validated",
+        "all_below": "validated",
+        "all_above": "validated",
+        "empty_scores": "validated",
+        "no_force_identity": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "quality_stratification",
+      "passed": true,
+      "duration_ms": 5.773599999884027,
+      "message": "Quality stratification validated",
+      "details": {
+        "quality_classes": [
+          "GOOD",
+          "MARGINAL"
+        ],
+        "stratified_metrics": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "temporal_stratification",
+      "passed": true,
+      "duration_ms": 5.592599999999948,
+      "message": "Temporal stratification validated",
+      "details": {
+        "calibration_levels": [
+          "single_frame",
+          "temporal_hypothesis"
+        ],
+        "stratified_metrics": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "versioning",
+      "passed": true,
+      "duration_ms": 7.082099999934144,
+      "message": "Versioning validated",
+      "details": {
+        "model_version": "captured",
+        "model_sha256": "captured",
+        "enrollment_version": "captured",
+        "dataset_version": "captured",
+        "matcher_version": "captured",
+        "config_version": "captured",
+        "calibration_level": "captured",
+        "embedding_dimension": "captured",
+        "normalization_method": "captured"
+      },
+      "error": null
+    },
+    {
+      "test_name": "serialization",
+      "passed": true,
+      "duration_ms": 3.760800000236486,
+      "message": "Serialization validated",
+      "details": {
+        "to_dict": "validated",
+        "json_serialization": "validated",
+        "json_deserialization": "validated",
+        "all_fields_present": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "determinism",
+      "passed": true,
+      "duration_ms": 27.978299999631417,
+      "message": "Determinism validated (5 identical runs)",
+      "details": {
+        "runs": 5,
+        "identical_results": true,
+        "excluded_fields": [
+          "calibration_id",
+          "calibration_timestamp"
+        ]
+      },
+      "error": null
+    },
+    {
+      "test_name": "negative_cases",
+      "passed": true,
+      "duration_ms": 0.08660000003146706,
+      "message": "Negative cases validated",
+      "details": {
+        "empty_genuine": "handled",
+        "empty_impostor": "handled",
+        "both_empty": "handled",
+        "only_genuine": "eer_unavailable",
+        "only_impostor": "eer_unavailable",
+        "single_pair": "eer_unavailable",
+        "nan_scores": "handled",
+        "inf_scores": "handled",
+        "invalid_threshold": "handled",
+        "invalid_sweep_thresholds": "handled"
+      },
+      "error": null
+    },
+    {
+      "test_name": "synthetic_calibration_validation",
+      "passed": true,
+      "duration_ms": 8.734500000173284,
+      "message": "Synthetic calibration validation passed",
+      "details": {
+        "status": "infrastructure_ready",
+        "threshold": 0.6,
+        "far": 0.0,
+        "frr": 0.01,
+        "tpr": 0.99,
+        "eer": 0.0,
+        "eer_threshold": 0.5887064041639674,
+        "genuine_count": 100,
+        "impostor_count": 100,
+        "not_production_calibrated": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "real_calibration_dataset_gate",
+      "passed": true,
+      "duration_ms": 1211.143600000014,
+      "message": "Real calibration dataset gate checked",
+      "details": {
+        "real_dataset_found": false,
+        "dataset_path": null,
+        "has_enrollment_database": true,
+        "enrollment_dirs": [
+          "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\vision\\enrollment.py",
+          "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\vision\\enrollment_contract.py",
+          "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\vision\\__pycache__\\enrollment.cpython-312.pyc",
+          "C:\\Users\\Nguyen Cong Thong\\Desktop\\AI attendance\\app\\vision\\__pycache__\\enrollment_contract.cpython-312.pyc"
+        ],
+        "status": "NOT_CALIBRATED - no representative labeled dataset found",
+        "no_fake_calibration": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "phase18_compatibility",
+      "passed": true,
+      "duration_ms": 29.89770000021963,
+      "message": "Phase 18 compatibility validated",
+      "details": {
+        "temporal_evidence_consumed": true,
+        "hypothesis_generated": true,
+        "calibration_level_temporal": true,
+        "phase18_unmodified": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "offline_safety",
+      "passed": true,
+      "duration_ms": 13.477099999818165,
+      "message": "Offline-only safety validated",
+      "details": {
+        "no_camera_imports": true,
+        "no_streaming_imports": true,
+        "no_attendance_logic": true,
+        "no_cross_camera": true,
+        "synthetic_only": true
+      },
+      "error": null
+    },
+    {
+      "test_name": "config_serialization",
+      "passed": true,
+      "duration_ms": 0.05760000021837186,
+      "message": "Configuration serialization validated",
+      "details": {
+        "serialization": "validated",
+        "json_roundtrip": "validated",
+        "all_fields": "present"
+      },
+      "error": null
+    }
+  ],
+  "verdict": "PASS",
+  "similarity_contract": {
+    "status": "validated"
+  },
+  "calibration_data_contract": {
+    "status": "validated"
+  },
+  "score_collection": {
+    "status": "validated"
+  },
+  "metric_calculator": {
+    "status": "validated"
+  },
+  "threshold_sweep": {
+    "status": "validated"
+  },
+  "eer_calculation": {
+    "status": "validated"
+  },
+  "threshold_selection": {
+    "status": "validated"
+  },
+  "ambiguity_margin": {
+    "status": "validated"
+  },
+  "unknown_policy": {
+    "status": "validated"
+  },
+  "quality_stratification": {
+    "status": "validated"
+  },
+  "temporal_stratification": {
+    "status": "validated"
+  },
+  "versioning": {
+    "status": "validated"
+  },
+  "serialization": {
+    "status": "validated"
+  },
+  "determinism": {
+    "status": "validated"
+  },
+  "negative_cases": {
+    "status": "validated"
+  },
+  "synthetic_validation": {
+    "status": "validated"
+  },
+  "real_calibration_dataset": {
+    "status": "checked"
+  },
+  "phase18_compatibility": {
+    "status": "validated"
+  },
+  "offline_safety": {
+    "status": "validated"
+  },
+  "limitations": [
+    "Synthetic data only - no production accuracy claim",
+    "Quality weights are engineering defaults",
+    "Threshold selection policy requires production requirements",
+    "Ambiguity margin requires second-best score context",
+    "Real calibration dataset not found - status = NOT_CALIBRATED"
+  ],
+  "readiness_for_phase20": true
+}

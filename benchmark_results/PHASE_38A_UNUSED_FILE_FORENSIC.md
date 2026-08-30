@@ -1,0 +1,3252 @@
+# Phase 38A - Repository Forensic Analysis Report
+
+**Generated:** 2026-08-27T19:31:42.156380Z
+
+## 1. Summary
+
+- **Total Files Analyzed:** 648
+- **Active Runtime Files:** 117
+- **Imported But Not Runtime:** 0
+- **Test Only:** 7
+- **Tooling Only:** 0
+- **Legacy:** 0
+- **Duplicate:** 4
+- **Orphan:** 520
+- **Unknown:** 0
+- **Models Found:** 7
+- **Entry Points Found:** 118
+- **Enrollment Databases:** 3
+- **Bootstrap Can Initialize Without Camera:** True
+
+## 2. Canonical Entrypoints
+
+- **app\main.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **app\bootstrap\startup_validation.py** (BOOTSTRAP) - Production: True
+  - Has __main__ block
+- **app\operational\cli.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\benchmark_phase5_model_inference.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\check_model_hashes.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\generate_phase3_reports.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\generate_phase4_reports.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\generate_phase8_report.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase16_adaptive_person_face_crop.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase17_adaptive_face_quality.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase18_temporal_identity_evidence.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase19_matching_calibration.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase20_dual_camera_offline_replay.py** (CAMERA) - Production: True
+  - Has __main__ block
+- **scripts\phase21_cross_camera_fusion.py** (CAMERA) - Production: True
+  - Has __main__ block
+- **scripts\phase22_in_out_geometry.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase23_raw_in_out_event.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase24_repeated_in_out_resolution.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase25_attendance_persistence.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase26_acceptance.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase27_annotated_dual_camera_replay.py** (CAMERA) - Production: True
+  - Has __main__ block
+- **scripts\phase28_live_ui.py** (UI) - Production: True
+  - Has __main__ block
+- **scripts\phase29_immediate_event_output.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase30a_enrollment.py** (ENROLLMENT) - Production: True
+  - Has __main__ block
+- **scripts\phase30_daily_excel.py** (EXCEL) - Production: True
+  - Has __main__ block
+- **scripts\phase31_offline_full_e2e.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase32_rtmp_mediamtx.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase33_simple_runner.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase34_live_dual_camera_e2e.py** (CAMERA) - Production: True
+  - Has __main__ block
+- **scripts\phase35_performance_baseline.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase35_realtime_e2e.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase35_realtime_performance.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36e_gpu_cpu_bottleneck_forensic.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36f_baseline_benchmark.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36g_gpu_v2_integration_benchmark.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_baseline_measurement.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_final_report.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_subagent10_hardware_headroom.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_subagent1_e2e_trace.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_subagent2_gpu_vs_host.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_subagent3_ort_audit.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_subagent4_cuda_sync.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_subagent5_cpu_forensics.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_subagent6_cam_serialization.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_subagent7_transfer_memory.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_subagent8_scrfd_forensics.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36k_subagent9_tracking_identity.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36l_bounded_candidates.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36l_validation.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36m_safe_async_gpu_optimization.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36r_long_duration_soak.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36t_production_live_gpu_validation.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase36_long_duration_soak.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase6_data_pipeline_validation.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase7r2_scrfd_deep_diagnostic.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase7r3_scrfd_contract_cuda.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase7r_face_pipeline_validation.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase7_face_pipeline_validation.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\phase9_yolo11n_4k_person_detection.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **scripts\test_rtsp_source.py** (CAMERA) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase23_integration.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase24_integration.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase27_replay.py** (REPLAY) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase29_integration.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase30a_deliverables.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase31_offline_full_e2e.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase35_realtime_e2e.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase36d_nvdec_integration.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase36r_long_duration_soak.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase36_long_duration_soak.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase37d_semantic_integration.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_timetable_integration.py** (TIMETABLE) - Production: True
+  - Has __main__ block
+- **tests\unit\test_appearance_record.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_arcface_recognition.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_association.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_config.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_data_pipeline.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_detector_contract.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_event_adapters.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_event_publisher.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_face_crop.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_face_detection.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_face_landmarks.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_face_pipeline.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_face_quality.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_ffmpeg.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_gpu.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_immediate_event_contract.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_logging.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_parent_registry.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_paths.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_phase13_enrollment.py** (ENROLLMENT) - Production: True
+  - Has __main__ block
+- **tests\unit\test_phase14_matching.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_phase15_hardpose.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_phase30a_enrollment.py** (ENROLLMENT) - Production: True
+  - Has __main__ block
+- **tests\unit\test_phase35_performance.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_phase36a_live_stream_cuda_repair.py** (CAMERA) - Production: True
+  - Has __main__ block
+- **tests\unit\test_phase36d_nvdec_integration.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_phase36r_long_duration_soak.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_phase36_long_duration_soak.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_policy_engine.py** (POLICY) - Production: True
+  - Has __main__ block
+- **tests\unit\test_raw_in_out_event.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_repeated_in_out.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_replay_annotation.py** (REPLAY) - Production: True
+  - Has __main__ block
+- **tests\unit\test_runtime_detector.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_timetable_loader.py** (TIMETABLE) - Production: True
+  - Has __main__ block
+- **tests\unit\test_tracking.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_venv.py** (BOOTSTRAP) - Production: True
+  - Has __main__ block
+- **tests\unit\test_video_segment_retrieval.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\phase37b\test_phase37b_integration.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\integration\test_phase25\test_phase25_integration.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_attendance\test_attendance_contract.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_attendance\test_attendance_repository.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **tests\unit\test_attendance\test_daily_excel_contract.py** (EXCEL) - Production: True
+  - Has __main__ block
+- **tests\unit\test_attendance\test_daily_excel_exporter.py** (EXCEL) - Production: True
+  - Has __main__ block
+- **bootstrap.py** (BOOTSTRAP) - Production: True
+  - Has __main__ block
+- **find_entrypoints.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **phase38a_forensic.py** (UNKNOWN) - Production: True
+  - Has __main__ block
+- **bootstrap.py** (BOOTSTRAP) - Production: True
+  - Environment setup
+  - venv management
+
+## 3. Model Analysis
+
+- **models\scrfd\scrfd_10g_bnkps.onnx** (SCRFD, 16923827 bytes)
+  - Loaded by: app\models\contracts.py, app\models\registry.py, app\models\validation.py, app\runtime\model_inference.py, scripts\benchmark_phase5_model_inference.py, scripts\check_model_hashes.py, scripts\check_scrfd_outputs.py, scripts\debug_scrfd_outputs.py, scripts\generate_phase3_reports.py, scripts\phase36l_bounded_candidates.py, scripts\phase36m_safe_async_gpu_optimization.py, scripts\phase7r2_scrfd_deep_diagnostic.py, scripts\phase7r3_scrfd_contract_cuda.py, scripts\test_models_cuda.py, tests\unit\test_arcface_recognition.py, tests\unit\test_face_detection.py, tests\unit\test_face_pipeline.py, tests\unit\test_models_registry.py, tests\unit\test_models_validation.py, tests\unit\test_runtime_model_inference.py
+  - Runtime usage: UNKNOWN
+  - Enrollment usage: False
+- **models\arcface\glintr100.onnx** (ArcFace, 260665334 bytes)
+  - Loaded by: app\models\contracts.py, app\models\registry.py, app\models\validation.py, app\runtime\model_inference.py, app\vision\arcface_inference.py, app\vision\enrollment.py, app\vision\enrollment_contract.py, app\vision\matching_contract.py, scripts\benchmark_phase5_model_inference.py, scripts\check_model_hashes.py, scripts\generate_phase3_reports.py, scripts\generate_phase4_reports.py, scripts\phase19_matching_calibration.py, scripts\phase30a_enrollment.py, tests\integration\test_phase30a_deliverables.py, tests\unit\test_arcface_recognition.py, tests\unit\test_models_registry.py, tests\unit\test_models_validation.py, tests\unit\test_phase13_enrollment.py, tests\unit\test_phase14_matching.py, tests\unit\test_phase30a_enrollment.py, tests\unit\test_runtime_cuda.py
+  - Runtime usage: UNKNOWN
+  - Enrollment usage: False
+- **models\landmark\1k3d68.onnx** (Landmark, 143607619 bytes)
+  - Loaded by: app\data\contracts.py, app\models\registry.py, app\models\validation.py, app\runtime\model_inference.py, app\vision\face_sample.py, app\vision\hardpose_alignment.py, app\vision\hardpose_contract.py, app\vision\landmarks.py, scripts\benchmark_phase5_model_inference.py, scripts\check_model_hashes.py, scripts\generate_phase3_reports.py, scripts\generate_phase4_reports.py, scripts\generate_phase8_report.py, scripts\phase6_data_pipeline_validation.py, scripts\phase7r2_scrfd_deep_diagnostic.py, scripts\phase7r3_scrfd_contract_cuda.py, scripts\phase7r_face_pipeline_validation.py, scripts\phase7_face_pipeline_validation.py, scripts\test_models_cuda.py, tests\unit\test_association.py, tests\unit\test_face_landmarks.py, tests\unit\test_face_pipeline.py, tests\unit\test_face_quality.py, tests\unit\test_models_registry.py, tests\unit\test_models_validation.py, tests\unit\test_phase13_enrollment.py, tests\unit\test_phase14_matching.py, tests\unit\test_phase15_hardpose.py, tests\unit\test_runtime_cuda.py, tests\unit\test_runtime_model_inference.py
+  - Runtime usage: UNKNOWN
+  - Enrollment usage: False
+- **models\reid\resnet50_reid.onnx** (ReID, 93950200 bytes)
+  - Loaded by: app\models\registry.py, app\models\validation.py, app\runtime\model_inference.py, scripts\benchmark_phase5_model_inference.py, scripts\check_model_hashes.py, scripts\generate_phase3_reports.py, scripts\generate_phase4_reports.py, tests\unit\test_arcface_recognition.py, tests\unit\test_models_registry.py
+  - Runtime usage: UNKNOWN
+  - Enrollment usage: False
+- **models\1k3d68.onnx** (Other, 143607619 bytes)
+  - Loaded by: app\data\contracts.py, app\models\registry.py, app\models\validation.py, app\runtime\model_inference.py, app\vision\face_sample.py, app\vision\hardpose_alignment.py, app\vision\hardpose_contract.py, app\vision\landmarks.py, scripts\benchmark_phase5_model_inference.py, scripts\check_model_hashes.py, scripts\generate_phase3_reports.py, scripts\generate_phase4_reports.py, scripts\generate_phase8_report.py, scripts\phase6_data_pipeline_validation.py, scripts\phase7r2_scrfd_deep_diagnostic.py, scripts\phase7r3_scrfd_contract_cuda.py, scripts\phase7r_face_pipeline_validation.py, scripts\phase7_face_pipeline_validation.py, scripts\test_models_cuda.py, tests\unit\test_association.py, tests\unit\test_face_landmarks.py, tests\unit\test_face_pipeline.py, tests\unit\test_face_quality.py, tests\unit\test_models_registry.py, tests\unit\test_models_validation.py, tests\unit\test_phase13_enrollment.py, tests\unit\test_phase14_matching.py, tests\unit\test_phase15_hardpose.py, tests\unit\test_runtime_cuda.py, tests\unit\test_runtime_model_inference.py
+  - Runtime usage: UNKNOWN
+  - Enrollment usage: False
+- **models\glintr100.onnx** (Other, 260665334 bytes)
+  - Loaded by: app\models\contracts.py, app\models\registry.py, app\models\validation.py, app\runtime\model_inference.py, app\vision\arcface_inference.py, app\vision\enrollment.py, app\vision\enrollment_contract.py, app\vision\matching_contract.py, scripts\benchmark_phase5_model_inference.py, scripts\check_model_hashes.py, scripts\generate_phase3_reports.py, scripts\generate_phase4_reports.py, scripts\phase19_matching_calibration.py, scripts\phase30a_enrollment.py, tests\integration\test_phase30a_deliverables.py, tests\unit\test_arcface_recognition.py, tests\unit\test_models_registry.py, tests\unit\test_models_validation.py, tests\unit\test_phase13_enrollment.py, tests\unit\test_phase14_matching.py, tests\unit\test_phase30a_enrollment.py, tests\unit\test_runtime_cuda.py
+  - Runtime usage: UNKNOWN
+  - Enrollment usage: False
+- **models\resnet50_reid.onnx** (Other, 93950200 bytes)
+  - Loaded by: app\models\registry.py, app\models\validation.py, app\runtime\model_inference.py, scripts\benchmark_phase5_model_inference.py, scripts\check_model_hashes.py, scripts\generate_phase3_reports.py, scripts\generate_phase4_reports.py, tests\unit\test_arcface_recognition.py, tests\unit\test_models_registry.py
+  - Runtime usage: UNKNOWN
+  - Enrollment usage: False
+
+## 4. Enrollment Databases
+
+- **enrollment_db**
+  - Embeddings: 9
+  - Persons: HS001, HS002, HS003
+  - Model: glintr100.onnx
+  - Created: 2026-08-23T14:01:36.441284Z
+- **enrollment_db_1**
+  - Embeddings: 9
+  - Persons: HS001, HS002, HS003
+  - Model: glintr100.onnx
+  - Created: 2026-08-23T14:08:14.577380Z
+- **enrollment_db_2**
+  - Embeddings: 9
+  - Persons: HS001, HS002, HS003
+  - Model: glintr100.onnx
+  - Created: 2026-08-23T14:08:15.297888Z
+
+## 5. File Classifications
+
+### ACTIVE_RUNTIME (117 files)
+
+- **app\main.py**
+  - Size: 3435 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 11 modules, Has __main__ block
+- **app\bootstrap\startup_validation.py**
+  - Size: 17580 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 17 modules, Has __main__ block
+- **app\operational\cli.py**
+  - Size: 15255 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 29 modules, Has __main__ block
+- **scripts\benchmark_phase5_model_inference.py**
+  - Size: 13898 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 17 modules, Has __main__ block
+- **scripts\check_model_hashes.py**
+  - Size: 3777 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 3 modules, Has __main__ block
+- **scripts\generate_phase3_reports.py**
+  - Size: 32356 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 29 modules, Has __main__ block
+- **scripts\generate_phase4_reports.py**
+  - Size: 9366 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 9 modules, Has __main__ block
+- **scripts\generate_phase8_report.py**
+  - Size: 12653 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 4 modules, Has __main__ block
+- **scripts\phase16_adaptive_person_face_crop.py**
+  - Size: 59997 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 55 modules, Has __main__ block
+- **scripts\phase17_adaptive_face_quality.py**
+  - Size: 81208 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 45 modules, Has __main__ block
+- **scripts\phase18_temporal_identity_evidence.py**
+  - Size: 84797 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 60 modules, Has __main__ block
+- **scripts\phase19_matching_calibration.py**
+  - Size: 65262 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 50 modules, Has __main__ block
+- **scripts\phase20_dual_camera_offline_replay.py**
+  - Size: 50735 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 38 modules, Has __main__ block
+- **scripts\phase21_cross_camera_fusion.py**
+  - Size: 57555 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 43 modules, Has __main__ block
+- **scripts\phase22_in_out_geometry.py**
+  - Size: 95300 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 65 modules, Has __main__ block
+- **scripts\phase23_raw_in_out_event.py**
+  - Size: 64138 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 107 modules, Has __main__ block
+- **scripts\phase24_repeated_in_out_resolution.py**
+  - Size: 31291 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 32 modules, Has __main__ block
+- **scripts\phase25_attendance_persistence.py**
+  - Size: 24489 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 34 modules, Has __main__ block
+- **scripts\phase26_acceptance.py**
+  - Size: 54799 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 27 modules, Has __main__ block
+- **scripts\phase27_annotated_dual_camera_replay.py**
+  - Size: 57519 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 76 modules, Has __main__ block
+- **scripts\phase28_live_ui.py**
+  - Size: 44964 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 29 modules, Has __main__ block
+- **scripts\phase29_immediate_event_output.py**
+  - Size: 41832 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 43 modules, Has __main__ block
+- **scripts\phase30a_enrollment.py**
+  - Size: 36337 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 39 modules, Has __main__ block
+- **scripts\phase30_daily_excel.py**
+  - Size: 24580 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 21 modules, Has __main__ block
+- **scripts\phase31_offline_full_e2e.py**
+  - Size: 20538 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 11 modules, Has __main__ block
+- **scripts\phase32_rtmp_mediamtx.py**
+  - Size: 22559 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 40 modules, Has __main__ block
+- **scripts\phase33_simple_runner.py**
+  - Size: 2940 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 6 modules, Has __main__ block
+- **scripts\phase34_live_dual_camera_e2e.py**
+  - Size: 67450 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 89 modules, Has __main__ block
+- **scripts\phase35_performance_baseline.py**
+  - Size: 16223 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 15 modules, Has __main__ block
+- **scripts\phase35_realtime_e2e.py**
+  - Size: 63978 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 102 modules, Has __main__ block
+- **scripts\phase35_realtime_performance.py**
+  - Size: 25668 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 28 modules, Has __main__ block
+- **scripts\phase36e_gpu_cpu_bottleneck_forensic.py**
+  - Size: 65970 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 45 modules, Has __main__ block
+- **scripts\phase36f_baseline_benchmark.py**
+  - Size: 6588 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 11 modules, Has __main__ block
+- **scripts\phase36g_gpu_v2_integration_benchmark.py**
+  - Size: 26288 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 26 modules, Has __main__ block
+- **scripts\phase36k_baseline_measurement.py**
+  - Size: 30015 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 52 modules, Has __main__ block
+- **scripts\phase36k_final_report.py**
+  - Size: 31374 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 6 modules, Has __main__ block
+- **scripts\phase36k_subagent10_hardware_headroom.py**
+  - Size: 17638 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 20 modules, Has __main__ block
+- **scripts\phase36k_subagent1_e2e_trace.py**
+  - Size: 9077 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 25 modules, Has __main__ block
+- **scripts\phase36k_subagent2_gpu_vs_host.py**
+  - Size: 8738 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 22 modules, Has __main__ block
+- **scripts\phase36k_subagent3_ort_audit.py**
+  - Size: 8245 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 12 modules, Has __main__ block
+- **scripts\phase36k_subagent4_cuda_sync.py**
+  - Size: 10003 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 17 modules, Has __main__ block
+- **scripts\phase36k_subagent5_cpu_forensics.py**
+  - Size: 12502 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 24 modules, Has __main__ block
+- **scripts\phase36k_subagent6_cam_serialization.py**
+  - Size: 19743 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 24 modules, Has __main__ block
+- **scripts\phase36k_subagent7_transfer_memory.py**
+  - Size: 11613 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 21 modules, Has __main__ block
+- **scripts\phase36k_subagent8_scrfd_forensics.py**
+  - Size: 14315 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 20 modules, Has __main__ block
+- **scripts\phase36k_subagent9_tracking_identity.py**
+  - Size: 11850 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 35 modules, Has __main__ block
+- **scripts\phase36l_bounded_candidates.py**
+  - Size: 29997 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 70 modules, Has __main__ block
+- **scripts\phase36l_validation.py**
+  - Size: 14677 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 23 modules, Has __main__ block
+- **scripts\phase36m_safe_async_gpu_optimization.py**
+  - Size: 32408 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Parse error: unexpected indent (<unknown>, line 424), Has __main__ block
+- **scripts\phase36r_long_duration_soak.py**
+  - Size: 79261 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 45 modules, Has __main__ block
+- **scripts\phase36t_production_live_gpu_validation.py**
+  - Size: 15778 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 21 modules, Has __main__ block
+- **scripts\phase36_long_duration_soak.py**
+  - Size: 69146 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 45 modules, Has __main__ block
+- **scripts\phase6_data_pipeline_validation.py**
+  - Size: 24298 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 63 modules, Has __main__ block
+- **scripts\phase7r2_scrfd_deep_diagnostic.py**
+  - Size: 72276 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 55 modules, Has __main__ block
+- **scripts\phase7r3_scrfd_contract_cuda.py**
+  - Size: 103433 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 65 modules, Has __main__ block
+- **scripts\phase7r_face_pipeline_validation.py**
+  - Size: 46459 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 55 modules, Has __main__ block
+- **scripts\phase7_face_pipeline_validation.py**
+  - Size: 46449 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 75 modules, Has __main__ block
+- **scripts\phase9_yolo11n_4k_person_detection.py**
+  - Size: 71669 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 33 modules, Has __main__ block
+- **scripts\test_rtsp_source.py**
+  - Size: 1168 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 2 modules, Has __main__ block
+- **tests\integration\test_phase23_integration.py**
+  - Size: 39365 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 33 modules, Has __main__ block
+- **tests\integration\test_phase24_integration.py**
+  - Size: 51040 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 49 modules, Has __main__ block
+- **tests\integration\test_phase27_replay.py**
+  - Size: 26508 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 47 modules, Has __main__ block
+- **tests\integration\test_phase29_integration.py**
+  - Size: 26785 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 41 modules, Has __main__ block
+- **tests\integration\test_phase30a_deliverables.py**
+  - Size: 20112 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 18 modules, Has __main__ block
+- **tests\integration\test_phase31_offline_full_e2e.py**
+  - Size: 116688 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 166 modules, Has __main__ block
+- **tests\integration\test_phase35_realtime_e2e.py**
+  - Size: 25212 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 95 modules, Has __main__ block
+- **tests\integration\test_phase36d_nvdec_integration.py**
+  - Size: 11266 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 16 modules, Has __main__ block
+- **tests\integration\test_phase36r_long_duration_soak.py**
+  - Size: 15230 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 39 modules, Has __main__ block
+- **tests\integration\test_phase36_long_duration_soak.py**
+  - Size: 11781 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 37 modules, Has __main__ block
+- **tests\integration\test_phase37d_semantic_integration.py**
+  - Size: 36370 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 33 modules, Has __main__ block
+- **tests\integration\test_timetable_integration.py**
+  - Size: 48008 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 62 modules, Has __main__ block
+- **tests\unit\test_appearance_record.py**
+  - Size: 14540 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 13 modules, Has __main__ block
+- **tests\unit\test_arcface_recognition.py**
+  - Size: 34474 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 24 modules, Has __main__ block
+- **tests\unit\test_association.py**
+  - Size: 54422 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 44 modules, Has __main__ block
+- **tests\unit\test_config.py**
+  - Size: 6444 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 7 modules, Has __main__ block
+- **tests\unit\test_data_pipeline.py**
+  - Size: 23818 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 44 modules, Has __main__ block
+- **tests\unit\test_detector_contract.py**
+  - Size: 22151 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 21 modules, Has __main__ block
+- **tests\unit\test_event_adapters.py**
+  - Size: 20474 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 29 modules, Has __main__ block
+- **tests\unit\test_event_publisher.py**
+  - Size: 31565 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 18 modules, Has __main__ block
+- **tests\unit\test_face_crop.py**
+  - Size: 17260 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 14 modules, Has __main__ block
+- **tests\unit\test_face_detection.py**
+  - Size: 14692 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 16 modules, Has __main__ block
+- **tests\unit\test_face_landmarks.py**
+  - Size: 17682 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 15 modules, Has __main__ block
+- **tests\unit\test_face_pipeline.py**
+  - Size: 34041 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 31 modules, Has __main__ block
+- **tests\unit\test_face_quality.py**
+  - Size: 19224 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 15 modules, Has __main__ block
+- **tests\unit\test_ffmpeg.py**
+  - Size: 4433 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 11 modules, Has __main__ block
+- **tests\unit\test_gpu.py**
+  - Size: 4152 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 13 modules, Has __main__ block
+- **tests\unit\test_immediate_event_contract.py**
+  - Size: 32852 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 10 modules, Has __main__ block
+- **tests\unit\test_logging.py**
+  - Size: 5064 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 13 modules, Has __main__ block
+- **tests\unit\test_parent_registry.py**
+  - Size: 14905 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 13 modules, Has __main__ block
+- **tests\unit\test_paths.py**
+  - Size: 6619 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 8 modules, Has __main__ block
+- **tests\unit\test_phase13_enrollment.py**
+  - Size: 54886 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 78 modules, Has __main__ block
+- **tests\unit\test_phase14_matching.py**
+  - Size: 66537 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 52 modules, Has __main__ block
+- **tests\unit\test_phase15_hardpose.py**
+  - Size: 57629 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 42 modules, Has __main__ block
+- **tests\unit\test_phase30a_enrollment.py**
+  - Size: 38582 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 54 modules, Has __main__ block
+- **tests\unit\test_phase35_performance.py**
+  - Size: 17804 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 20 modules, Has __main__ block
+- **tests\unit\test_phase36a_live_stream_cuda_repair.py**
+  - Size: 15660 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 17 modules, Has __main__ block
+- **tests\unit\test_phase36d_nvdec_integration.py**
+  - Size: 10600 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 12 modules, Has __main__ block
+- **tests\unit\test_phase36r_long_duration_soak.py**
+  - Size: 23493 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 13 modules, Has __main__ block
+- **tests\unit\test_phase36_long_duration_soak.py**
+  - Size: 14900 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 12 modules, Has __main__ block
+- **tests\unit\test_policy_engine.py**
+  - Size: 21015 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 36 modules, Has __main__ block
+- **tests\unit\test_raw_in_out_event.py**
+  - Size: 61387 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 49 modules, Has __main__ block
+- **tests\unit\test_repeated_in_out.py**
+  - Size: 55133 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 26 modules, Has __main__ block
+- **tests\unit\test_replay_annotation.py**
+  - Size: 20463 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 14 modules, Has __main__ block
+- **tests\unit\test_runtime_detector.py**
+  - Size: 4761 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 6 modules, Has __main__ block
+- **tests\unit\test_timetable_loader.py**
+  - Size: 23871 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 24 modules, Has __main__ block
+- **tests\unit\test_tracking.py**
+  - Size: 68318 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 31 modules, Has __main__ block
+- **tests\unit\test_venv.py**
+  - Size: 6023 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 6 modules, Has __main__ block
+- **tests\unit\test_video_segment_retrieval.py**
+  - Size: 13005 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 17 modules, Has __main__ block
+- **tests\integration\phase37b\test_phase37b_integration.py**
+  - Size: 28131 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 42 modules, Has __main__ block
+- **tests\integration\test_phase25\test_phase25_integration.py**
+  - Size: 33597 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 23 modules, Has __main__ block
+- **tests\unit\test_attendance\test_attendance_contract.py**
+  - Size: 19685 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 14 modules, Has __main__ block
+- **tests\unit\test_attendance\test_attendance_repository.py**
+  - Size: 30168 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 20 modules, Has __main__ block
+- **tests\unit\test_attendance\test_daily_excel_contract.py**
+  - Size: 8486 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 11 modules, Has __main__ block
+- **tests\unit\test_attendance\test_daily_excel_exporter.py**
+  - Size: 36398 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 19 modules, Has __main__ block
+- **bootstrap.py**
+  - Size: 3840 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 4 modules, Has __main__ block
+- **find_entrypoints.py**
+  - Size: 968 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 2 modules, Has __main__ block
+- **phase38a_forensic.py**
+  - Size: 33693 bytes
+  - Recommendation: KEEP - Active in production runtime
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 20 modules, Has __main__ block
+
+### TEST_ONLY (7 files)
+
+- **test_api.py**
+  - Size: 1723 bytes
+  - Recommendation: KEEP - Test file
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 3 modules
+- **test_backpressure.py**
+  - Size: 2972 bytes
+  - Recommendation: KEEP - Test file
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 10 modules
+- **test_nvdec_file.py**
+  - Size: 867 bytes
+  - Recommendation: KEEP - Test file
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 3 modules
+- **test_nvdec_pipe.py**
+  - Size: 835 bytes
+  - Recommendation: KEEP - Test file
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 3 modules
+- **test_regression.py**
+  - Size: 307 bytes
+  - Recommendation: KEEP - Test file
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 2 modules
+- **test_rtspsource_nvdec.py**
+  - Size: 1037 bytes
+  - Recommendation: KEEP - Test file
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 3 modules
+- **test_rtspsource_nvdec_cam2.py**
+  - Size: 1037 bytes
+  - Recommendation: KEEP - Test file
+  - Deletion Risk: RISKY
+  - Evidence: Imports: 3 modules
+
+### DUPLICATE (4 files)
+
+- **data\enrollment_db_1\embeddings.npy**
+  - Size: 18560 bytes
+  - Recommendation: REVIEW - Duplicate enrollment database
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_db_1\embeddings.npy.metadata.json**
+  - Size: 18392 bytes
+  - Recommendation: REVIEW - Duplicate enrollment database
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_db_2\embeddings.npy**
+  - Size: 18560 bytes
+  - Recommendation: REVIEW - Duplicate enrollment database
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_db_2\embeddings.npy.metadata.json**
+  - Size: 18387 bytes
+  - Recommendation: REVIEW - Duplicate enrollment database
+  - Deletion Risk: UNKNOWN
+
+### ORPHAN (520 files)
+
+- **app\errors.py**
+  - Size: 2804 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 2 modules
+- **app\__init__.py**
+  - Size: 66 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **app\api\health.py**
+  - Size: 20664 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 26 modules
+- **app\api\websocket.py**
+  - Size: 23291 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 28 modules
+- **app\api\__init__.py**
+  - Size: 241 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **app\attendance\calendar.py**
+  - Size: 15228 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 19 modules
+- **app\attendance\contract.py**
+  - Size: 15459 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 12 modules
+- **app\attendance\daily_excel.py**
+  - Size: 30996 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 39 modules
+- **app\attendance\daily_resolver.py**
+  - Size: 21624 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 26 modules
+- **app\attendance\engine.py**
+  - Size: 28738 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 37 modules
+- **app\attendance\policy.py**
+  - Size: 17035 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 15 modules
+- **app\attendance\query.py**
+  - Size: 13306 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 13 modules
+- **app\attendance\repository.py**
+  - Size: 12849 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 17 modules
+- **app\attendance\session_context.py**
+  - Size: 7625 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 14 modules
+- **app\attendance\storage.py**
+  - Size: 29025 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 15 modules
+- **app\attendance\timetable.py**
+  - Size: 13264 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 15 modules
+- **app\attendance\timetable_loader.py**
+  - Size: 32484 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 21 modules
+- **app\attendance\__init__.py**
+  - Size: 1675 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 23 modules
+- **app\bootstrap\venv_manager.py**
+  - Size: 8713 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 7 modules
+- **app\bootstrap\__init__.py**
+  - Size: 126 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **app\config\paths.py**
+  - Size: 5942 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **app\config\settings.py**
+  - Size: 18639 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 16 modules
+- **app\config\__init__.py**
+  - Size: 155 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 2 modules
+- **app\data\contracts.py**
+  - Size: 17278 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 12 modules
+- **app\data\frame.py**
+  - Size: 8233 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 9 modules
+- **app\data\input_adapter.py**
+  - Size: 21635 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 27 modules
+- **app\data\npy.py**
+  - Size: 14944 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 17 modules
+- **app\data\preprocessing.py**
+  - Size: 15391 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 28 modules
+- **app\data\__init__.py**
+  - Size: 1634 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 17 modules
+- **app\geometry\contract.py**
+  - Size: 22364 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 13 modules
+- **app\geometry\crossing.py**
+  - Size: 34467 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 24 modules
+- **app\geometry\transform.py**
+  - Size: 10043 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 8 modules
+- **app\geometry\versioning.py**
+  - Size: 17089 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 24 modules
+- **app\geometry\__init__.py**
+  - Size: 2526 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 33 modules
+- **app\in_out\contract.py**
+  - Size: 12621 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 12 modules
+- **app\in_out\factory.py**
+  - Size: 4078 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 14 modules
+- **app\in_out\raw_event.py**
+  - Size: 10373 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 17 modules
+- **app\in_out\resolver.py**
+  - Size: 18259 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 24 modules
+- **app\in_out\resolver_config.py**
+  - Size: 6514 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 10 modules
+- **app\in_out\resolver_contract.py**
+  - Size: 12136 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 16 modules
+- **app\in_out\__init__.py**
+  - Size: 2916 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 33 modules
+- **app\logging\logger.py**
+  - Size: 9899 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 12 modules
+- **app\logging\__init__.py**
+  - Size: 151 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 2 modules
+- **app\models\contracts.py**
+  - Size: 16091 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 12 modules
+- **app\models\exceptions.py**
+  - Size: 2240 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **app\models\hashing.py**
+  - Size: 5358 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 7 modules
+- **app\models\registry.py**
+  - Size: 24913 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 24 modules
+- **app\models\validation.py**
+  - Size: 14643 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 23 modules
+- **app\models\__init__.py**
+  - Size: 2349 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 27 modules
+- **app\output\adapter.py**
+  - Size: 25012 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 33 modules
+- **app\output\contract.py**
+  - Size: 15821 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 12 modules
+- **app\output\publisher.py**
+  - Size: 21195 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 21 modules
+- **app\output\ui_adapter.py**
+  - Size: 9125 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 19 modules
+- **app\output\__init__.py**
+  - Size: 1901 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 27 modules
+- **app\replay\annotated_replay.py**
+  - Size: 30345 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 46 modules
+- **app\replay\annotation.py**
+  - Size: 21506 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 12 modules
+- **app\replay\appearance.py**
+  - Size: 11947 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 11 modules
+- **app\replay\clock.py**
+  - Size: 4573 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **app\replay\fusion.py**
+  - Size: 36769 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 22 modules
+- **app\replay\manifest.py**
+  - Size: 6017 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 13 modules
+- **app\replay\pipeline.py**
+  - Size: 16851 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 41 modules
+- **app\replay\scheduler.py**
+  - Size: 15440 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 16 modules
+- **app\replay\source.py**
+  - Size: 13157 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 17 modules
+- **app\replay\video_evidence.py**
+  - Size: 15267 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 19 modules
+- **app\runtime\cuda.py**
+  - Size: 24833 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 49 modules
+- **app\runtime\detector.py**
+  - Size: 5835 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 13 modules
+- **app\runtime\ffmpeg.py**
+  - Size: 4365 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 7 modules
+- **app\runtime\gpu.py**
+  - Size: 6235 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 7 modules
+- **app\runtime\model_inference.py**
+  - Size: 30313 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 26 modules
+- **app\runtime\__init__.py**
+  - Size: 2077 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 31 modules
+- **app\streaming\contracts.py**
+  - Size: 9446 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 11 modules
+- **app\streaming\health.py**
+  - Size: 24101 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 20 modules
+- **app\streaming\health_events.py**
+  - Size: 9908 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 8 modules
+- **app\streaming\mediamtx_config.py**
+  - Size: 8019 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 8 modules
+- **app\streaming\reconnect.py**
+  - Size: 10050 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 13 modules
+- **app\streaming\rtsp_source.py**
+  - Size: 15111 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 22 modules
+- **app\streaming\__init__.py**
+  - Size: 3474 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 40 modules
+- **app\vision\adaptive_crop.py**
+  - Size: 27484 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 14 modules
+- **app\vision\arcface_inference.py**
+  - Size: 11103 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 16 modules
+- **app\vision\association.py**
+  - Size: 18767 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 23 modules
+- **app\vision\association_contract.py**
+  - Size: 14214 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 14 modules
+- **app\vision\association_geometry.py**
+  - Size: 12952 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 4 modules
+- **app\vision\crop.py**
+  - Size: 11749 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 21 modules
+- **app\vision\detection.py**
+  - Size: 23490 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 19 modules
+- **app\vision\detector_contract.py**
+  - Size: 9795 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 15 modules
+- **app\vision\detector_factory.py**
+  - Size: 6052 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 16 modules
+- **app\vision\enrollment.py**
+  - Size: 32363 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 46 modules
+- **app\vision\enrollment_contract.py**
+  - Size: 14368 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 10 modules
+- **app\vision\face_quality.py**
+  - Size: 30059 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 16 modules
+- **app\vision\face_sample.py**
+  - Size: 12961 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 16 modules
+- **app\vision\gpu_face_detector.py**
+  - Size: 31306 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 25 modules
+- **app\vision\gpu_inference.py**
+  - Size: 17420 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 16 modules
+- **app\vision\gpu_preprocessing.py**
+  - Size: 17877 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 17 modules
+- **app\vision\hardpose_alignment.py**
+  - Size: 29471 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 33 modules
+- **app\vision\hardpose_contract.py**
+  - Size: 14552 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 10 modules
+- **app\vision\landmarks.py**
+  - Size: 15404 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 26 modules
+- **app\vision\matching.py**
+  - Size: 13990 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 22 modules
+- **app\vision\matching_calibration.py**
+  - Size: 33774 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 18 modules
+- **app\vision\matching_contract.py**
+  - Size: 10770 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 10 modules
+- **app\vision\quality.py**
+  - Size: 15701 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 14 modules
+- **app\vision\recognition_contract.py**
+  - Size: 7243 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 5 modules
+- **app\vision\retinaface_adapter.py**
+  - Size: 5050 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 9 modules
+- **app\vision\scrfd_adapter.py**
+  - Size: 5850 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 14 modules
+- **app\vision\temporal_evidence.py**
+  - Size: 28846 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 17 modules
+- **app\vision\tracker.py**
+  - Size: 19940 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 26 modules
+- **app\vision\track_contract.py**
+  - Size: 20927 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 15 modules
+- **app\vision\__init__.py**
+  - Size: 4294 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 54 modules
+- **app\attendance\policy_engine\contract.py**
+  - Size: 6723 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 13 modules
+- **app\attendance\policy_engine\engine.py**
+  - Size: 35523 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 35 modules
+- **app\attendance\policy_engine\excel_integration.py**
+  - Size: 17096 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 45 modules
+- **app\attendance\policy_engine\exit_session.py**
+  - Size: 11101 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 15 modules
+- **app\attendance\policy_engine\factory.py**
+  - Size: 11400 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 37 modules
+- **app\attendance\policy_engine\parent_registry.py**
+  - Size: 26005 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 19 modules
+- **app\attendance\policy_engine\telegram_bot.py**
+  - Size: 41759 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 29 modules
+- **app\attendance\policy_engine\templates.py**
+  - Size: 6930 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 7 modules
+- **app\attendance\policy_engine\__init__.py**
+  - Size: 656 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **scripts\check_model.py**
+  - Size: 237 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **scripts\check_model2.py**
+  - Size: 289 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 2 modules
+- **scripts\check_scrfd_outputs.py**
+  - Size: 514 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 2 modules
+- **scripts\debug_bbox_overlap.py**
+  - Size: 2741 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 10 modules
+- **scripts\debug_debounce.py**
+  - Size: 3159 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 10 modules
+- **scripts\debug_jitter.py**
+  - Size: 2376 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 10 modules
+- **scripts\debug_multi_camera.py**
+  - Size: 2848 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 11 modules
+- **scripts\debug_phase22_geometry_versioning.py**
+  - Size: 401 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\debug_phase22_jitter.py**
+  - Size: 2523 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 6 modules
+- **scripts\debug_phase22_line_side.py**
+  - Size: 405 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\debug_phase22_line_side_details.py**
+  - Size: 2139 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 4 modules
+- **scripts\debug_phase22_reverse_crossing.py**
+  - Size: 395 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\debug_phase22_reverse_crossing_verbose.py**
+  - Size: 1871 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 6 modules
+- **scripts\debug_scrfd_outputs.py**
+  - Size: 884 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\debug_scrfd_trace.py**
+  - Size: 2309 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 9 modules
+- **scripts\fix_check_health.py**
+  - Size: 2415 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **scripts\fix_last_test.py**
+  - Size: 1382 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **scripts\fix_test_health.py**
+  - Size: 1439 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **scripts\generate_phase36e_report.py**
+  - Size: 19060 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **scripts\phase33_live_health_failover.py**
+  - Size: 6145 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 11 modules
+- **scripts\phase36f_generate_report.py**
+  - Size: 6363 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 2 modules
+- **scripts\phase3_cuda_validation.py**
+  - Size: 7334 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 15 modules
+- **scripts\print_baseline.py**
+  - Size: 527 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **scripts\run_phase33.py**
+  - Size: 227 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 2 modules
+- **scripts\run_phase33_acceptance.py**
+  - Size: 304 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\run_phase33_check.py**
+  - Size: 304 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\run_phase33_check_final.py**
+  - Size: 304 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\run_phase33_direct.py**
+  - Size: 296 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\run_phase33_final.py**
+  - Size: 296 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\run_phase33_final2.py**
+  - Size: 296 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\run_phase33_final_check.py**
+  - Size: 304 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\run_phase33_pytest.py**
+  - Size: 706 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\run_phase33_simple.py**
+  - Size: 229 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 2 modules
+- **scripts\run_phase33_simple_check.py**
+  - Size: 304 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\run_phase33_verdict.py**
+  - Size: 304 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\test_cuda_ort.py**
+  - Size: 1820 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 7 modules
+- **scripts\test_models_cuda.py**
+  - Size: 2742 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 3 modules
+- **scripts\update_health.py**
+  - Size: 2610 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **scripts\update_health2.py**
+  - Size: 4006 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **scripts\update_health3.py**
+  - Size: 4071 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **scripts\update_health4.py**
+  - Size: 4022 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **scripts\_phase31_task_progress.py**
+  - Size: 4706 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 2 modules
+- **tests\__init__.py**
+  - Size: 44 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **tests\integration\test_attendance_integration.py**
+  - Size: 17370 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 9 modules
+- **tests\unit\test_attendance_engine.py**
+  - Size: 23745 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 19 modules
+- **tests\unit\test_attendance_policy.py**
+  - Size: 17681 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 10 modules
+- **tests\unit\test_attendance_timetable.py**
+  - Size: 18159 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 9 modules
+- **tests\unit\test_models_registry.py**
+  - Size: 35501 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 33 modules
+- **tests\unit\test_models_validation.py**
+  - Size: 22225 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 25 modules
+- **tests\unit\test_phase36t_gpu_live_integration.py**
+  - Size: 9365 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 36 modules
+- **tests\unit\test_runtime_cuda.py**
+  - Size: 25889 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 60 modules
+- **tests\unit\test_runtime_model_inference.py**
+  - Size: 26698 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 32 modules
+- **tests\unit\test_streaming_contracts.py**
+  - Size: 10309 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 9 modules
+- **tests\unit\test_streaming_health.py**
+  - Size: 22965 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 11 modules
+- **tests\unit\test_streaming_health_events.py**
+  - Size: 16883 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 12 modules
+- **tests\unit\test_streaming_mediamtx.py**
+  - Size: 9132 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 6 modules
+- **tests\unit\__init__.py**
+  - Size: 25 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **tests\integration\test_phase25\__init__.py**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **tests\unit\test_attendance\__init__.py**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\App.vue**
+  - Size: 106 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\components\AttendanceSummary.vue**
+  - Size: 5232 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\components\CameraCard.vue**
+  - Size: 14608 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\components\HelloWorld.vue**
+  - Size: 2821 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\components\Layout.vue**
+  - Size: 18307 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\components\LiveEventTimeline.vue**
+  - Size: 9143 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\components\PersonDetailPanel.vue**
+  - Size: 16466 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\components\ProvenancePanel.vue**
+  - Size: 15544 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\components\ReplayModal.vue**
+  - Size: 19654 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\components\SystemHealthPanel.vue**
+  - Size: 24266 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\components\TimetableCell.vue**
+  - Size: 6611 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\views\LiveDashboard.vue**
+  - Size: 9975 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\views\ReplayView.vue**
+  - Size: 14640 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\views\SearchView.vue**
+  - Size: 11716 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\views\TimetableManagement.vue**
+  - Size: 42682 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\main.js**
+  - Size: 234 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\router\index.js**
+  - Size: 1096 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **frontend\src\stores\app.js**
+  - Size: 11201 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **config\default.yaml**
+  - Size: 1393 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\.DS_Store**
+  - Size: 6148 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\1k3d68.onnx**
+  - Size: 143607619 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\desktop.ini**
+  - Size: 113 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\glintr100.onnx**
+  - Size: 260665334 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\README.md**
+  - Size: 633 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\resnet50_reid.onnx**
+  - Size: 93950200 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\arcface\.gitkeep**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\arcface\glintr100.onnx**
+  - Size: 260665334 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\landmark\.gitkeep**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\landmark\1k3d68.onnx**
+  - Size: 143607619 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\reid\.gitkeep**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\reid\resnet50_reid.onnx**
+  - Size: 93950200 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\scrfd\.gitkeep**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\scrfd\scrfd_10g_bnkps.onnx**
+  - Size: 16923827 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\yolo\.gitkeep**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\yolo\yolo11n-pose.pt**
+  - Size: 6255593 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **models\yolo\yolo11n.pt**
+  - Size: 5613764 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\attendance.db**
+  - Size: 57344 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\exit_sessions.db**
+  - Size: 24576 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\notification_queue.db**
+  - Size: 32768 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\parent_registry.db**
+  - Size: 45056 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_db\embeddings.npy**
+  - Size: 18560 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_db\embeddings.npy.metadata.json**
+  - Size: 18392 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_test\HS001\img_001.jpg**
+  - Size: 21273 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_test\HS001\img_002.jpg**
+  - Size: 21273 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_test\HS001\img_003.jpg**
+  - Size: 21273 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_test\HS002\img_001.jpg**
+  - Size: 21273 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_test\HS002\img_002.jpg**
+  - Size: 21273 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_test\HS002\img_003.jpg**
+  - Size: 21273 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_test\HS003\img_001.jpg**
+  - Size: 21273 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_test\HS003\img_002.jpg**
+  - Size: 21273 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **data\enrollment_test\HS003\img_003.jpg**
+  - Size: 21273 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_10_PERSON_FACE_ASSOCIATION.json**
+  - Size: 4174 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_10_PERSON_FACE_ASSOCIATION.md**
+  - Size: 6155 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_11_PERSON_FACE_TRACKING.json**
+  - Size: 3325 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_11_PERSON_FACE_TRACKING.md**
+  - Size: 5606 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_12_ARCFACE_NORMAL_RECOGNITION.json**
+  - Size: 3312 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_12_ARCFACE_NORMAL_RECOGNITION.md**
+  - Size: 5424 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_13_ARCFACE_ENROLLMENT_DATABASE.json**
+  - Size: 3321 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_13_ARCFACE_ENROLLMENT_DATABASE.md**
+  - Size: 4014 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_14_ARCFACE_IDENTITY_MATCHING.json**
+  - Size: 7394 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_14_ARCFACE_IDENTITY_MATCHING.md**
+  - Size: 9167 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_16_ADAPTIVE_PERSON_FACE_CROP.json**
+  - Size: 12550 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_16_ADAPTIVE_PERSON_FACE_CROP.md**
+  - Size: 3260 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_17_ADAPTIVE_FACE_QUALITY.json**
+  - Size: 10395 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_17_ADAPTIVE_FACE_QUALITY.md**
+  - Size: 4340 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_18_TEMPORAL_IDENTITY_EVIDENCE.json**
+  - Size: 9058 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_18_TEMPORAL_IDENTITY_EVIDENCE.md**
+  - Size: 2525 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_19_MATCHING_CALIBRATION.json**
+  - Size: 10798 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_19_MATCHING_CALIBRATION.md**
+  - Size: 2810 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_1_WINDOWS_NATIVE_FOUNDATION.json**
+  - Size: 3575 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_1_WINDOWS_NATIVE_FOUNDATION.md**
+  - Size: 4099 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_20_DUAL_CAMERA_OFFLINE_REPLAY.json**
+  - Size: 7866 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_20_DUAL_CAMERA_OFFLINE_REPLAY.md**
+  - Size: 5635 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_20_DUAL_CAMERA_OFFLINE_REPLAY_20260821_153524.json**
+  - Size: 7866 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_20_DUAL_CAMERA_OFFLINE_REPLAY_20260821_153524.md**
+  - Size: 5635 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION.json**
+  - Size: 9282 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION.md**
+  - Size: 6582 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION_20260821_155904.json**
+  - Size: 8573 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION_20260821_155904.md**
+  - Size: 6051 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION_20260821_160822.json**
+  - Size: 9063 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION_20260821_160822.md**
+  - Size: 6370 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION_20260821_161313.json**
+  - Size: 9165 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION_20260821_161313.md**
+  - Size: 6461 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION_20260821_161544.json**
+  - Size: 9257 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION_20260821_161544.md**
+  - Size: 6546 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION_20260821_161658.json**
+  - Size: 9282 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_21_CROSS_CAMERA_FUSION_20260821_161658.md**
+  - Size: 6582 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY.json**
+  - Size: 10632 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY.md**
+  - Size: 7532 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_165441.json**
+  - Size: 10478 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_165441.md**
+  - Size: 7444 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_165618.json**
+  - Size: 10468 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_165618.md**
+  - Size: 7444 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_174536.json**
+  - Size: 10470 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_174536.md**
+  - Size: 7444 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_174922.json**
+  - Size: 10474 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_174922.md**
+  - Size: 7444 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_175623.json**
+  - Size: 10405 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_175623.md**
+  - Size: 7388 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_182212.json**
+  - Size: 10403 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_182212.md**
+  - Size: 7388 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_183734.json**
+  - Size: 10602 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_183734.md**
+  - Size: 7502 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_183842.json**
+  - Size: 10637 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_183842.md**
+  - Size: 7544 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_184011.json**
+  - Size: 10599 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_184011.md**
+  - Size: 7513 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_185051.json**
+  - Size: 10618 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_185051.md**
+  - Size: 7531 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_185447.json**
+  - Size: 10618 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_185447.md**
+  - Size: 7531 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_185708.json**
+  - Size: 10514 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_185708.md**
+  - Size: 7427 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_194019.json**
+  - Size: 10606 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_194019.md**
+  - Size: 7505 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_194659.json**
+  - Size: 10621 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_194659.md**
+  - Size: 7505 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_195242.json**
+  - Size: 10632 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_22_IN_OUT_GEOMETRY_20260821_195242.md**
+  - Size: 7532 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_23_RAW_IN_OUT_EVENT.json**
+  - Size: 21391 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_23_RAW_IN_OUT_EVENT.md**
+  - Size: 18884 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_23_RAW_IN_OUT_EVENT_20260822_033236.json**
+  - Size: 21392 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_23_RAW_IN_OUT_EVENT_20260822_033236.md**
+  - Size: 18884 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_23_RAW_IN_OUT_EVENT_20260822_033357.json**
+  - Size: 21393 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_23_RAW_IN_OUT_EVENT_20260822_033357.md**
+  - Size: 18884 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_23_RAW_IN_OUT_EVENT_20260823_172954.json**
+  - Size: 21391 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_23_RAW_IN_OUT_EVENT_20260823_172954.md**
+  - Size: 18884 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_24_REPEATED_IN_OUT_RESOLUTION.json**
+  - Size: 4868 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_24_REPEATED_IN_OUT_RESOLUTION.md**
+  - Size: 4262 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_25_ATTENDANCE_PERSISTENCE.json**
+  - Size: 24037 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_25_ATTENDANCE_PERSISTENCE.md**
+  - Size: 2224 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_26_ATTENDANCE_ENGINE.json**
+  - Size: 2487 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_26_ATTENDANCE_ENGINE.log**
+  - Size: 7226 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_26_ATTENDANCE_ENGINE.md**
+  - Size: 7436 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_27_ANNOTATED_DUAL_CAMERA_REPLAY.json**
+  - Size: 6824 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_27_ANNOTATED_DUAL_CAMERA_REPLAY.md**
+  - Size: 4570 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_28_LIVE_UI.json**
+  - Size: 5339 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_28_LIVE_UI.md**
+  - Size: 3655 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_29_IMMEDIATE_EVENT_OUTPUT.json**
+  - Size: 7382 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_29_IMMEDIATE_EVENT_OUTPUT.md**
+  - Size: 5041 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_2_MODEL_REGISTRY.json**
+  - Size: 3976 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_2_MODEL_REGISTRY.md**
+  - Size: 6411 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_30_DAILY_EXCEL.json**
+  - Size: 904 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_30_DAILY_EXCEL.md**
+  - Size: 969 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_31_OFFLINE_FULL_E2E.json**
+  - Size: 179295 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_31_OFFLINE_FULL_E2E.md**
+  - Size: 4507 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_31_TASK_PROGRESS.json**
+  - Size: 5265 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_32_RTMP_MEDIAMTX_20260824_021000.json**
+  - Size: 10155 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_32_RTMP_MEDIAMTX_20260824_021000.md**
+  - Size: 1063 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_32_RTMP_MEDIAMTX_20260824_021445.json**
+  - Size: 9820 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_32_RTMP_MEDIAMTX_20260824_021445.md**
+  - Size: 1147 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_32_RTMP_MEDIAMTX_20260824_042804.json**
+  - Size: 9820 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_32_RTMP_MEDIAMTX_20260824_042804.md**
+  - Size: 1147 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_33_LIVE_HEALTH_FAILOVER_20260824_060829.json**
+  - Size: 24130 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34R_LIVE_DUAL_CAMERA_E2E_REVALIDATION.json**
+  - Size: 5605 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34R_LIVE_DUAL_CAMERA_E2E_REVALIDATION.md**
+  - Size: 6182 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34_LIVE_DUAL_CAMERA_E2E_20260824_131413.json**
+  - Size: 102024 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34_LIVE_DUAL_CAMERA_E2E_20260824_131413.md**
+  - Size: 7451 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34_LIVE_DUAL_CAMERA_E2E_20260824_140836.json**
+  - Size: 102292 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34_LIVE_DUAL_CAMERA_E2E_20260824_140836.md**
+  - Size: 8272 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34_LIVE_DUAL_CAMERA_E2E_20260824_141847.json**
+  - Size: 102780 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34_LIVE_DUAL_CAMERA_E2E_20260824_141847.md**
+  - Size: 8938 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34_LIVE_DUAL_CAMERA_E2E_20260824_142552.json**
+  - Size: 102743 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34_LIVE_DUAL_CAMERA_E2E_20260824_142552.md**
+  - Size: 8908 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34_LIVE_DUAL_CAMERA_E2E_20260824_143628.json**
+  - Size: 102697 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_34_LIVE_DUAL_CAMERA_E2E_20260824_143628.md**
+  - Size: 8841 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35A_CONTRACT_IMPORT_TIMESTAMP_REPAIR.json**
+  - Size: 5430 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35A_CONTRACT_IMPORT_TIMESTAMP_REPAIR.md**
+  - Size: 5559 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE.json**
+  - Size: 14293 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_154226.json**
+  - Size: 101546 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_154226.md**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_154359.json**
+  - Size: 101546 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_154359.md**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_154702.json**
+  - Size: 101546 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_154702.md**
+  - Size: 5305 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_160652.json**
+  - Size: 101545 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_160652.md**
+  - Size: 5305 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_162003.json**
+  - Size: 101546 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_162003.md**
+  - Size: 5305 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_164749.json**
+  - Size: 102335 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_164749.md**
+  - Size: 6196 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_164913.json**
+  - Size: 102335 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_164913.md**
+  - Size: 6196 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_165320.json**
+  - Size: 102172 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_165320.md**
+  - Size: 6190 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_165517.json**
+  - Size: 102171 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_165517.md**
+  - Size: 6190 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_165617.json**
+  - Size: 102172 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_165617.md**
+  - Size: 6190 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_165733.json**
+  - Size: 102172 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_165733.md**
+  - Size: 6190 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_165949.json**
+  - Size: 102168 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_165949.md**
+  - Size: 6190 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_170054.json**
+  - Size: 102168 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_170054.md**
+  - Size: 6190 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_172119.json**
+  - Size: 106139 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_172119.md**
+  - Size: 6427 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_173000.json**
+  - Size: 106138 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_35_REALTIME_PERFORMANCE_20260824_173000.md**
+  - Size: 6427 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36A_LIVE_STREAM_CUDA_REPAIR.json**
+  - Size: 8088 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36A_LIVE_STREAM_CUDA_REPAIR.md**
+  - Size: 9549 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36B_NVDEC_TIMESTAMP_FORENSIC.json**
+  - Size: 14220 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36B_NVDEC_TIMESTAMP_FORENSIC.md**
+  - Size: 12531 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36C_UPSTREAM_TIMESTAMP_REPAIR.json**
+  - Size: 20512 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36C_UPSTREAM_TIMESTAMP_REPAIR.md**
+  - Size: 17501 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36D_NVDEC_ARCHITECTURE.md**
+  - Size: 11190 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36D_NVDEC_INTEGRATION.json**
+  - Size: 6067 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36D_NVDEC_INTEGRATION.md**
+  - Size: 9823 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36E_GPU_CPU_BOTTLENECK_FORENSIC.json**
+  - Size: 58584 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36E_GPU_CPU_BOTTLENECK_FORENSIC.md**
+  - Size: 29223 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36F_BASELINE_CPU.json**
+  - Size: 993 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36F_GPU_RESIDENT_IO_BINDING.json**
+  - Size: 5483 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36F_GPU_RESIDENT_IO_BINDING.md**
+  - Size: 10582 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36G_GPU_V2_INTEGRATION.json**
+  - Size: 169177 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36G_GPU_V2_INTEGRATION.md**
+  - Size: 3973 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36H1_LIVE_UI_NON_BLOCKING.json**
+  - Size: 13949 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36H1_LIVE_UI_NON_BLOCKING.md**
+  - Size: 15366 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36H_GPU_V2_PENDING_CLOSURE.json**
+  - Size: 15287 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36H_GPU_V2_PENDING_CLOSURE.md**
+  - Size: 12543 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_MAX_PERFORMANCE_FORENSIC.json**
+  - Size: 10915 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_MAX_PERFORMANCE_FORENSIC.md**
+  - Size: 7100 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_MAX_PERFORMANCE_FORENSIC_BASELINE.json**
+  - Size: 10909 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_MAX_PERFORMANCE_FORENSIC_BASELINE.md**
+  - Size: 2235 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_SUBAGENT10_HARDWARE_HEADROOM.json**
+  - Size: 5069 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_SUBAGENT1_E2E_TRACE.json**
+  - Size: 17079 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_SUBAGENT2_GPU_VS_HOST.json**
+  - Size: 1439 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_SUBAGENT3_ORT_AUDIT.json**
+  - Size: 3717 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_SUBAGENT4_CUDA_SYNC.json**
+  - Size: 1976 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_SUBAGENT5_CPU_FORENSICS.json**
+  - Size: 3647 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_SUBAGENT6_CAM_SERIALIZATION.json**
+  - Size: 2374 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_SUBAGENT7_TRANSFER_MEMORY.json**
+  - Size: 3087 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_SUBAGENT8_SCRFD_FORENSICS.json**
+  - Size: 3414 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36K_SUBAGENT9_TRACKING_IDENTITY.json**
+  - Size: 2598 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36L_ACCURACY_VALIDATION.json**
+  - Size: 842583 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36L_BOUNDED_OPTIMIZATION.json**
+  - Size: 6022 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36L_BOUNDED_OPTIMIZATION.md**
+  - Size: 1231 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36L_LOW_RISK_GPU_OPTIMIZATION.json**
+  - Size: 4766 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36L_LOW_RISK_GPU_OPTIMIZATION.md**
+  - Size: 4762 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36L_PERFORMANCE_AB_TEST.json**
+  - Size: 5837 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36M_SAFE_ASYNC_GPU_OPTIMIZATION.json**
+  - Size: 91305 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36M_SAFE_ASYNC_GPU_OPTIMIZATION.md**
+  - Size: 2316 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R1_FINAL_REAL_30MIN_SOAK.json**
+  - Size: 45761 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R1_FINAL_REAL_30MIN_SOAK.md**
+  - Size: 15464 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R2_DISCONTINUITY_FORENSIC.json**
+  - Size: 8101 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R2_DISCONTINUITY_FORENSIC.md**
+  - Size: 8291 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R3_1_HEALTH_MONITOR_CLOSURE.json**
+  - Size: 4950 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R3_1_HEALTH_MONITOR_CLOSURE.md**
+  - Size: 5651 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R3_SOAK_HARNESS_REPAIR.json**
+  - Size: 63794 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R3_SOAK_HARNESS_REPAIR.md**
+  - Size: 8487 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R4_GPU_ENGINE_FPS_TELEMETRY.json**
+  - Size: 17472 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R4_GPU_ENGINE_FPS_TELEMETRY.md**
+  - Size: 15285 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R5_FINAL_REAL_30MIN_PRODUCTION_GPU_SOAK.json**
+  - Size: 12768 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R5_FINAL_REAL_30MIN_PRODUCTION_GPU_SOAK.md**
+  - Size: 12102 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_FINAL_REAL_30MIN_SOAK.json**
+  - Size: 34787 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_FINAL_REAL_30MIN_SOAK.md**
+  - Size: 12475 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_004424.json**
+  - Size: 42939 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_004424.md**
+  - Size: 14319 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_004800.json**
+  - Size: 3255 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_004800.md**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_004837.json**
+  - Size: 3493 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_004837.md**
+  - Size: 4763 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_041146.json**
+  - Size: 44750 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_041146.md**
+  - Size: 15257 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_042406.json**
+  - Size: 43851 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_042406.md**
+  - Size: 14863 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_043432.json**
+  - Size: 43310 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_043432.md**
+  - Size: 14453 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_043821.json**
+  - Size: 43252 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_043821.md**
+  - Size: 14459 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_061436.json**
+  - Size: 43985 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_061436.md**
+  - Size: 14553 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_122823.json**
+  - Size: 43839 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_122823.md**
+  - Size: 14862 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_125111.json**
+  - Size: 45036 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_125111.md**
+  - Size: 15206 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_131059.json**
+  - Size: 45031 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_131059.md**
+  - Size: 15195 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_131428.json**
+  - Size: 32177 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_131428.md**
+  - Size: 6721 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_134847.json**
+  - Size: 45761 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36R_LONG_DURATION_SOAK_20260825_134847.md**
+  - Size: 15464 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36S_CANONICAL_LIVE_GPU_FORENSIC.json**
+  - Size: 22233 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36S_CANONICAL_LIVE_GPU_FORENSIC.md**
+  - Size: 15398 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36T_PRODUCTION_LIVE_GPU_INTEGRATION.json**
+  - Size: 2858 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36T_PRODUCTION_LIVE_GPU_INTEGRATION.md**
+  - Size: 2125 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36_LONG_DURATION_SOAK_20260825_001316.json**
+  - Size: 19346 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36_LONG_DURATION_SOAK_20260825_001316.md**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36_LONG_DURATION_SOAK_20260825_001502.json**
+  - Size: 20295 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36_LONG_DURATION_SOAK_20260825_001502.md**
+  - Size: 0 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36_LONG_DURATION_SOAK_20260825_001940.json**
+  - Size: 20297 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36_LONG_DURATION_SOAK_20260825_001940.md**
+  - Size: 6687 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36_LONG_DURATION_SOAK_20260826_060408.json**
+  - Size: 21547 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_36_LONG_DURATION_SOAK_20260826_060408.md**
+  - Size: 6903 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_37B_PRODUCTION_POLICY_TELEGRAM_EXCEL.json**
+  - Size: 5129 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_37B_PRODUCTION_POLICY_TELEGRAM_EXCEL.md**
+  - Size: 14882 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_37C_PRODUCTION_HARDENING.json**
+  - Size: 4181 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_37C_PRODUCTION_HARDENING.md**
+  - Size: 16546 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_37C_TASK_PROGRESS.md**
+  - Size: 3865 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_37D_SEMANTIC_FULL_INTEGRATION.json**
+  - Size: 2191 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_37D_SEMANTIC_FULL_INTEGRATION.md**
+  - Size: 8916 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_37_1_TIMETABLE_FORENSIC.json**
+  - Size: 13359 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_37_1_TIMETABLE_FORENSIC.md**
+  - Size: 11616 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_3_WINDOWS_CUDA_RUNTIME.json**
+  - Size: 5907 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_3_WINDOWS_CUDA_RUNTIME.md**
+  - Size: 10690 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_3_WINDOWS_CUDA_RUNTIME_SNAPSHOT.json**
+  - Size: 5870 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_4_MODEL_INVENTORY.json**
+  - Size: 3867 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_4_PRODUCTION_MODEL_ACQUISITION.json**
+  - Size: 7235 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_4_PRODUCTION_MODEL_ACQUISITION.md**
+  - Size: 3963 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_5_MODEL_INFERENCE.json**
+  - Size: 19472 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_5_MODEL_INFERENCE.md**
+  - Size: 4735 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_5_MODEL_RUNTIME_MATRIX.json**
+  - Size: 9261 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_5_PRODUCTION_MODEL_CUDA_INFERENCE.json**
+  - Size: 19482 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_5_PRODUCTION_MODEL_CUDA_INFERENCE.md**
+  - Size: 4731 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_6_DATA_PIPELINE_VALIDATION.json**
+  - Size: 4354 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_6_IMAGE_VIDEO_NPY_PIPELINE.md**
+  - Size: 6926 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_6_NPY_SCHEMA.json**
+  - Size: 5402 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_7R2_SCRFD_DEEP_DIAGNOSTIC.json**
+  - Size: 21791 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_7R2_SCRFD_DEEP_DIAGNOSTIC.md**
+  - Size: 3871 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_7R2_SCRFD_RUNTIME_MATRIX.json**
+  - Size: 3051 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_7R3_SCRFD_CONTRACT_CUDA.json**
+  - Size: 83701 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_7R3_SCRFD_CONTRACT_CUDA.md**
+  - Size: 4947 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_7R3_SCRFD_RUNTIME_MATRIX.json**
+  - Size: 4128 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_7R_FACE_PIPELINE.json**
+  - Size: 8282 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_7R_FACE_PIPELINE.md**
+  - Size: 2379 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_7_FACE_PIPELINE.json**
+  - Size: 5872 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_7_FACE_PIPELINE.md**
+  - Size: 2264 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_8_FACE_DETECTOR_ABSTRACTION.json**
+  - Size: 5378 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_8_FACE_DETECTOR_ABSTRACTION.md**
+  - Size: 5824 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_9_YOLO11N_4K_PERSON_DETECTION.json**
+  - Size: 20168 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\PHASE_9_YOLO11N_4K_PERSON_DETECTION.md**
+  - Size: 3737 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **benchmark_results\test_manifest.json**
+  - Size: 2842 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **requirements\base.txt**
+  - Size: 358 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **requirements\windows.txt**
+  - Size: 1096 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **check_indent.py**
+  - Size: 343 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **debug_test.py**
+  - Size: 2186 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 11 modules
+- **fix_regression.py**
+  - Size: 3307 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **fix_regression2.py**
+  - Size: 2412 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **fix_regression_check.py**
+  - Size: 927 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **fix_regression_test.py**
+  - Size: 3229 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **fix_repo.py**
+  - Size: 936 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **fix_repo2.py**
+  - Size: 976 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **fix_verdict.py**
+  - Size: 963 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+- **generate_report.py**
+  - Size: 8626 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **print_summary.py**
+  - Size: 3306 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+  - Evidence: Imports: 1 modules
+- **PROJECT_HANDOFF_PHASE1_TO_CURRENT_ARCHITECTURE_HARDENED.md**
+  - Size: 52866 bytes
+  - Recommendation: REVIEW - No imports found, verify if dynamically loaded
+  - Deletion Risk: UNKNOWN
+
+## 6. Bootstrap Rehearsal Result
+
+- **Can Initialize Without Camera:** True
+- **Camera Absence Behavior:** NOT_CONNECTED / NOT_AVAILABLE (expected)
+
+### Checks:
+- environment: PASS
+- configuration: PASS
+- database: PASS
+- enrollment_database: PASS
+- timetable: PASS
+- backend: PASS
+- policy: PASS
+- notification_worker: PASS
+- ui: PASS
+
+## 7. Configuration Analysis
+
+- **default.yaml.runtime.log_level**: UNKNOWN (used by: none)
+- **default.yaml.runtime.debug**: UNKNOWN (used by: none)
+- **default.yaml.paths.config_dir**: UNKNOWN (used by: none)
+- **default.yaml.paths.models_dir**: UNKNOWN (used by: none)
+- **default.yaml.paths.logs_dir**: UNKNOWN (used by: none)
+- **default.yaml.paths.data_dir**: UNKNOWN (used by: none)
+- **default.yaml.paths.recordings_dir**: UNKNOWN (used by: none)
+- **default.yaml.paths.benchmark_results_dir**: UNKNOWN (used by: none)
+- **default.yaml.models.scrfd_dir**: UNKNOWN (used by: none)
+- **default.yaml.models.arcface_dir**: UNKNOWN (used by: none)
+- **default.yaml.models.landmark_dir**: UNKNOWN (used by: none)
+- **default.yaml.models.reid_dir**: UNKNOWN (used by: none)
+- **default.yaml.models.yolo_dir**: UNKNOWN (used by: none)
+- **default.yaml.cameras**: UNKNOWN (used by: none)
+- **default.yaml.media.ffmpeg_path**: UNKNOWN (used by: none)
+- **default.yaml.inference.device**: UNKNOWN (used by: none)
+- **default.yaml.inference.batch_size**: UNKNOWN (used by: none)
+- **default.yaml.tracking**: UNKNOWN (used by: none)
+- **default.yaml.attendance**: UNKNOWN (used by: none)
+- **default.yaml.stranger**: UNKNOWN (used by: none)
+- **default.yaml.geometry**: UNKNOWN (used by: none)
+- **default.yaml.storage**: UNKNOWN (used by: none)
+- **default.yaml.monitoring**: UNKNOWN (used by: none)

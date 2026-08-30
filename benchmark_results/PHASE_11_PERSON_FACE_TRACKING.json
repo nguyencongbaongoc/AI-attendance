@@ -1,0 +1,108 @@
+{
+  "phase": 11,
+  "name": "Person/Face Tracking",
+  "status": "PASS",
+  "timestamp": "2026-08-19T19:29:00+07:00",
+  "summary": {
+    "unit_tests_passed": 44,
+    "unit_tests_failed": 0,
+    "unit_tests_total": 44,
+    "regression_passed": 607,
+    "regression_skipped": 5,
+    "regression_failed": 0
+  },
+  "files_created": [
+    "app/vision/track_contract.py",
+    "app/vision/tracker.py",
+    "tests/unit/test_tracking.py"
+  ],
+  "files_modified": [],
+  "key_features": {
+    "track_contract": {
+      "lifecycle_states": ["NEW", "ACTIVE", "LOST", "CLOSED"],
+      "deterministic_track_ids": true,
+      "face_attachment": true,
+      "provenance_preservation": true,
+      "coordinate_space": "ORIGINAL_FRAME (3840x2160)"
+    },
+    "tracker_implementation": {
+      "geometry_matching": ["IoU", "center_distance", "area_ratio", "containment"],
+      "assignment_algorithm": "greedy_deterministic",
+      "memory_bounds": {
+        "max_active_tracks": 100,
+        "max_lost_tracks": 50
+      },
+      "no_identity_recognition": true
+    },
+    "safety_boundaries": {
+      "no_camera": true,
+      "no_mediamtx": true,
+      "no_rtsp_rtmp": true,
+      "no_live_ffmpeg": true,
+      "no_arcface": true,
+      "no_attendance": true,
+      "no_persistent_workers": true
+    }
+  },
+  "test_coverage": {
+    "track_contract": 10,
+    "tracker_config": 3,
+    "track_lifecycle": 5,
+    "single_person_tracking": 2,
+    "multiple_people_tracking": 3,
+    "temporary_face_loss": 1,
+    "person_occlusion": 2,
+    "crossing_trajectories": 1,
+    "face_attachment_stability": 1,
+    "provenance_preservation": 2,
+    "invalid_input_rejection": 5,
+    "determinism": 2,
+    "memory_safety": 3,
+    "safety_boundary": 4,
+    "tracking_result": 1
+  },
+  "known_limitations": [
+    "Geometry-only tracking: track IDs follow spatial continuity during crossings, not identity",
+    "Track ID includes frame_index: same position at different frame = different track ID",
+    "No Kalman filtering or motion models in Phase 11"
+  ],
+  "phase_boundary_compliance": {
+    "completed": [
+      "Track contract with lifecycle states",
+      "Person tracking implementation",
+      "Track lifecycle (NEW->ACTIVE->LOST->CLOSED)",
+      "Face attachment from Phase 10 associations",
+      "Occlusion/missing face handling",
+      "Ordering independence",
+      "Synthetic 4K video test sequences",
+      "Memory safety verification",
+      "Determinism verification",
+      "Targeted tests created"
+    ],
+    "deferred_to_future_phases": [
+      "ArcFace identity recognition",
+      "1K3D68 landmarks",
+      "Attendance/IN/OUT logic",
+      "Database persistence",
+      "API endpoints",
+      "Real camera integration"
+    ]
+  },
+  "acceptance_criteria": {
+    "track_contract_with_lifecycle": "PASS",
+    "deterministic_geometry_tracking": "PASS",
+    "face_attachment_phase10": "PASS",
+    "occlusion_handling": "PASS",
+    "multiple_people_independent": "PASS",
+    "shuffled_ordering_determinism": "PASS",
+    "crossing_trajectories_documented": "PASS",
+    "provenance_preservation": "PASS",
+    "invalid_input_rejection": "PASS",
+    "memory_bounded": "PASS",
+    "no_identity_attendance_logic": "PASS",
+    "all_unit_tests_pass": "PASS",
+    "full_regression_passes": "PASS"
+  },
+  "verdict": "PASS",
+  "ready_for_next_phase": true
+}

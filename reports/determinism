@@ -1,0 +1,7 @@
+{
+  "embeddings_identical": true,
+  "metadata_identical": true,
+  "embeddings_shape_match": true,
+  "person_ids_match": true,
+  "sample_order_match": true
+}

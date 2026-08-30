@@ -1,0 +1,127 @@
+{
+  "benchmark": {
+    "name": "Phase 2: Model Registry",
+    "generated": "2026-08-16T15:51:00+07:00",
+    "phase": 2,
+    "status": "COMPLETE",
+    "verdict": "PASS"
+  },
+  "test_results": {
+    "total": 86,
+    "passed": 86,
+    "failed": 0,
+    "warnings": 1,
+    "duration_seconds": 0.68
+  },
+  "models": {
+    "total": 6,
+    "list": [
+      {
+        "model_id": "scrfd",
+        "display_name": "SCRFD Face Detector",
+        "filename": "scrfd_10g_bnkps.onnx",
+        "format": "onnx",
+        "provider": "onnxruntime",
+        "input_shape": [1, 3, 960, 960],
+        "output_type": "detection",
+        "keypoints": 5,
+        "confidence_threshold": 0.55,
+        "nms_threshold": 0.45,
+        "required": true,
+        "sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+        "status": "MISSING"
+      },
+      {
+        "model_id": "arcface",
+        "display_name": "ArcFace Face Recognition",
+        "filename": "glintr100.onnx",
+        "format": "onnx",
+        "provider": "onnxruntime",
+        "input_shape": [1, 3, 112, 112],
+        "output_type": "embedding",
+        "embedding_dimension": 512,
+        "distance_threshold": 0.6,
+        "required": true,
+        "sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+        "status": "MISSING"
+      },
+      {
+        "model_id": "landmark_1k3d68",
+        "display_name": "1K3D68 Face Landmark",
+        "filename": "1k3d68.onnx",
+        "format": "onnx",
+        "provider": "onnxruntime",
+        "input_shape": [1, 3, 192, 192],
+        "output_type": "landmarks",
+        "num_landmarks": 68,
+        "landmark_format": "xyz",
+        "required": false,
+        "sha256": "df5c06b8a0c12e422b2ed8947b8869faa4105387f199c477af038aa01f9a45cc",
+        "status": "MISSING"
+      },
+      {
+        "model_id": "reid",
+        "display_name": "ResNet50 ReID",
+        "filename": "resnet50_reid.onnx",
+        "format": "onnx",
+        "provider": "onnxruntime",
+        "input_shape": [1, 3, 256, 128],
+        "output_type": "embedding",
+        "embedding_dimension": 2048,
+        "required": false,
+        "sha256": "09d398902020205dd4aa80495b2a8fceecd64ba610e6b72afc1f93965c9613d2",
+        "status": "MISSING"
+      },
+      {
+        "model_id": "yolo_person",
+        "display_name": "YOLO11n Person Detector",
+        "filename": "yolo11n.pt",
+        "format": "pytorch",
+        "provider": "ultralytics",
+        "input_shape": [1, 3, 640, 640],
+        "output_type": "detection",
+        "confidence_threshold": 0.5,
+        "nms_threshold": 0.45,
+        "required": false,
+        "sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+        "status": "MISSING"
+      },
+      {
+        "model_id": "yolo_pose",
+        "display_name": "YOLO11n-Pose",
+        "filename": "yolo11n-pose.pt",
+        "format": "pytorch",
+        "provider": "ultralytics",
+        "input_shape": [1, 3, 640, 640],
+        "output_type": "pose",
+        "pose_keypoints": 17,
+        "confidence_threshold": 0.5,
+        "nms_threshold": 0.45,
+        "required": false,
+        "sha256": "869e83fcdffdc7371fa4e34cd8e51c838cc729571d1635e5141e3075e9319dc0",
+        "status": "MISSING"
+      }
+    ]
+  },
+  "files_created": [
+    "app/models/__init__.py",
+    "app/models/contracts.py",
+    "app/models/exceptions.py",
+    "app/models/hashing.py",
+    "app/models/registry.py",
+    "tests/unit/test_models_registry.py",
+    "docs/benchmarks/phase2_model_registry_benchmark.md",
+    "docs/benchmarks/phase2_model_registry_benchmark.json",
+    "benchmark_results/PHASE_2_MODEL_REGISTRY.md",
+    "benchmark_results/PHASE_2_MODEL_REGISTRY.json"
+  ],
+  "files_modified": [],
+  "phase_boundary_verification": {
+    "camera_accessed": false,
+    "mediamtx_started": false,
+    "ffmpeg_streaming": false,
+    "ai_inference_executed": false,
+    "model_files_modified": false,
+    "legacy_production_code_modified": false
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "cam1_only": {
+    "frames_processed": 30,
+    "fps": 19.147860223436485,
+    "avg_latency_ms": 52.22515666664549,
+    "p50_latency_ms": 31.657800000175484,
+    "p95_latency_ms": 72.46590000067954,
+    "max_latency_ms": 460.0798000001305,
+    "avg_gpu_utilization": 13.266666666666667
+  },
+  "cam2_only": {
+    "frames_processed": 30,
+    "fps": 25.560296611847388,
+    "avg_latency_ms": 39.123176666756386,
+    "p50_latency_ms": 33.32789999967645,
+    "p95_latency_ms": 67.47699999959877,
+    "max_latency_ms": 77.45680000061839,
+    "avg_gpu_utilization": 13.6
+  },
+  "cam1_cam2_serialized": {
+    "total_frames_processed": 60,
+    "cam1_frames": 30,
+    "cam2_frames": 30,
+    "combined_fps": 23.46099031653146,
+    "avg_latency_ms": 42.623946666708434,
+    "p50_latency_ms": 31.825000000026193,
+    "p95_latency_ms": 75.45280000067578,
+    "max_latency_ms": 206.75500000015745,
+    "avg_gpu_utilization": 32.6,
+    "cam1_avg_latency_ms": 44.66533000004347,
+    "cam2_avg_latency_ms": 40.5825633333734
+  },
+  "cam1_cam2_overlapped": {
+    "total_wall_time_s": 3.8280174000001352,
+    "total_frames_processed": 60,
+    "cam1_frames": 30,
+    "cam2_frames": 30,
+    "combined_fps": 15.673909946176806,
+    "avg_latency_ms": 85.97797833334273,
+    "p50_latency_ms": 60.04480000046897,
+    "p95_latency_ms": 224.76019999976415,
+    "max_latency_ms": 238.64810000031866,
+    "cam1_avg_latency_ms": 78.01029666667698,
+    "cam2_avg_latency_ms": 93.9456600000085
+  },
+  "analysis": {
+    "cam1_only_fps": 19.147860223436485,
+    "cam2_only_fps": 25.560296611847388,
+    "serialized_combined_fps": 23.46099031653146,
+    "overlapped_combined_fps": 15.673909946176806,
+    "serialization_overhead_pct": 47.524138821093274,
+    "overlap_speedup_pct": -33.191609839536895,
+    "gpu_utilization_cam1_only": 13.266666666666667,
+    "gpu_utilization_cam2_only": 13.6,
+    "gpu_utilization_serialized": 32.6,
+    "expected_parallel_fps": 44.70815683528387
+  },
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "issue": "Significant serialization overhead: 47.5%",
+      "current": "CAM1 and CAM2 processed sequentially",
+      "recommended": "Implement parallel camera processing with separate detector instances or CUDA streams",
+      "impact": "Could achieve 44.7 FPS combined vs 23.5 FPS"
+    }
+  ]
+}
