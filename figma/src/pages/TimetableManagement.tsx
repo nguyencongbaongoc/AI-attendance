@@ -1,8 +1,10 @@
 // Timetable Management Page - New page built in Figma's design language
 // Based on existing frontend's TimetableManagement.vue functionality
+// Now uses real backend data via hooks
 
 import { useState, useEffect, useMemo } from 'react';
 import { useTimetableStore } from '@/store';
+import { useTimetable, useTimetableEntries, useCreateTimetableEntry, useUpdateTimetableEntry, useDeleteTimetableEntry, useImportTimetableFromExcel } from '@/hooks/useTimetable';
 import type { TimetableEntry, Timetable } from '@/types/backend';
 import { Badge, MonoLabel, MonoValue, SectionTitle, GlassButton, GlassInput } from '@/components/ui/DesignSystem';
 
@@ -13,9 +15,6 @@ type SessionType = typeof SESSION_TYPES[number];
 type Day = typeof DAYS[number];
 
 export default function TimetableManagement() {
-  const [entries, setEntries] = useState<TimetableEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
   const [formData, setFormData] = useState<Omit<TimetableEntry, 'entry_id' | 'created_at' | 'updated_at'>>({
@@ -34,53 +33,21 @@ export default function TimetableManagement() {
     outside_allowed: false,
   });
 
+  const { data: timetable, loading: timetableLoading, error: timetableError, refetch: refetchTimetable } = useTimetable();
+  const { data: entries, loading: entriesLoading, error: entriesError, refetch: refetchEntries } = useTimetableEntries();
+  const { mutate: createEntry, loading: createLoading, error: createError } = useCreateTimetableEntry();
+  const { mutate: updateEntry, loading: updateLoading, error: updateError } = useUpdateTimetableEntry();
+  const { mutate: deleteEntry, loading: deleteLoading, error: deleteError } = useDeleteTimetableEntry();
+  const { mutate: importTimetable, loading: importLoading, error: importError } = useImportTimetableFromExcel();
+
   const { setEntries: storeSetEntries, setLoading: storeSetLoading, setError: storeSetError } = useTimetableStore();
 
-  // Load mock data on mount
+  // Sync store with API data
   useEffect(() => {
-    if (entries.length === 0) {
-      const mockEntries: TimetableEntry[] = [
-        {
-          entry_id: 'TT-001',
-          person_id: 'STU-10042',
-          session_id: 'MORNING',
-          day: 'MONDAY',
-          entry_time: 28800,
-          exit_time: 43200,
-          entry_window_seconds: 300,
-          exit_window_seconds: 300,
-          late_tolerance_seconds: 600,
-          session_type: 'CLASSROOM',
-          subject: 'Mathematics',
-          location: 'Room 101',
-          expected_location: 'Room 101',
-          outside_allowed: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          entry_id: 'TT-002',
-          person_id: 'STU-10042',
-          session_id: 'AFTERNOON',
-          day: 'MONDAY',
-          entry_time: 46800,
-          exit_time: 61200,
-          entry_window_seconds: 300,
-          exit_window_seconds: 300,
-          late_tolerance_seconds: 600,
-          session_type: 'LAB',
-          subject: 'Physics Lab',
-          location: 'Lab 201',
-          expected_location: 'Lab 201',
-          outside_allowed: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ];
-      setEntries(mockEntries);
-      storeSetEntries(mockEntries);
+    if (entries) {
+      storeSetEntries(entries);
     }
-  }, []);
+  }, [entries, storeSetEntries]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -88,37 +55,36 @@ export default function TimetableManagement() {
     return `${h}:${m}`;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingEntry) {
-      const updated = { ...editingEntry, ...formData, updated_at: new Date().toISOString() };
-      setEntries(prev => prev.map(e => e.entry_id === editingEntry.entry_id ? updated : e));
+    try {
+      if (editingEntry) {
+        await updateEntry(editingEntry.entry_id, formData);
+        refetchEntries();
+      } else {
+        await createEntry(formData);
+        refetchEntries();
+      }
+      setShowForm(false);
       setEditingEntry(null);
-    } else {
-      const newEntry: TimetableEntry = {
-        entry_id: `TT-${Date.now()}`,
-        ...formData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setEntries(prev => [...prev, newEntry]);
+      setFormData({
+        person_id: '',
+        session_id: '',
+        day: 'MONDAY',
+        entry_time: 28800,
+        exit_time: 61200,
+        entry_window_seconds: 300,
+        exit_window_seconds: 300,
+        late_tolerance_seconds: 600,
+        session_type: 'CLASSROOM',
+        subject: '',
+        location: '',
+        expected_location: '',
+        outside_allowed: false,
+      });
+    } catch (err) {
+      // Error handled by hook
     }
-    setShowForm(false);
-    setFormData({
-      person_id: '',
-      session_id: '',
-      day: 'MONDAY',
-      entry_time: 28800,
-      exit_time: 61200,
-      entry_window_seconds: 300,
-      exit_window_seconds: 300,
-      late_tolerance_seconds: 600,
-      session_type: 'CLASSROOM',
-      subject: '',
-      location: '',
-      expected_location: '',
-      outside_allowed: false,
-    });
   };
 
   const handleEdit = (entry: TimetableEntry) => {
@@ -127,20 +93,30 @@ export default function TimetableManagement() {
     setShowForm(true);
   };
 
-  const handleDelete = (entryId: string) => {
+  const handleDelete = async (entryId: string) => {
     if (confirm('Delete this timetable entry?')) {
-      setEntries(prev => prev.filter(e => e.entry_id !== entryId));
+      try {
+        await deleteEntry(entryId);
+        refetchEntries();
+      } catch (err) {
+        // Error handled by hook
+      }
     }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // TODO: Implement Excel import
-    alert('Excel import not yet implemented');
+    try {
+      await importTimetable(file);
+      refetchTimetable();
+      refetchEntries();
+    } catch (err) {
+      // Error handled by hook
+    }
   };
 
-  const filteredEntries = useMemo(() => entries, [entries]);
+  const filteredEntries = useMemo(() => entries ?? [], [entries]);
 
   return (
     <div className="flex h-full flex-col gap-3 p-3 fade-in">

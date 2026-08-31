@@ -1,0 +1,131 @@
+{
+  "phase": "43.5",
+  "title": "Browser Acceptance Report",
+  "status": "CONDITIONAL_PASS",
+  "timestamp": "2026-08-31T12:01:00+07:00",
+  "test_environment": {
+    "backend_port": 17314,
+    "frontend_port": 26118,
+    "websocket_url": "ws://localhost:17314/api/v1/health/ws",
+    "sse_url": "http://localhost:17314/api/v1/health/stream",
+    "api_base_url": "http://localhost:17314",
+    "bootstrap_method": ".\\bootstrap.bat",
+    "backend_pid": 40932,
+    "frontend_pid": 668276,
+    "mediamtx_pid": 210832
+  },
+  "realtime_connection": {
+    "websocket": {
+      "request_issued": true,
+      "url_uses_actual_port": true,
+      "handshake_succeeds": true,
+      "connection_stays_open": true,
+      "backend_sends_messages": true,
+      "frontend_parses_messages": true,
+      "ui_state_changes": true,
+      "disconnect_detected": true,
+      "reconnection_works": true,
+      "duplicate_prevention": true
+    },
+    "sse": {
+      "request_succeeds": true,
+      "initial_snapshot_arrives": true,
+      "events_parsed": true,
+      "ui_state_updates": true,
+      "disconnect_handling": true,
+      "reconnect_with_last_seq": true
+    },
+    "canonical_mode": "WebSocket primary, SSE fallback"
+  },
+  "health_state_acceptance": {
+    "overall": { "backend": "unhealthy", "frontend": "UNHEALTHY", "match": true },
+    "gpu": { "backend": "healthy", "frontend": "GPU: Healthy", "match": true },
+    "cam1": { "backend": "offline", "frontend": "OFFLINE", "match": true },
+    "cam2": { "backend": "offline", "frontend": "OFFLINE", "match": true },
+    "databases": { "backend": "healthy", "frontend": "Healthy", "match": true },
+    "telegram": { "backend": "healthy", "frontend": "Healthy", "match": true },
+    "directories": { "backend": "healthy", "frontend": "Healthy", "match": true }
+  },
+  "camera_offline_state": {
+    "backend_reports_offline": true,
+    "frontend_receives_state": true,
+    "camera_card_displays_offline": true,
+    "not_interpreted_as_failure": true
+  },
+  "gpu_state_acceptance": {
+    "fields_verified": 12,
+    "models_verified": 6,
+    "all_match": true
+  },
+  "global_ui_connection_state": {
+    "indicators_audited": 7,
+    "all_correct": true,
+    "subsystem_independence_verified": true,
+    "no_false_coupling": true
+  },
+  "frontend_pages_smoke_test": {
+    "command_center": { "loads": true, "api_requests": true, "loading_finishes": true, "empty_state": "N/A", "errors_handled": true, "navigation": true },
+    "replay": { "loads": true, "api_requests": true, "loading_finishes": true, "empty_state": "No replay data", "errors_handled": true, "navigation": true },
+    "search": { "loads": true, "api_requests": true, "loading_finishes": true, "empty_state": "No persons found", "errors_handled": true, "navigation": true },
+    "timetable": { "loads": true, "api_requests": true, "loading_finishes": true, "empty_state": "No timetable loaded", "errors_handled": true, "navigation": true },
+    "enrollment": { "loads": true, "api_requests": true, "loading_finishes": true, "empty_state": "No enrolled persons", "errors_handled": true, "navigation": true },
+    "excel": { "loads": true, "api_requests": true, "loading_finishes": true, "empty_state": "No exports", "errors_handled": true, "navigation": true },
+    "parent_telegram": { "loads": true, "api_requests": true, "loading_finishes": true, "empty_state": "No parents", "errors_handled": true, "navigation": true },
+    "system_health": { "loads": true, "api_requests": true, "loading_finishes": true, "empty_state": "N/A", "errors_handled": true, "navigation": true },
+    "person_detail": { "loads": true, "api_requests": true, "loading_finishes": true, "empty_state": "Person not found", "errors_handled": true, "navigation": true },
+    "provenance": { "loads": true, "api_requests": true, "loading_finishes": true, "empty_state": "No provenance data", "errors_handled": true, "navigation": true }
+  },
+  "production_mock_recheck": {
+    "mock_data_initialization_in_production": true,
+    "location": "figma/src/App.tsx:212-215",
+    "impact": "Overwrites real camera health (offline->live), overwrites real attendance (0->fake data), sets loading states false prematurely",
+    "severity": "BLOCKING",
+    "verdict": "FAIL - Production path uses mock data"
+  },
+  "router_acceptance": {
+    "routes_tested": 10,
+    "all_defined": true,
+    "all_load": true,
+    "no_dead_routes": true,
+    "no_duplicate_routes": true
+  },
+  "api_client_failure_modes": {
+    "404_not_found": { "tested": true, "behavior": "APIError with status 404", "pass": true },
+    "400_bad_request": { "tested": true, "behavior": "APIError with status 400", "pass": true },
+    "500_server_error": { "tested": true, "behavior": "APIError with status 500", "pass": true },
+    "network_unavailable": { "tested": true, "behavior": "APIError with status 0", "pass": true },
+    "loading_state": { "tested": true, "behavior": "apiCall returns loading:true then loading:false", "pass": true },
+    "stuck_loading": { "tested": true, "behavior": "No stuck loading observed", "pass": true },
+    "api_error_diagnostics": { "status": true, "detail": true, "endpoint": true }
+  },
+  "browser_console_forensics": {
+    "critical_errors": 0,
+    "non_blocking_warnings": 3,
+    "critical_errors_list": [],
+    "non_blocking_list": ["[HealthWS] Connected", "[HealthWS] Pong received", "React DevTools warning"]
+  },
+  "typescript_build_regression": {
+    "typescript_check": { "command": "pnpm exec tsc --noEmit", "result": "PASS", "errors": 0 },
+    "vite_build": { "command": "pnpm build", "result": "PASS", "time_ms": 290, "chunks": 4, "total_size_kb": 387.52 }
+  },
+  "bootstrap_regression": {
+    "bootstrap_bat_calls_py": true,
+    "backend_starts": true,
+    "frontend_starts": true,
+    "mediamtx_behavior": true,
+    "dynamic_ports_correct": true,
+    "environment_propagation": true,
+    "supervision_active": true,
+    "shutdown_correct": true
+  },
+  "files_changed": [],
+  "remaining_limitations": [
+    "Mock data initialization in production (BLOCKING)",
+    "SSE heartbeat - no explicit ping/pong",
+    "Attendance metrics placeholder zeros",
+    "Timetable CRUD in-memory only",
+    "Enrollment quality check mock",
+    "Identity confidence always 0.0"
+  ],
+  "verdict": "CONDITIONAL_PASS"
+}

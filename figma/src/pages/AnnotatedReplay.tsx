@@ -2,29 +2,57 @@
 // Now uses real backend data via hooks and store
 
 import { useState, useEffect, useMemo } from 'react';
-import { useAttendanceStore } from '@/store';
+import { useReplayAppearances } from '@/hooks/useReplay';
 import type { AttendanceRecord } from '@/types/backend';
 import { Badge, MonoLabel, MonoValue, SectionTitle, GlassButton, ConfidenceBar, StatusDot } from '@/components/ui/DesignSystem';
 
 export default function AnnotatedReplay() {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0.34);
-  const [selectedTrack, setSelectedTrack] = useState("TRK-441");
-  const { liveEvents } = useAttendanceStore();
+  const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
+  const [cameraId, setCameraId] = useState("CAM1");
+  const [date, setDate] = useState("2026-08-23");
 
-  const tracks = useMemo(() => [
-    { id: "TRK-441", person: "Aisha Rahman", conf: 0.984, color: "cyan" },
-    { id: "TRK-440", person: "Reza Putra", conf: 0.961, color: "violet" },
-    { id: "TRK-439", person: "Mei Ling", conf: 0.877, color: "amber" },
-  ], []);
+  const { data: replayData, loading: replayLoading, error: replayError, refetch } = useReplayAppearances({
+    camera_id: cameraId,
+    limit: 50,
+  });
 
-  const annotations = useMemo(() => [
-    { time: 0.15, type: "enter", label: "TRK-441 ENTER" },
-    { time: 0.3, type: "enter", label: "TRK-440 ENTER" },
-    { time: 0.34, type: "unknown", label: "UNK detected" },
-    { time: 0.55, type: "exit", label: "TRK-441 EXIT" },
-    { time: 0.7, type: "enter", label: "TRK-439 ENTER" },
-  ], []);
+  // Transform attendance records into tracks for display
+  const tracks = useMemo(() => {
+    if (!replayData?.records) return [];
+    const trackMap = new Map<string, { id: string; person: string; conf: number; color: string; count: number }>();
+    const colors = ["cyan", "violet", "amber", "emerald", "rose", "orange"];
+    let colorIndex = 0;
+
+    replayData.records.forEach(record => {
+      const trackId = record.localTrackId;
+      if (!trackMap.has(trackId)) {
+        trackMap.set(trackId, {
+          id: trackId,
+          person: record.personName || record.personId,
+          conf: record.identityConfidence || 0.9,
+          color: colors[colorIndex % colors.length],
+          count: 0,
+        });
+        colorIndex++;
+      }
+      const track = trackMap.get(trackId)!;
+      track.count++;
+    });
+
+    return Array.from(trackMap.values());
+  }, [replayData]);
+
+  // Transform attendance records into annotations for timeline
+  const annotations = useMemo(() => {
+    if (!replayData?.records) return [];
+    return replayData.records.slice(0, 20).map((record, index) => ({
+      time: index / Math.max(replayData.records.length, 1),
+      type: record.direction === 'in' ? 'enter' : record.direction === 'out' ? 'exit' : 'unknown',
+      label: `${record.localTrackId} ${record.direction.toUpperCase()}`,
+    }));
+  }, [replayData]);
 
   useEffect(() => {
     if (!playing) return;
@@ -45,7 +73,7 @@ export default function AnnotatedReplay() {
     return `${m}:${s}`;
   };
 
-  const trackColors: Record<string, string> = { cyan: "#00d4ff", violet: "#8b5cf6", amber: "#f59e0b" };
+  const trackColors: Record<string, string> = { cyan: "#00d4ff", violet: "#8b5cf6", amber: "#f59e0b", emerald: "#10b981", rose: "#f43f5e", orange: "#f97316" };
 
   return (
     <div className="flex h-full gap-3 p-3 fade-in">
@@ -53,16 +81,17 @@ export default function AnnotatedReplay() {
       <div className="flex-1 flex flex-col gap-3 min-w-0">
         {/* Camera selector */}
         <div className="flex items-center gap-2">
-          {["CAM-001", "CAM-002", "CAM-003", "CAM-004", "CAM-005", "CAM-006"].map(cam => (
+          {["CAM1", "CAM2"].map(cam => (
             <button
               key={cam}
-              className={`h-9 px-3 rounded-lg text-[11px] font-mono border transition-all duration-150 cursor-pointer min-w-[44px] ${cam === "CAM-001" ? "nav-active" : "nav-inactive"}`}
+              onClick={() => { setCameraId(cam); refetch(); }}
+              className={`h-9 px-3 rounded-lg text-[11px] font-mono border transition-all duration-150 cursor-pointer min-w-[44px] ${cam === cameraId ? "nav-active" : "nav-inactive"}`}
             >
               {cam}
             </button>
           ))}
           <div className="ml-auto flex items-center gap-1.5">
-            <MonoLabel>Main Entrance · 2026-08-23</MonoLabel>
+            <MonoLabel>{cameraId === "CAM1" ? "Main Entrance" : "Corridor East"} · {date}</MonoLabel>
           </div>
         </div>
 
@@ -112,10 +141,10 @@ export default function AnnotatedReplay() {
           {/* Corner UI */}
           <div className="absolute top-3 left-3 flex items-center gap-2">
             <StatusDot status="recording" />
-            <span className="font-mono text-[10px] text-white/50">REC · CAM-001</span>
+            <span className="font-mono text-[10px] text-white/50">REC · {cameraId}</span>
           </div>
           <div className="absolute top-3 right-3">
-            <span className="font-mono text-[10px] text-white/50">2026-08-23 · {formatTime(progress)}</span>
+            <span className="font-mono text-[10px] text-white/50">{date} · {formatTime(progress)}</span>
           </div>
 
           {/* Corner brackets */}
@@ -189,52 +218,62 @@ export default function AnnotatedReplay() {
         <div className="glass-elevated rounded-xl p-3 flex-1 flex flex-col min-h-0">
           <SectionTitle>Track Details</SectionTitle>
           <div className="space-y-2 flex-1 overflow-y-auto">
-            {tracks.map(track => (
-              <div
-                key={track.id}
-                onClick={() => setSelectedTrack(track.id)}
-                className={`p-3 rounded-lg cursor-pointer transition-all duration-150 border ${selectedTrack === track.id ? "border-cyan-400/20 bg-cyan-400/8" : "border-transparent hover:border-white/6 hover:bg-white/3"}`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ background: trackColors[track.color] }} />
-                  <span className="font-mono text-[11px] text-white/80 font-medium">{track.id}</span>
+            {tracks.length === 0 ? (
+              <div className="text-center text-white/30 py-8 text-sm">No tracks available</div>
+            ) : (
+              tracks.map(track => (
+                <div
+                  key={track.id}
+                  onClick={() => setSelectedTrack(track.id)}
+                  className={`p-3 rounded-lg cursor-pointer transition-all duration-150 border ${selectedTrack === track.id ? "border-cyan-400/20 bg-cyan-400/8" : "border-transparent hover:border-white/6 hover:bg-white/3"}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ background: trackColors[track.color] }} />
+                    <span className="font-mono text-[11px] text-white/80 font-medium">{track.id}</span>
+                  </div>
+                  <div className="text-[12px] text-white/65 mt-1">{track.person}</div>
+                  <div className="mt-2">
+                    <ConfidenceBar value={track.conf} />
+                  </div>
                 </div>
-                <div className="text-[12px] text-white/65 mt-1">{track.person}</div>
-                <div className="mt-2">
-                  <ConfidenceBar value={track.conf} />
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
         <div className="glass rounded-xl p-3">
           <SectionTitle>Event Log</SectionTitle>
           <div className="space-y-1">
-            {annotations.map(a => (
-              <div
-                key={a.label}
-                className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-white/3 rounded px-1"
-                onClick={() => setProgress(a.time)}
-              >
-                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{
-                  background: a.type === "enter" ? "#10b981" : a.type === "exit" ? "#f43f5e" : "#f59e0b",
-                }} />
-                <MonoLabel className="flex-1">{a.label}</MonoLabel>
-                <MonoLabel>{formatTime(a.time)}</MonoLabel>
-              </div>
-            ))}
+            {annotations.length === 0 ? (
+              <div className="text-center text-white/30 py-4 text-sm">No events</div>
+            ) : (
+              annotations.map(a => (
+                <div
+                  key={a.label}
+                  className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-white/3 rounded px-1"
+                  onClick={() => setProgress(a.time)}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{
+                    background: a.type === "enter" ? "#10b981" : a.type === "exit" ? "#f43f5e" : "#f59e0b",
+                  }} />
+                  <MonoLabel className="flex-1">{a.label}</MonoLabel>
+                  <MonoLabel>{formatTime(a.time)}</MonoLabel>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         <div className="glass rounded-xl p-3 space-y-2">
           <SectionTitle>Metadata</SectionTitle>
           {[
-            { label: "Camera", value: "CAM-001" },
-            { label: "Clip ID", value: "CLIP-20260823-001" },
+            { label: "Camera", value: cameraId },
+            { label: "Date", value: date },
             { label: "Duration", value: "05:00" },
             { label: "Resolution", value: "3840×2160" },
             { label: "Model", value: "ArcFace R100" },
+            { label: "Tracks", value: tracks.length.toString() },
+            { label: "Events", value: annotations.length.toString() },
           ].map(r => (
             <div key={r.label} className="flex items-center justify-between">
               <MonoLabel>{r.label}</MonoLabel>

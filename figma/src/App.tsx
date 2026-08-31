@@ -209,9 +209,11 @@ function AppContent() {
   
   const { snapshot, connected, error, requestSync, disconnect } = useHealthRealtime(true);
 
-  // Initialize mock data for development
+  // Initialize mock data for development only
   useEffect(() => {
-    initializeMockData();
+    if (import.meta.env.DEV) {
+      initializeMockData();
+    }
   }, []);
 
   // Connect to realtime health updates

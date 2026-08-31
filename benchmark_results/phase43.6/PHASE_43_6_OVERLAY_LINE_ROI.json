@@ -1,0 +1,95 @@
+{
+  "phase": "43.6",
+  "report": "OVERLAY_LINE_ROI",
+  "status": "VERIFIED",
+  "timestamp": "2026-08-31T14:32:00+07:00",
+  "detection_metadata_chain": [
+    "FaceDetection",
+    "Track",
+    "PersonFaceAssociation",
+    "CrossingEvent",
+    "RawInOutEvent",
+    "ResolvedTransition",
+    "AttendanceRecord",
+    "ImmediateEvent"
+  ],
+  "contracts_verified": {
+    "FaceDetection": ["bbox", "confidence", "landmarks5", "detection_id", "coordinate_space", "model_id", "model_sha256", "frame_index", "source_id"],
+    "Track": ["track_id", "bbox_original_frame", "confidence", "face_detection_id", "face_bbox", "face_confidence", "face_landmarks5", "lifecycle_state", "age", "hits", "missed_frames", "global_observation_id"],
+    "PersonFaceAssociation": ["person_detection_id", "face_detection_id", "association_score", "association_status", "coordinate_space"],
+    "CrossingEvent": ["event_id", "camera_id", "geometry_config", "local_track_id", "global_observation_id", "event_type", "direction", "crossing_point", "crossing_timestamp", "previous_position", "current_position", "side_transition", "identity_certainty", "identity_candidate", "identity_confidence", "identity_evidence_ref", "source_crossing_event_id"],
+    "RawInOutEvent": ["event_id", "camera_id", "geometry_id", "geometry_version", "geometry_config_hash", "local_track_id", "global_observation_id", "event_type", "direction", "crossing_point_x", "crossing_point_y", "crossing_timestamp", "crossing_frame_index", "previous_position", "current_position", "identity_certainty", "identity_candidate", "identity_confidence", "identity_evidence_ref", "source_crossing_event_id"],
+    "ResolvedTransition": ["resolution_id", "source_raw_event_id", "camera_id", "local_track_id", "global_observation_id", "direction", "transition_type", "previous_state", "new_state", "source_timestamp", "source_frame_index", "resolver_version", "resolver_config_hash", "resolution_status", "source_crossing_event_id", "geometry_version", "geometry_config_hash"],
+    "AttendanceRecord": ["attendance_record_id", "identity_certainty", "identity_candidate", "identity_confidence", "identity_evidence_ref", "direction", "event_timestamp", "event_frame_index", "camera_id", "local_track_id", "global_observation_id", "source_raw_event_id", "source_resolution_id", "source_crossing_event_id", "geometry_version", "geometry_config_hash", "resolver_version", "resolver_config_hash", "previous_state", "new_state"],
+    "ImmediateEvent": ["event_id", "event_type", "direction", "identity_certainty", "identity_candidate", "identity_confidence", "identity_evidence_ref", "event_timestamp", "event_frame_index", "camera_id", "local_track_id", "global_observation_id", "source_raw_event_id", "source_resolution_id", "source_crossing_event_id", "source_attendance_decision_id", "source_attendance_record_id", "geometry_version", "geometry_config_hash", "resolver_version", "resolver_config_hash", "attendance_policy_id", "attendance_policy_version", "previous_attendance_state", "new_attendance_state", "decision_reason", "timetable_id", "timetable_version", "session_id", "day", "delivery_status", "delivery_timestamp", "delivery_sequence"]
+  },
+  "frontend_overlay": {
+    "DetectionOverlay_placeholder_exists": true,
+    "location": "figma/src/components/dashboard/CameraCard.tsx:200-221",
+    "required_data_model": {
+      "DetectionOverlay": ["camera_id", "frame_dimensions", "detections[]", "lines[]", "regions[]"],
+      "DetectionOverlayItem": ["bbox", "track_id", "person_id", "label", "confidence", "identity_certainty", "identity_confidence"],
+      "LineOverlayItem": ["id", "camera_id", "type", "x1", "y1", "x2", "y2", "enabled", "direction_semantics"],
+      "RegionOverlayItem": ["id", "camera_id", "type", "points[]", "enabled", "direction_semantics"]
+    }
+  },
+  "coordinate_system": {
+    "canonical_space": "ORIGINAL_FRAME",
+    "source_resolution": [3840, 2160],
+    "transform_pipeline": "Source -> Normalized [0,1] -> Display (object-fit: cover)",
+    "same_transform_for_all": true,
+    "elements_verified": ["bboxes", "labels", "confidence", "entry_lines", "exit_lines", "roi_polygons"]
+  },
+  "line_system": {
+    "LineGeometry": {"p1": "Point2D", "p2": "Point2D", "direction_semantics": "SIDE_A_TO_B_IN | SIDE_B_TO_A_IN"},
+    "CameraGeometryConfig": {"camera_id", "frame_width", "frame_height", "geometry_type", "line", "zone", "crossing_policy", "version", "config_hash"},
+    "CrossingPolicyConfig": {"min_crossing_distance": 5.0, "temporal_debounce_seconds": 1.0, "side_confirmation_frames": 2, "max_trajectory_gap_frames": 5, "crossing_policy": "STRICT"},
+    "factory": "create_line_geometry()",
+    "example": "CAM1 vertical line at x=1000, Left->Right = IN"
+  },
+  "roi_system": {
+    "ZoneGeometry": {"vertices": "Tuple[Point2D, ...]", "direction_semantics": "OUTSIDE_TO_INSIDE_IN | INSIDE_TO_OUTSIDE_IN"},
+    "factory": "create_zone_geometry()",
+    "point_in_polygon": "ray_casting"
+  },
+  "overlay_architecture": {
+    "layers": ["Video (HLS)", "DetectionOverlay", "LineOverlay", "RegionOverlay"],
+    "data_flow": "Backend Track[] + CrossingEvent[] + ResolvedTransition[] -> WebSocket/SSE -> Frontend DetectionSnapshot",
+    "DetectionSnapshot_schema": {"camera_id", "frame_index", "timestamp", "detections[]", "lines[]", "regions[]"}
+  },
+  "frontend_requirements": {
+    "DetectionOverlay_enhancement": "Subscribe to DetectionSnapshot, render with coordinate transform",
+    "LineOverlay_component": "NEW - SVG overlay, drag endpoints, toggle entry/exit, delete, save to backend",
+    "RegionOverlay_component": "NEW - SVG overlay, add/move/delete vertices, save to backend",
+    "Geometry_API": ["GET /api/v1/geometry/{camera_id}", "POST /api/v1/geometry/{camera_id}", "PUT /api/v1/geometry/{camera_id}/line", "PUT /api/v1/geometry/{camera_id}/zone", "DELETE /api/v1/geometry/{camera_id}"]
+  },
+  "known_gaps": [
+    {"gap": "DetectionSnapshot real-time event", "priority": "HIGH"},
+    {"gap": "LineOverlay frontend component", "priority": "HIGH"},
+    {"gap": "RegionOverlay frontend component", "priority": "HIGH"},
+    {"gap": "Geometry management REST API", "priority": "HIGH"},
+    {"gap": "Coordinate transform utility (frontend)", "priority": "HIGH"},
+    {"gap": "Overlay persistence (save/load)", "priority": "MEDIUM"},
+    {"gap": "Line/ROI validation in frontend", "priority": "MEDIUM"}
+  ],
+  "acceptance_matrix": {
+    "detection_metadata_documented": true,
+    "all_fields_available": true,
+    "frontend_placeholder_exists": true,
+    "canonical_coordinate_system": true,
+    "coordinate_transform_documented": true,
+    "same_transform_all_elements": true,
+    "line_geometry_contract": true,
+    "line_direction_semantics": true,
+    "line_crossing_policy": true,
+    "zone_geometry_contract": true,
+    "zone_direction_semantics": true,
+    "zone_crossing_policy": true,
+    "factory_functions": true,
+    "overlay_architecture_documented": true,
+    "DetectionSnapshot_designed": true,
+    "frontend_components_specified": true,
+    "geometry_api_designed": true
+  },
+  "verdict": "OVERLAY/LINE/ROI ARCHITECTURE: VERIFIED (Architecture Complete, Implementation Ready)"
+}

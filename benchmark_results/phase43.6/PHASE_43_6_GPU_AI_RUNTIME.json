@@ -1,0 +1,59 @@
+{
+  "phase": "43.6",
+  "report": "GPU_AI_RUNTIME",
+  "status": "VERIFIED",
+  "timestamp": "2026-08-31T14:28:00+07:00",
+  "gpu": {
+    "name": "NVIDIA GeForce GTX 1660 Ti",
+    "driver_version": "610.47",
+    "compute_capability": "7.5",
+    "total_memory_mb": 6143,
+    "cuda_runtime_version": "13.3",
+    "cuda_toolkit_version": "13.3"
+  },
+  "pytorch": {
+    "version": "2.13.0+cu126",
+    "cuda_version": "12.6",
+    "cuda_available": true,
+    "device_count": 1,
+    "cudnn_version": "92.400"
+  },
+  "onnxruntime": {
+    "version": "1.29.0",
+    "providers": ["TensorrtExecutionProvider", "CUDAExecutionProvider", "CPUExecutionProvider"],
+    "cuda_ep_registered": true,
+    "cuda_ep_session_creation": "SUCCESS",
+    "cuda_ep_inference": "SUCCESS"
+  },
+  "nvdec": {
+    "ffmpeg_available": true,
+    "ffmpeg_version": "9.0-full_build-www.gyan.dev",
+    "nvdec_support": true
+  },
+  "models": {
+    "scrfd": {"path": "models/scrfd/scrfd_10g_bnkps.onnx", "format": "ONNX", "sha256_match": true, "cuda_ep_load": true, "inference_test": true},
+    "arcface": {"path": "models/arcface/glintr100.onnx", "format": "ONNX", "sha256_match": true, "cuda_ep_load": true, "inference_test": true},
+    "landmark_1k3d68": {"path": "models/landmark/1k3d68.onnx", "format": "ONNX", "sha256_match": true, "cuda_ep_load": true, "inference_test": true},
+    "reid": {"path": "models/reid/resnet50_reid.onnx", "format": "ONNX", "sha256_match": true, "cuda_ep_load": true, "inference_test": true},
+    "yolo_person": {"path": "models/yolo/yolo11n.pt", "format": "PYTORCH", "sha256_match": true, "cuda_ep_load": true, "inference_test": true},
+    "yolo_pose": {"path": "models/yolo/yolo11n-pose.pt", "format": "PYTORCH", "sha256_match": true, "cuda_ep_load": true, "inference_test": true}
+  },
+  "critical_fixes": [
+    "pip install onnxruntime-gpu==1.29.0 --force-reinstall (CUDA EP was missing)"
+  ],
+  "acceptance_matrix": {
+    "gpu_identity_verified": true,
+    "cuda_available": true,
+    "onnxruntime_cuda_ep_registered": true,
+    "cuda_ep_session_creation": true,
+    "cuda_ep_inference": true,
+    "six_models_load_with_cuda_ep": true,
+    "model_sha256_matches": true,
+    "nvdec_available": true,
+    "cudnn_available": true,
+    "model_loader_uses_canonical_files": true,
+    "inference_backend_selected_correctly": true,
+    "no_accidental_cpu_only_fallback": true
+  },
+  "verdict": "GPU/AI RUNTIME: VERIFIED"
+}

@@ -1,0 +1,55 @@
+{
+  "phase": "43.5",
+  "title": "SSE Forensic Report",
+  "status": "PASS",
+  "timestamp": "2026-08-31T12:00:00+07:00",
+  "backend_port": 17314,
+  "frontend_port": 26118,
+  "sse_url": "http://localhost:17314/api/v1/health/stream",
+  "backend_contract": {
+    "content_type": "PASS",
+    "initial_snapshot": "PASS",
+    "event_format": "PASS",
+    "sequence_numbers": "PASS",
+    "reconnect_support": "PASS",
+    "keep_alive": "PASS",
+    "disconnect_handling": "PASS",
+    "heartbeat": "PARTIAL"
+  },
+  "frontend_contract": {
+    "url_construction": "PASS",
+    "connection_lifecycle": "PASS",
+    "event_parsing": "PASS",
+    "sequence_tracking": "PASS",
+    "auto_reconnect": "PASS",
+    "cleanup_on_unmount": "PASS",
+    "duplicate_prevention": "PASS"
+  },
+  "runtime_evidence": {
+    "content_type_verified": "text/event-stream; charset=utf-8",
+    "initial_event_received": true,
+    "subsequent_events_received": true,
+    "reconnect_with_last_seq_verified": true
+  },
+  "contract_compliance": {
+    "correct_content_type": true,
+    "initial_snapshot_on_connect": true,
+    "event_format_data_json_newline": true,
+    "sequence_numbers": true,
+    "reconnect_with_last_seq": true,
+    "keep_alive_headers": true,
+    "disconnect_detection": true,
+    "snake_case_to_camelcase_transform": true,
+    "dynamic_port_via_vite_api_base_url": true,
+    "cleanup_on_unmount": true,
+    "duplicate_connection_prevention": true
+  },
+  "issues_found": [
+    {
+      "severity": "MINOR",
+      "description": "No explicit ping/pong heartbeat in SSE (relies on 5s broadcast interval)",
+      "impact": "Acceptable - EventSource handles reconnection automatically"
+    }
+  ],
+  "verdict": "PASS"
+}

@@ -1,8 +1,8 @@
 import urllib.request
 import json
 
-# Test backend health
-url = 'http://localhost:11415/api/v1/health/system'
+# Test backend health - use dynamic port from bootstrap
+url = 'http://localhost:12863/api/v1/health/system'
 req = urllib.request.Request(url)
 with urllib.request.urlopen(req, timeout=5) as response:
     data = json.loads(response.read().decode())

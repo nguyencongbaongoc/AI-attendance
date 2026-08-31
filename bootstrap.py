@@ -233,7 +233,7 @@ class BootstrapOrchestrator:
             return False
 
     def _start_mediamtx(self) -> bool:
-        """Start MediaMTX process (non-critical)."""
+        """Start MediaMTX process (non-critical) with single-instance hardening."""
         mediamtx_exe = self.repo_root / "mediamtx" / "mediamtx.exe"
         mediamtx_config = self.repo_root / "mediamtx" / "mediamtx.yml"
 
@@ -244,6 +244,33 @@ class BootstrapOrchestrator:
         if not mediamtx_config.exists():
             print(f"[WARN] MediaMTX config not found at: {mediamtx_config} - continuing without MediaMTX")
             return True  # Not fatal
+
+        # Single-instance hardening: check for existing MediaMTX on required ports
+        required_ports = [1935, 8554, 9997]  # RTMP, RTSP, API
+        existing_pid = self._check_mediamtx_ports(required_ports)
+        
+        if existing_pid is not None:
+            # Check if it's our MediaMTX instance
+            if self._is_our_mediamtx_process(existing_pid):
+                print(f"[INFO] MediaMTX already running on required ports (PID: {existing_pid}) - reusing existing instance")
+                # Create a service entry for the existing process so we can track it
+                # Note: We don't actually manage this process, but we track it for verification
+                service = ServiceProcess(
+                    name="MediaMTX",
+                    process=None,  # We don't own this process
+                    cwd=self.repo_root / "mediamtx",
+                    critical=False,
+                )
+                # Store the PID for verification
+                service.process = type('obj', (object,), {'pid': existing_pid, 'poll': lambda self: None})()
+                self.services.append(service)
+                print(f"[INFO] Reusing existing MediaMTX (PID: {existing_pid})")
+                print()
+                return True
+            else:
+                print(f"[ERROR] Port conflict: Required MediaMTX ports occupied by unrelated process (PID: {existing_pid})")
+                print(f"[ERROR] Cannot start MediaMTX - ports 1935, 8554, 9997 are in use by another application")
+                return False
 
         print(f"[INFO] Starting MediaMTX...")
         print(f"[INFO]   Executable: {mediamtx_exe}")
@@ -291,6 +318,66 @@ class BootstrapOrchestrator:
 
         except Exception as e:
             print(f"[ERROR] Failed to start MediaMTX: {e}")
+            return False
+
+    def _check_mediamtx_ports(self, ports: List[int]) -> Optional[int]:
+        """Check if any of the required MediaMTX ports are already in use.
+        
+        Returns the PID of the process owning the port, or None if all ports are free.
+        """
+        import psutil
+        
+        for port in ports:
+            try:
+                for conn in psutil.net_connections(kind='inet'):
+                    if conn.laddr.port == port and conn.status == 'LISTEN':
+                        return conn.pid
+            except (psutil.AccessDenied, psutil.NoSuchProcess):
+                continue
+            except Exception:
+                continue
+        return None
+
+    def _is_our_mediamtx_process(self, pid: int) -> bool:
+        """Check if a PID belongs to our MediaMTX instance.
+        
+        Verifies:
+        1. Process name is mediamtx.exe
+        2. Process cwd is our mediamtx directory
+        3. Process was started with our config file
+        """
+        import psutil
+        
+        try:
+            proc = psutil.Process(pid)
+            
+            # Check process name
+            if proc.name().lower() != "mediamtx.exe":
+                return False
+            
+            # Check working directory
+            try:
+                cwd = proc.cwd()
+                expected_cwd = str(self.repo_root / "mediamtx")
+                if not cwd or not cwd.lower().startswith(expected_cwd.lower()):
+                    return False
+            except (psutil.AccessDenied, psutil.NoSuchProcess):
+                pass
+            
+            # Check command line for our config
+            try:
+                cmdline = proc.cmdline()
+                config_path = str(self.repo_root / "mediamtx" / "mediamtx.yml")
+                if any(config_path in arg for arg in cmdline):
+                    return True
+            except (psutil.AccessDenied, psutil.NoSuchProcess):
+                pass
+            
+            return False
+            
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            return False
+        except Exception:
             return False
 
     def _start_backend(self) -> bool:

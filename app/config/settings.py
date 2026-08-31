@@ -352,6 +352,20 @@ class Settings(BaseSettings):
     failure_recovery: FailureRecoveryConfig = Field(default_factory=FailureRecoveryConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
 
+    @field_validator("telegram", mode="before")
+    @classmethod
+    def _set_telegram_bot_token(cls, v: Any) -> Any:
+        """Inject TELEGRAM_BOT_TOKEN from environment into telegram config."""
+        import os
+        token = os.environ.get("TELEGRAM_BOT_TOKEN")
+        if token:
+            if isinstance(v, dict):
+                v = v.copy()
+            else:
+                v = {}
+            v["bot_token"] = token
+        return v
+
     def ensure_directories(self) -> None:
         """Create all configured directories if they don't exist."""
         for attr_name in dir(self.paths):

@@ -21,6 +21,7 @@ from app.api.persons import router as persons_router
 from app.api.timetable import router as timetable_router
 from app.api.excel import router as excel_router
 from app.api.parent_telegram import router as parent_telegram_router
+from app.api.geometry import router as geometry_router
 from app.bootstrap.port_discovery import find_backend_port
 from app.config.settings import load_settings
 
@@ -72,7 +73,7 @@ def create_app() -> FastAPI:
     )
 
     # Include routers - manually add routes due to FastAPI version issue
-    for router in [health_router, websocket_router, attendance_router, persons_router, timetable_router, excel_router, parent_telegram_router]:
+    for router in [health_router, websocket_router, attendance_router, persons_router, timetable_router, excel_router, parent_telegram_router, geometry_router]:
         for route in router.routes:
             app.router.routes.append(route)
 

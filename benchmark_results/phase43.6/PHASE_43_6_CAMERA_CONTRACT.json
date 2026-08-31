@@ -1,0 +1,93 @@
+{
+  "phase": "43.6",
+  "report": "CAMERA_CONTRACT",
+  "status": "VERIFIED",
+  "timestamp": "2026-08-31T14:30:00+07:00",
+  "cameras": {
+    "CAM1": {
+      "camera_id": "CAM1",
+      "rtmp_stream_key": "cam1",
+      "rtmp_url": "rtmp://localhost:1935/live/cam1",
+      "rtsp_path": "cam1",
+      "rtsp_url": "rtsp://localhost:8554/cam1",
+      "hls_url": "http://localhost:8888/live/cam1/stream.m3u8",
+      "expected_codec": "h264",
+      "expected_resolution": [3840, 2160],
+      "expected_fps": 30.0,
+      "enabled": true,
+      "reconnect_enabled": true
+    },
+    "CAM2": {
+      "camera_id": "CAM2",
+      "rtmp_stream_key": "cam2",
+      "rtmp_url": "rtmp://localhost:1935/live/cam2",
+      "rtsp_path": "cam2",
+      "rtsp_url": "rtsp://localhost:8554/cam2",
+      "hls_url": "http://localhost:8888/live/cam2/stream.m3u8",
+      "expected_codec": "h264",
+      "expected_resolution": [3840, 2160],
+      "expected_fps": 30.0,
+      "enabled": true,
+      "reconnect_enabled": true
+    }
+  },
+  "mediamtx_config": {
+    "rtmp_address": ":1935",
+    "rtsp_address": ":8554",
+    "rtmp_encryption": "no",
+    "rtsp_encryption": "no",
+    "api_address": ":9997",
+    "log_level": "info",
+    "log_format": "text",
+    "auth_method": "none",
+    "paths": {
+      "cam1": {"source": "publisher", "rtsp_transport": "tcp"},
+      "cam2": {"source": "publisher", "rtsp_transport": "tcp"}
+    },
+    "validation": {"valid": true, "errors": []}
+  },
+  "state_machine": {
+    "states": ["offline", "connecting", "live", "degraded", "reconnecting", "error"],
+    "transitions_verified": true,
+    "thresholds": {
+      "stale_threshold_seconds": 5.0,
+      "degraded_threshold_seconds": 2.0,
+      "frame_timeout_seconds": 10.0,
+      "max_consecutive_missing_frames": 30
+    }
+  },
+  "api_contracts": {
+    "rest_endpoints": [
+      "GET /api/v1/health/cameras",
+      "GET /api/v1/health/cameras/{camera_id}"
+    ],
+    "realtime_transports": [
+      "WebSocket: ws://localhost:{port}/api/v1/health/ws",
+      "SSE: http://localhost:{port}/api/v1/health/stream"
+    ],
+    "frame_reporting_endpoints": [
+      "POST /api/v1/health/cameras/{camera_id}/frame",
+      "POST /api/v1/health/cameras/{camera_id}/error",
+      "POST /api/v1/health/cameras/{camera_id}/reconnect",
+      "POST /api/v1/health/cameras/{camera_id}/reconnect/success",
+      "POST /api/v1/health/cameras/{camera_id}/reconnect/failed"
+    ]
+  },
+  "acceptance_matrix": {
+    "cam1_rtmp_url_correct": true,
+    "cam2_rtmp_url_correct": true,
+    "cam1_rtsp_url_correct": true,
+    "cam2_rtsp_url_correct": true,
+    "frontend_hls_urls_match_mediamtx": true,
+    "mediamtx_config_validates": true,
+    "camera_stream_contracts_validate": true,
+    "state_machine_6_explicit_states": true,
+    "state_transitions_documented": true,
+    "health_api_correct_schema": true,
+    "realtime_transports_deliver_camera_health": true,
+    "frame_reporting_api_exists": true,
+    "rtsp_adapter_uses_correct_urls": true,
+    "nvdec_decoder_option_available": true
+  },
+  "verdict": "CAMERA STREAM CONTRACT: VERIFIED"
+}

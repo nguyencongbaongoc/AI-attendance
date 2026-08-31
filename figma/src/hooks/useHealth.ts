@@ -11,6 +11,7 @@ import type {
   AlertResponse,
   HealthSnapshot,
   ConnectionStats,
+  DetectionSnapshot,
 } from '@/types/backend';
 import {
   fetchSystemHealth,
@@ -26,6 +27,7 @@ import {
   healthWS,
   healthSSE,
   HealthWebSocketHandler,
+  DetectionSnapshotHandler,
 } from '@/services/api';
 
 // ============================================
@@ -407,6 +409,51 @@ export function useConnectionStats(pollInterval = 30000) {
   }, [fetchData, pollInterval]);
 
   return { data, loading, error, refetch: fetchData };
+}
+
+// ============================================
+// Detection Snapshot Hook (Real-time)
+// ============================================
+
+export function useDetectionSnapshot(cameraId?: string) {
+  const [snapshot, setSnapshot] = useState<DetectionSnapshot | null>(null);
+  const [connected, setConnected] = useState(false);
+  const [error, setError] = useState<Event | null>(null);
+  const handlerRef = useRef<DetectionSnapshotHandler | null>(null);
+
+  useEffect(() => {
+    handlerRef.current = (newSnapshot: DetectionSnapshot) => {
+      // Filter by camera ID if provided
+      if (cameraId && newSnapshot.camera_id !== cameraId) {
+        return;
+      }
+      setSnapshot(newSnapshot);
+    };
+
+    const unsubscribe = healthWS.onDetectionSnapshot(handlerRef.current);
+    const unsubscribeError = healthWS.onError((err) => {
+      setError(err);
+      setConnected(false);
+    });
+    const unsubscribeClose = healthWS.onClose(() => {
+      setConnected(false);
+    });
+
+    healthWS.connect();
+    setConnected(healthWS.isConnected());
+
+    return () => {
+      unsubscribe();
+      unsubscribeError();
+      unsubscribeClose();
+    };
+  }, [cameraId]);
+
+  return {
+    snapshot,
+    connected,
+    error,
+  };
 }
 
 // ============================================

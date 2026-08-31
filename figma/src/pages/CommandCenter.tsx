@@ -5,7 +5,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useHealthStore, useAttendanceStore, useUIStore } from '@/store';
 import { useSystemHealth, useCameraHealth, useHealthSummary, useHealthRealtime } from '@/hooks/useHealth';
-import type { CameraHealthResponse } from '@/types/backend';
+import { useAttendanceSummary, useAttendanceRecords } from '@/hooks/useAttendance';
+import type { CameraHealthResponse, AttendanceRecord } from '@/types/backend';
 import { Badge, StatusDot, ConfidenceBar, MonoLabel, MonoValue, SectionTitle, GlassButton } from '@/components/ui/DesignSystem';
 import CameraCard from '@/components/dashboard/CameraCard';
 import EventRow from '@/components/attendance/EventRow';
@@ -30,7 +31,8 @@ export default function CommandCenter({ onPersonClick }: CommandCenterProps) {
     isUnhealthy
   } = useHealthSummary();
 
-  const { attendanceSummary, liveEvents } = useAttendanceStore();
+  const { data: attendanceSummary, loading: attendanceLoading } = useAttendanceSummary();
+  const { data: attendanceRecords, loading: recordsLoading } = useAttendanceRecords({ limit: 20 });
   const { setLoadingState } = useUIStore();
   const { connected, requestSync, disconnect } = useHealthRealtime();
 
@@ -41,9 +43,9 @@ export default function CommandCenter({ onPersonClick }: CommandCenterProps) {
 
   useEffect(() => {
     setLoadingState('cameras', cameraLoading);
-    setLoadingState('attendance', healthLoading);
-    setLoadingState('events', healthLoading);
-  }, [cameraLoading, healthLoading, setLoadingState]);
+    setLoadingState('attendance', attendanceLoading);
+    setLoadingState('events', recordsLoading);
+  }, [cameraLoading, attendanceLoading, recordsLoading, setLoadingState]);
 
   const timeStr = time.toTimeString().slice(0, 8);
   const dateStr = time.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
@@ -70,18 +72,19 @@ export default function CommandCenter({ onPersonClick }: CommandCenterProps) {
 
   // Transform live events for EventRow component
   const events = useMemo(() => {
-    return liveEvents.slice(0, 20).map(evt => ({
-      id: evt.attendance_record_id,
-      personId: evt.person_id,
-      personName: evt.person_name,
-      cameraId: evt.camera_id,
-      trackId: evt.local_track_id,
+    if (!attendanceRecords?.records) return [];
+    return attendanceRecords.records.slice(0, 20).map((evt: AttendanceRecord) => ({
+      id: evt.attendanceRecordId,
+      personId: evt.personId,
+      personName: evt.personName,
+      cameraId: evt.cameraId,
+      trackId: evt.localTrackId,
       type: (evt.direction === 'in' ? 'enter' : evt.direction === 'out' ? 'exit' : 'unknown') as 'enter' | 'exit' | 'unknown',
-      confidence: evt.identity_confidence,
+      confidence: evt.identityConfidence,
       timestamp: new Date(evt.timestamp * 1000).toTimeString().slice(0, 8),
-      observationId: evt.global_observation_id,
+      observationId: evt.globalObservationId,
     }));
-  }, [liveEvents]);
+  }, [attendanceRecords]);
 
   return (
     <div className="flex h-full gap-3 p-3 fade-in">

@@ -1,0 +1,200 @@
+{
+  "phase": "43.2",
+  "title": "Pre-Live Gate Readiness Report",
+  "timestamp": "2026-08-31T04:20:30+07:00",
+  "overall_verdict": "CONDITIONAL GO",
+  "backend_readiness": "PRODUCTION READY",
+  "frontend_readiness": "REQUIRES INTEGRATION WORK",
+  "blocking_issues_count": 8,
+  "source_inventory": {
+    "backend": {
+      "modules": 8,
+      "total_endpoints": 54,
+      "routers": [
+        {"name": "health", "file": "app/api/health.py", "prefix": "/api/v1/health", "endpoints": 12},
+        {"name": "websocket", "file": "app/api/websocket.py", "prefix": "/api/v1/health", "endpoints": 5},
+        {"name": "attendance", "file": "app/api/attendance.py", "prefix": "/api/v1/attendance", "endpoints": 7},
+        {"name": "persons", "file": "app/api/persons.py", "prefix": "/api/v1/persons", "endpoints": 8},
+        {"name": "timetable", "file": "app/api/timetable.py", "prefix": "/api/v1/timetable", "endpoints": 7},
+        {"name": "excel", "file": "app/api/excel.py", "prefix": "/api/v1/excel", "endpoints": 3},
+        {"name": "parent_telegram", "file": "app/api/parent_telegram.py", "prefix": "/api/v1", "endpoints": 9},
+        {"name": "root", "file": "app/main.py", "prefix": "/", "endpoints": 3}
+      ]
+    },
+    "frontend": {
+      "views": 4,
+      "all_mock_data": true,
+      "views_detail": [
+        {"name": "LiveDashboard", "route": "/", "file": "views/LiveDashboard.vue", "data_source": "MOCK"},
+        {"name": "Replay", "route": "/replay", "file": "views/ReplayView.vue", "data_source": "MOCK"},
+        {"name": "Search", "route": "/search", "file": "views/SearchView.vue", "data_source": "MOCK"},
+        {"name": "Timetable", "route": "/timetable", "file": "views/TimetableManagement.vue", "data_source": "MOCK"}
+      ],
+      "components": 9
+    }
+  },
+  "backend_route_registry": {
+    "total_endpoints": 54,
+    "route_conflicts": 3,
+    "conflicts_detail": [
+      {"path": "/api/v1/health/queue/metrics", "defined_in": ["health.py", "parent_telegram.py"], "severity": "MEDIUM"},
+      {"path": "/api/v1/health/queue/alerts", "defined_in": ["health.py", "parent_telegram.py"], "severity": "MEDIUM"},
+      {"path": "/api/v1/health/queue/stats", "defined_in": ["health.py", "parent_telegram.py"], "severity": "MEDIUM"}
+    ]
+  },
+  "health_api_forensic": {
+    "system_health_response": "VERIFIED",
+    "camera_health_response": "VERIFIED",
+    "gpu_status_response": "VERIFIED",
+    "health_monitor": {
+      "state_machine": "6 states (LIVE, DEGRADED, OFFLINE, CONNECTING, RECONNECTING, ERROR)",
+      "frame_freshness_tracking": true,
+      "health_event_generation": true,
+      "reconnect_tracking": true,
+      "cameras_registered": ["CAM1", "CAM2"],
+      "streaming_pipeline_feeding_frames": false
+    }
+  },
+  "gpu_contract_audit": {
+    "runtime_snapshot_fields": 12,
+    "model_availability": {
+      "total_models": 6,
+      "all_sha256_verified": true,
+      "all_cuda_inference": true,
+      "all_cpu_inference": true,
+      "models": [
+        {"id": "scrfd", "file": "models/scrfd/scrfd_10g_bnkps.onnx", "sha256": true, "cuda": true, "cpu": true},
+        {"id": "arcface", "file": "models/arcface/glintr100.onnx", "sha256": true, "cuda": true, "cpu": true},
+        {"id": "landmark_1k3d68", "file": "models/landmark/1k3d68.onnx", "sha256": true, "cuda": true, "cpu": true},
+        {"id": "reid", "file": "models/reid/resnet50_reid.onnx", "sha256": true, "cuda": true, "cpu": true},
+        {"id": "yolo_person", "file": "models/yolo/yolo11n.pt", "sha256": true, "cuda": true, "cpu": true},
+        {"id": "yolo_pose", "file": "models/yolo/yolo11n-pose.pt", "sha256": true, "cuda": true, "cpu": true}
+      ]
+    }
+  },
+  "camera_contract_audit": {
+    "mediamtx_ports": 6,
+    "ports_detail": [
+      {"protocol": "RTMP", "port": 1935, "status": "configured"},
+      {"protocol": "RTSP", "port": 8554, "status": "configured"},
+      {"protocol": "API", "port": 9997, "status": "configured"},
+      {"protocol": "HLS", "port": 8888, "status": "configured"},
+      {"protocol": "WebRTC", "port": 8889, "status": "configured"},
+      {"protocol": "SRT", "port": 8890, "status": "configured"}
+    ],
+    "camera_ids": ["CAM1", "CAM2"],
+    "streaming_pipeline_exists": false,
+    "mediamtx_api_integration": false
+  },
+  "websocket_forensic": {
+    "backend_endpoint": "ws://localhost:{backend_port}/api/v1/health/ws",
+    "backend_implementation": "COMPLETE",
+    "frontend_client": "NOT IMPLEMENTED",
+    "features": {
+      "connection_management": true,
+      "heartbeat_ping_pong": true,
+      "stale_detection": true,
+      "event_sequence": true,
+      "broadcast_loop": true,
+      "reconnect_support": true
+    }
+  },
+  "sse_forensic": {
+    "backend_endpoint": "http://localhost:{backend_port}/api/v1/health/stream",
+    "backend_implementation": "COMPLETE",
+    "frontend_client": "NOT IMPLEMENTED",
+    "features": {
+      "streaming_response": true,
+      "sequence_numbers": true,
+      "initial_snapshot": true,
+      "disconnect_detection": true
+    }
+  },
+  "frontend_api_client": {
+    "exists": false,
+    "vite_env_variables_propagated": true,
+    "vite_env_variables_consumed": false,
+    "http_client_library": "NONE (only native fetch available)"
+  },
+  "production_pages_audit": {
+    "total_views": 4,
+    "all_use_mock_data": true,
+    "views": [
+      {"name": "LiveDashboard", "route": "/", "api_integration": false, "mock_functions": 3},
+      {"name": "ReplayView", "route": "/replay", "api_integration": false, "mock_functions": 1},
+      {"name": "SearchView", "route": "/search", "api_integration": false, "mock_functions": 1},
+      {"name": "TimetableManagement", "route": "/timetable", "api_integration": false, "mock_functions": 2}
+    ],
+    "router_mismatch": {
+      "defined_routes": 4,
+      "nav_items": 7,
+      "missing_routes": ["/cameras", "/attendance", "/events", "/people", "/settings"]
+    }
+  },
+  "mock_data_forensic": {
+    "total_mock_functions": 8,
+    "store_mock_initialization": true,
+    "mock_vs_backend_mapping": 8,
+    "all_unconnected": true
+  },
+  "browser_runtime_acceptance": {
+    "bootstrap_orchestration": "VERIFIED",
+    "service_health_checks": "ALL PASS",
+    "environment_propagation": {
+      "VITE_API_BASE_URL": "propagated but not consumed",
+      "VITE_WS_BASE_URL": "propagated but not consumed",
+      "PORT": "consumed by Vite"
+    },
+    "bootstrap_regression_runs": 6,
+    "all_runs_healthy": true
+  },
+  "frontend_state_machine": {
+    "router_routes": 4,
+    "nav_items": 7,
+    "missing_routes": 3,
+    "store_state": "ALL MOCK DATA",
+    "api_calls_update_store": false
+  },
+  "error_handling": {
+    "backend": "COMPLETE",
+    "frontend": "MINIMAL - NO ERROR BOUNDARIES"
+  },
+  "type_schema_consistency": {
+    "backend_pydantic": "COMPLETE",
+    "frontend_typescript": "NOT USED",
+    "schema_mismatches": 10,
+    "mismatch_type": "camelCase (frontend) vs snake_case (backend)"
+  },
+  "realtime_state_consistency": {
+    "backend": "READY (WebSocket + SSE)",
+    "frontend": "NO CLIENT IMPLEMENTED",
+    "state_sync_gap": "Backend broadcasts every 5s, frontend receives nothing"
+  },
+  "api_error_matrix": {
+    "backend_errors_documented": 17,
+    "frontend_error_handling": "NONE"
+  },
+  "no_live_camera_enforced": true,
+  "blocking_issues_for_live_camera": 8,
+  "pre_live_gate_readiness": {
+    "total_gates": 26,
+    "pass": 16,
+    "partial": 3,
+    "fail": 7
+  },
+  "targeted_fixes": {
+    "critical": 8,
+    "high": 3,
+    "medium": 3
+  },
+  "regression_testing": {
+    "backend_tests": "PASS",
+    "frontend_tests": "NONE",
+    "bootstrap_regression": "6 RUNS ALL PASS"
+  },
+  "final_decision": {
+    "verdict": "CONDITIONAL GO",
+    "required_before_phase44": ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8"],
+    "can_proceed_parallel": ["F9", "F10", "F11"]
+  }
+}

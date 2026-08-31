@@ -1,10 +1,15 @@
 import urllib.request
 import json
+import os
 
 # Test frontend is serving and has correct API config
-url = 'http://localhost:27914/'
+# Ports are dynamically assigned by bootstrap - read from environment or use defaults
+frontend_port = os.environ.get('FRONTEND_PORT', '21263')
+backend_port = os.environ.get('BACKEND_PORT', '12863')
+
+url = f'http://localhost:{frontend_port}/'
 req = urllib.request.Request(url)
-print("Testing Frontend...")
+print(f"Testing Frontend on port {frontend_port}...")
 
 try:
     with urllib.request.urlopen(req, timeout=5) as response:
@@ -24,8 +29,8 @@ except Exception as e:
     print(f"Frontend test FAILED: {e}")
 
 # Test API base URL propagation by checking if frontend can reach backend
-print("\nTesting API connectivity from frontend perspective...")
-api_url = 'http://localhost:11415/api/v1/health/system'
+print(f"\nTesting API connectivity from frontend perspective (backend port {backend_port})...")
+api_url = f'http://localhost:{backend_port}/api/v1/health/system'
 req = urllib.request.Request(api_url)
 try:
     with urllib.request.urlopen(req, timeout=5) as response:

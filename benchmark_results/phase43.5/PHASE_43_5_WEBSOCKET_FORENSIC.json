@@ -1,0 +1,52 @@
+{
+  "phase": "43.5",
+  "title": "WebSocket Forensic Report",
+  "status": "PASS",
+  "timestamp": "2026-08-31T11:59:00+07:00",
+  "backend_port": 17314,
+  "frontend_port": 26118,
+  "websocket_url": "ws://localhost:17314/api/v1/health/ws",
+  "backend_contract": {
+    "handshake": "PASS",
+    "initial_message": "PASS",
+    "event_format": "PASS",
+    "sequence_numbers": "PASS",
+    "heartbeat_ping_pong": "PASS",
+    "stale_detection": "PASS",
+    "reconnect_support": "PASS",
+    "connection_tracking": "PASS"
+  },
+  "frontend_contract": {
+    "url_construction": "PASS",
+    "connection_lifecycle": "PASS",
+    "message_parsing": "PASS",
+    "sequence_tracking": "PASS",
+    "connection_id": "PASS",
+    "heartbeat": "PASS",
+    "reconnect_logic": "PASS",
+    "cleanup_on_unmount": "PASS",
+    "duplicate_prevention": "PASS"
+  },
+  "runtime_evidence": {
+    "initial_message_received": true,
+    "ping_pong_verified": true,
+    "broadcast_received": true,
+    "connection_stats_verified": true
+  },
+  "contract_compliance": {
+    "handshake_with_connection_id": true,
+    "initial_health_snapshot": true,
+    "sequence_numbers": true,
+    "ping_pong_heartbeat": true,
+    "stale_connection_detection": true,
+    "sync_on_reconnect": true,
+    "subscribe_to_event_types": true,
+    "ack_for_delivery_confirmation": true,
+    "snake_case_to_camelcase_transform": true,
+    "dynamic_port_via_vite_ws_base_url": true,
+    "cleanup_on_unmount": true,
+    "duplicate_connection_prevention": true
+  },
+  "issues_found": [],
+  "verdict": "PASS"
+}

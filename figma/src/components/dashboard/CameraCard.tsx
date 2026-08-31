@@ -4,6 +4,9 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Camera } from '@/types/backend';
 import { StatusDot } from '@/components/ui/DesignSystem';
+import { useDetectionSnapshot } from '@/hooks/useHealth';
+import { useVideoTransform, sourceBBoxToDisplay, sourceLineToDisplay, sourcePolygonToDisplay } from '@/utils/coordinateTransform';
+import type { DetectionOverlayItem, LineOverlayItem, RegionOverlayItem } from '@/types/backend';
 
 interface CameraCardProps {
   cam: Camera;
@@ -22,6 +25,12 @@ export default function CameraCard({ cam, onClick }: CameraCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<any>(null);
+
+  // Get detection snapshot from WebSocket
+  const { snapshot: detectionSnapshot } = useDetectionSnapshot(cam.id);
+
+  // Get video transform for coordinate conversion
+  const { transform, dimensions } = useVideoTransform(videoRef);
 
   // Initialize HLS.js for video playback
   useEffect(() => {
@@ -96,6 +105,146 @@ export default function CameraCard({ cam, onClick }: CameraCardProps) {
   // Determine status display
   const statusDisplay = cam.status;
 
+  // Render detection bounding boxes
+  const renderDetections = () => {
+    if (!detectionSnapshot || !transform || !dimensions || dimensions.width === 0) {
+      return null;
+    }
+
+    return detectionSnapshot.detections.map((detection: DetectionOverlayItem) => {
+      const bbox = sourceBBoxToDisplay(
+        detection.bbox,
+        3840, 2160,
+        dimensions.width, dimensions.height
+      );
+
+      const label = detection.identity_certainty === 'known' && detection.person_id
+        ? detection.person_id
+        : `Person ${detection.track_id}`;
+
+      return (
+        <div
+          key={detection.track_id}
+          className="absolute pointer-events-none"
+          style={{
+            left: `${bbox.x}px`,
+            top: `${bbox.y}px`,
+            width: `${bbox.width}px`,
+            height: `${bbox.height}px`,
+          }}
+        >
+          <div className="absolute inset-0 border border-cyan-400/60 rounded-sm" />
+          <div className="absolute -top-5 left-0 flex items-center gap-1 whitespace-nowrap">
+            <div className="h-px w-3 bg-cyan-400" />
+            <span className="font-mono text-[9px] text-cyan-400">{label}</span>
+          </div>
+          <div className="absolute -bottom-5 left-0">
+            <span className="font-mono text-[9px] text-cyan-400">
+              {Math.round(detection.confidence * 100)}%
+            </span>
+          </div>
+          {detection.identity_certainty !== 'known' && (
+            <div className="absolute -top-10 left-0">
+              <span className="font-mono text-[8px] text-amber-400 bg-black/50 px-1 rounded">
+                {detection.identity_certainty.toUpperCase()}
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
+  // Render lines (entry/exit)
+  const renderLines = () => {
+    if (!detectionSnapshot || !transform || !dimensions || dimensions.width === 0) {
+      return null;
+    }
+
+    return detectionSnapshot.lines
+      .filter((line: LineOverlayItem) => line.enabled)
+      .map((line: LineOverlayItem) => {
+        const displayLine = sourceLineToDisplay(
+          line.x1, line.y1, line.x2, line.y2,
+          3840, 2160,
+          dimensions.width, dimensions.height
+        );
+
+        const isEntry = line.type === 'entry';
+        const color = isEntry ? 'emerald-400' : 'amber-400';
+        const arrowOffset = isEntry ? 10 : -10;
+
+        return (
+          <svg
+            key={line.id}
+            className="absolute inset-0 pointer-events-none"
+            style={{ left: 0, top: 0, width: '100%', height: '100%' }}
+          >
+            <line
+              x1={displayLine.x1}
+              y1={displayLine.y1}
+              x2={displayLine.x2}
+              y2={displayLine.y2}
+              stroke={color}
+              strokeWidth="2"
+              strokeDasharray="8,4"
+              strokeLinecap="round"
+            />
+            {/* Arrow marker */}
+            <polygon
+              points={`${displayLine.x2},${displayLine.y2 - arrowOffset} ${displayLine.x2 - 8},${displayLine.y2} ${displayLine.x2 + 8},${displayLine.y2}`}
+              fill={color}
+            />
+            <text
+              x={(displayLine.x1 + displayLine.x2) / 2}
+              y={(displayLine.y1 + displayLine.y2) / 2 - 10}
+              fill={color}
+              fontSize="10"
+              fontFamily="monospace"
+              textAnchor="middle"
+            >
+              {isEntry ? 'ENTRY' : 'EXIT'}
+            </text>
+          </svg>
+        );
+      });
+  };
+
+  // Render regions (ROI polygons)
+  const renderRegions = () => {
+    if (!detectionSnapshot || !transform || !dimensions || dimensions.width === 0) {
+      return null;
+    }
+
+    return detectionSnapshot.regions
+      .filter((region: RegionOverlayItem) => region.enabled)
+      .map((region: RegionOverlayItem) => {
+        const displayPoints = sourcePolygonToDisplay(
+          region.points,
+          3840, 2160,
+          dimensions.width, dimensions.height
+        );
+
+        const pointsStr = displayPoints.map(([x, y]) => `${x},${y}`).join(' ');
+
+        return (
+          <svg
+            key={region.id}
+            className="absolute inset-0 pointer-events-none"
+            style={{ left: 0, top: 0, width: '100%', height: '100%' }}
+          >
+            <polygon
+              points={pointsStr}
+              fill="rgba(0, 212, 255, 0.1)"
+              stroke="cyan"
+              strokeWidth="2"
+              strokeDasharray="6,3"
+            />
+          </svg>
+        );
+      });
+  };
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
@@ -135,9 +284,17 @@ export default function CameraCard({ cam, onClick }: CameraCardProps) {
           </div>
         )}
 
-        {/* Detection overlay - bounding boxes from real detection data */}
-        {/* This would be populated from real-time detection WebSocket data */}
-        <DetectionOverlay cameraId={cam.id} />
+        {/* Overlay Layer */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Detection bounding boxes */}
+          {renderDetections()}
+          
+          {/* Lines (entry/exit) */}
+          {renderLines()}
+          
+          {/* Regions (ROI polygons) */}
+          {renderRegions()}
+        </div>
 
         {/* Corner crosshairs for live cameras */}
         {statusDisplay === 'live' && (
@@ -193,29 +350,6 @@ export default function CameraCard({ cam, onClick }: CameraCardProps) {
           </span>
         )}
       </div>
-    </div>
-  );
-}
-
-// Detection Overlay Component - Renders bounding boxes from real detection data
-function DetectionOverlay({ cameraId }: { cameraId: string }) {
-  // In production, this would subscribe to real-time detection data via WebSocket
-  // For now, we show a placeholder structure
-  return (
-    <div className="absolute inset-0 pointer-events-none" data-camera-id={cameraId}>
-      {/* Detection boxes would be rendered here from real-time WebSocket data */}
-      {/* Example structure:
-      <div className="absolute" style={{ left: '20%', top: '25%', width: '12%', height: '45%' }}>
-        <div className="absolute inset-0 border border-cyan-400/60 rounded-sm" />
-        <div className="absolute -top-5 left-0 flex items-center gap-1 whitespace-nowrap">
-          <div className="h-px w-3 bg-cyan-400" />
-          <span className="font-mono text-[9px] text-cyan-400">TRK-441</span>
-        </div>
-        <div className="absolute -bottom-5 left-0">
-          <span className="font-mono text-[9px] text-cyan-400">98%</span>
-        </div>
-      </div>
-      */}
     </div>
   );
 }

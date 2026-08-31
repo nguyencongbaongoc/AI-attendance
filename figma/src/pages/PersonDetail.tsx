@@ -14,18 +14,18 @@ export default function PersonDetail({ personId, onBack }: PersonDetailProps) {
   const { liveEvents } = useAttendanceStore();
   
   // Find person from live events or use mock data
-  const person = liveEvents.find(e => e.person_id === personId);
+  const person = liveEvents.find(e => e.personId === personId);
   
   // Mock person data for now - will be replaced with real API call
   const mockPerson: Person = {
     person_id: personId,
-    name: person?.person_name || "Unknown Person",
+    name: person?.personName || "Unknown Person",
     role: "student",
     enrollment_date: "2024-01-15",
     last_seen: person ? new Date(person.timestamp * 1000).toTimeString().slice(0, 8) : "—",
-    last_camera: person?.camera_id || "—",
+    last_camera: person?.cameraId || "—",
     attendance_state: "present",
-    face_quality: person?.identity_confidence || 0.95,
+    face_quality: person?.identityConfidence || 0.95,
     track_count: 12,
   };
 

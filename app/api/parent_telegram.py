@@ -109,32 +109,6 @@ class NotificationQueueStatsResponse(BaseModel):
     failed: int
 
 
-class QueueMetricsResponse(BaseModel):
-    """Detailed queue metrics response model."""
-    queue_stats: Dict[str, int]
-    enqueue_rate_1h: int
-    dequeue_rate_1h: int
-    avg_latency_seconds: float
-    p95_latency_seconds: float
-    oldest_pending_age_seconds: float
-    retry_count: int
-    failed_count: int
-    rate_limited_count: int
-    queue_depth: int
-    max_queue_size: int
-    queue_utilization_percent: float
-
-
-class AlertResponse(BaseModel):
-    """Alert response model."""
-    severity: str
-    type: str
-    message: str
-    metric: str
-    value: float
-    threshold: float
-
-
 # Parent endpoints
 
 @router.get("/parents", response_model=List[ParentResponse])
@@ -283,28 +257,3 @@ async def get_notification_queue_stats():
         sent=stats.get("sent", 0),
         failed=stats.get("failed", 0),
     )
-
-
-@router.get("/health/queue/metrics", response_model=QueueMetricsResponse)
-async def get_queue_metrics():
-    """Get detailed queue metrics."""
-    queue = get_notification_queue()
-    metrics = queue.get_detailed_metrics()
-    
-    return QueueMetricsResponse(**metrics)
-
-
-@router.get("/health/queue/alerts", response_model=List[AlertResponse])
-async def get_queue_alerts():
-    """Get current queue alerts."""
-    queue = get_notification_queue()
-    alerts = queue.check_alerts()
-    
-    return [AlertResponse(**alert) for alert in alerts]
-
-
-@router.get("/health/queue/stats", response_model=Dict[str, int])
-async def get_queue_stats():
-    """Get basic queue statistics."""
-    queue = get_notification_queue()
-    return queue.get_queue_stats()

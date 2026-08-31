@@ -210,27 +210,27 @@ export interface ConnectionStats {
 // ============================================
 
 export interface AttendanceRecord {
-  attendance_record_id: string;
-  source_resolution_id: string;
-  person_id: string;
-  person_name: string;
-  camera_id: string;
-  local_track_id: string;
-  global_observation_id: string;
+  attendanceRecordId: string;
+  sourceResolutionId: string;
+  personId: string;
+  personName: string;
+  cameraId: string;
+  localTrackId: string;
+  globalObservationId: string;
   direction: 'in' | 'out';
-  identity_certainty: 'known' | 'ambiguous' | 'unknown';
-  identity_candidate: string | null;
-  identity_confidence: number;
+  identityCertainty: 'known' | 'ambiguous' | 'unknown';
+  identityCandidate: string | null;
+  identityConfidence: number;
   timestamp: number;
   day: string;
-  session_id: string | null;
-  session_type: string | null;
-  attendance_state: 'present' | 'late' | 'absent' | 'excused' | 'left_early';
-  in_state: 'on_time' | 'late' | 'outside_window' | 'not_applicable';
-  out_state: 'on_time' | 'early' | 'outside_window' | 'not_applicable';
-  decision_reason: string;
-  created_at: string;
-  persisted_at: string;
+  sessionId: string | null;
+  sessionType: string | null;
+  attendanceState: 'present' | 'late' | 'absent' | 'excused' | 'left_early';
+  inState: 'on_time' | 'late' | 'outside_window' | 'not_applicable';
+  outState: 'on_time' | 'early' | 'outside_window' | 'not_applicable';
+  decisionReason: string;
+  createdAt: string;
+  persistedAt: string;
 }
 
 // AttendanceEvent for UI components (simplified from AttendanceRecord)
@@ -407,6 +407,83 @@ export interface NotificationQueueStats {
   pending: number;
   sent: number;
   failed: number;
+}
+
+// ============================================
+// Geometry Types (Frontend)
+// ============================================
+
+export interface Point2D {
+  x: number;
+  y: number;
+}
+
+export interface LineOverlayItem {
+  id: string;
+  camera_id: string;
+  type: 'entry' | 'exit';
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  enabled: boolean;
+  direction_semantics: 'side_a_to_b_in' | 'side_b_to_a_in';
+}
+
+export interface RegionOverlayItem {
+  id: string;
+  camera_id: string;
+  type: string;
+  points: [number, number][];
+  enabled: boolean;
+  direction_semantics: 'outside_to_inside_in' | 'inside_to_outside_in';
+}
+
+export interface DetectionOverlayItem {
+  bbox: [number, number, number, number];  // x1, y1, x2, y2 in SOURCE coordinates
+  track_id: string;
+  person_id?: string;  // global_observation_id
+  label: string;  // "Person TRK-441" or "John Doe"
+  confidence: number;
+  identity_certainty: 'known' | 'unknown' | 'ambiguous';
+  identity_confidence: number;
+}
+
+export interface DetectionSnapshot {
+  type: 'detection_snapshot';
+  camera_id: string;
+  frame_index: number;
+  timestamp: string;
+  frame_dimensions: {
+    width: number;
+    height: number;
+  };
+  detections: DetectionOverlayItem[];
+  lines: LineOverlayItem[];
+  regions: RegionOverlayItem[];
+}
+
+export interface CameraGeometryConfig {
+  camera_id: string;
+  frame_width: number;
+  frame_height: number;
+  coordinate_space: 'original_frame';
+  geometry_type: 'line' | 'zone';
+  line: LineOverlayItem | null;
+  zone: RegionOverlayItem | null;
+  crossing_policy: {
+    min_crossing_distance: number;
+    temporal_debounce_seconds: number;
+    side_confirmation_frames: number;
+    max_trajectory_gap_frames: number;
+    crossing_policy: 'strict' | 'touch_allowed';
+  };
+  version: number;
+  config_hash: string;
+  created_at: string;
+  updated_at: string;
+  description: string;
+  tags: string[];
 }
 
 // ============================================

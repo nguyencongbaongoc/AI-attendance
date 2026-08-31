@@ -28,6 +28,11 @@ import type {
   NotificationQueueStats,
   APIError as APIErrorType,
   APIResponse,
+  CameraGeometryConfig,
+  LineOverlayItem,
+  RegionOverlayItem,
+  DetectionOverlayItem,
+  DetectionSnapshot,
 } from '@/types/backend';
 
 // ============================================
@@ -50,6 +55,27 @@ class APIError extends Error {
   }
 }
 
+// ============================================
+// Schema Normalization: snake_case → camelCase
+// ============================================
+
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+function transformKeys<T>(obj: T): T {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(transformKeys) as any;
+  if (typeof obj !== 'object') return obj;
+  
+  const transformed: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const camelKey = snakeToCamel(key);
+    transformed[camelKey] = transformKeys(value);
+  }
+  return transformed as T;
+}
+
 async function handleResponse<T>(response: Response, endpoint: string): Promise<T> {
   if (!response.ok) {
     let detail = `HTTP ${response.status}`;
@@ -61,7 +87,8 @@ async function handleResponse<T>(response: Response, endpoint: string): Promise<
     }
     throw new APIError(response.status, detail, endpoint);
   }
-  return response.json();
+  const data = await response.json();
+  return transformKeys(data);
 }
 
 // ============================================
@@ -290,13 +317,13 @@ export async function importTimetableFromExcel(file: File): Promise<{ success: b
 // ============================================
 
 export async function fetchEnrolledPersons(): Promise<EnrollmentPerson[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/enrollment/persons`);
-  return handleResponse<EnrollmentPerson[]>(response, '/api/v1/enrollment/persons');
+  const response = await fetch(`${API_BASE_URL}/api/v1/persons/enrollment/persons`);
+  return handleResponse<EnrollmentPerson[]>(response, '/api/v1/persons/enrollment/persons');
 }
 
 export async function fetchEnrollmentStats(): Promise<EnrollmentStats> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/enrollment/stats`);
-  return handleResponse<EnrollmentStats>(response, '/api/v1/enrollment/stats');
+  const response = await fetch(`${API_BASE_URL}/api/v1/persons/enrollment/stats`);
+  return handleResponse<EnrollmentStats>(response, '/api/v1/persons/enrollment/stats');
 }
 
 export async function enrollPerson(data: {
@@ -306,26 +333,26 @@ export async function enrollPerson(data: {
   face_embedding: number[];
   face_quality: number;
 }): Promise<EnrollmentPerson> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/enrollment/persons`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/persons/enrollment/persons`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  return handleResponse<EnrollmentPerson>(response, '/api/v1/enrollment/persons');
+  return handleResponse<EnrollmentPerson>(response, '/api/v1/persons/enrollment/persons');
 }
 
 export async function deleteEnrolledPerson(personId: string): Promise<{ success: boolean }> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/enrollment/persons/${personId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/persons/enrollment/persons/${personId}`, {
     method: 'DELETE',
   });
-  return handleResponse<{ success: boolean }>(response, `/api/v1/enrollment/persons/${personId}`);
+  return handleResponse<{ success: boolean }>(response, `/api/v1/persons/enrollment/persons/${personId}`);
 }
 
 export async function runQualityCheck(personId: string): Promise<QualityCheckResult[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/enrollment/persons/${personId}/quality-check`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/persons/enrollment/persons/${personId}/quality-check`, {
     method: 'POST',
   });
-  return handleResponse<QualityCheckResult[]>(response, `/api/v1/enrollment/persons/${personId}/quality-check`);
+  return handleResponse<QualityCheckResult[]>(response, `/api/v1/persons/enrollment/persons/${personId}/quality-check`);
 }
 
 // ============================================
@@ -401,10 +428,99 @@ export async function fetchNotificationQueueStats(): Promise<NotificationQueueSt
 }
 
 // ============================================
+// Geometry Management API
+// ============================================
+
+export async function fetchGeometry(cameraId: string): Promise<CameraGeometryConfig> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/geometry/${cameraId}`);
+  return handleResponse<CameraGeometryConfig>(response, `/api/v1/geometry/${cameraId}`);
+}
+
+export interface CreateGeometryRequest {
+  frame_width: number;
+  frame_height: number;
+  geometry_type: 'line' | 'zone';
+  line?: { p1: { x: number; y: number }; p2: { x: number; y: number }; direction_semantics: string };
+  zone?: { vertices: { x: number; y: number }[]; direction_semantics: string };
+  crossing_policy?: {
+    min_crossing_distance: number;
+    temporal_debounce_seconds: number;
+    side_confirmation_frames: number;
+    max_trajectory_gap_frames: number;
+    crossing_policy: 'strict' | 'touch_allowed';
+  };
+  description?: string;
+  tags?: string[];
+}
+
+export async function createOrUpdateGeometry(cameraId: string, request: CreateGeometryRequest): Promise<CameraGeometryConfig> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/geometry/${cameraId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  return handleResponse<CameraGeometryConfig>(response, `/api/v1/geometry/${cameraId}`);
+}
+
+export interface UpdateLineRequest {
+  p1: { x: number; y: number };
+  p2: { x: number; y: number };
+  direction_semantics: string;
+}
+
+export async function updateLineGeometry(cameraId: string, request: UpdateLineRequest): Promise<CameraGeometryConfig> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/geometry/${cameraId}/line`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  return handleResponse<CameraGeometryConfig>(response, `/api/v1/geometry/${cameraId}/line`);
+}
+
+export interface UpdateZoneRequest {
+  vertices: { x: number; y: number }[];
+  direction_semantics: string;
+}
+
+export async function updateZoneGeometry(cameraId: string, request: UpdateZoneRequest): Promise<CameraGeometryConfig> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/geometry/${cameraId}/zone`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  return handleResponse<CameraGeometryConfig>(response, `/api/v1/geometry/${cameraId}/zone`);
+}
+
+export interface UpdatePolicyRequest {
+  min_crossing_distance: number;
+  temporal_debounce_seconds: number;
+  side_confirmation_frames: number;
+  max_trajectory_gap_frames: number;
+  crossing_policy: 'strict' | 'touch_allowed';
+}
+
+export async function updateCrossingPolicy(cameraId: string, request: UpdatePolicyRequest): Promise<CameraGeometryConfig> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/geometry/${cameraId}/policy`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  return handleResponse<CameraGeometryConfig>(response, `/api/v1/geometry/${cameraId}/policy`);
+}
+
+export async function deleteGeometry(cameraId: string): Promise<{ status: string; camera_id: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/geometry/${cameraId}`, {
+    method: 'DELETE',
+  });
+  return handleResponse<{ status: string; camera_id: string }>(response, `/api/v1/geometry/${cameraId}`);
+}
+
+// ============================================
 // WebSocket/SSE Connection
 // ============================================
 
 export type HealthWebSocketHandler = (snapshot: HealthSnapshot) => void;
+export type DetectionSnapshotHandler = (snapshot: DetectionSnapshot) => void;
 export type HealthWebSocketErrorHandler = (error: Event) => void;
 export type HealthWebSocketCloseHandler = (event: CloseEvent) => void;
 
@@ -416,7 +532,8 @@ export class HealthWebSocketClient {
   private maxReconnectDelay = 30000;
   private lastSeq = 0;
   private connectionId: string | null = null;
-  private handlers: Set<HealthWebSocketHandler> = new Set();
+  private healthHandlers: Set<HealthWebSocketHandler> = new Set();
+  private detectionHandlers: Set<DetectionSnapshotHandler> = new Set();
   private errorHandlers: Set<HealthWebSocketErrorHandler> = new Set();
   private closeHandlers: Set<HealthWebSocketCloseHandler> = new Set();
   private isIntentionalClose = false;
@@ -437,25 +554,30 @@ export class HealthWebSocketClient {
 
     this.ws.onmessage = (event) => {
       try {
-        const snapshot: HealthSnapshot = JSON.parse(event.data);
+        const message = JSON.parse(event.data);
 
         // Handle pong
-        if (snapshot.type === 'pong') {
+        if (message.type === 'pong') {
           return;
         }
 
         // Track sequence for reconnect sync
-        if (snapshot.seq !== undefined) {
-          this.lastSeq = snapshot.seq;
+        if (message.seq !== undefined) {
+          this.lastSeq = message.seq;
         }
 
         // Store connection ID
-        if (snapshot.connection_id) {
-          this.connectionId = snapshot.connection_id;
+        if (message.connection_id) {
+          this.connectionId = message.connection_id;
         }
 
-        // Notify handlers
-        this.handlers.forEach(handler => handler(snapshot));
+        // Route to appropriate handlers based on message type
+        if (message.type === 'detection_snapshot') {
+          this.detectionHandlers.forEach(handler => handler(message as DetectionSnapshot));
+        } else {
+          // Health snapshot or other types
+          this.healthHandlers.forEach(handler => handler(message as HealthSnapshot));
+        }
       } catch (error) {
         console.error('[HealthWS] Failed to parse message:', error);
       }
@@ -527,8 +649,13 @@ export class HealthWebSocketClient {
   }
 
   onMessage(handler: HealthWebSocketHandler): () => void {
-    this.handlers.add(handler);
-    return () => this.handlers.delete(handler);
+    this.healthHandlers.add(handler);
+    return () => this.healthHandlers.delete(handler);
+  }
+
+  onDetectionSnapshot(handler: DetectionSnapshotHandler): () => void {
+    this.detectionHandlers.add(handler);
+    return () => this.detectionHandlers.delete(handler);
   }
 
   onError(handler: HealthWebSocketErrorHandler): () => void {

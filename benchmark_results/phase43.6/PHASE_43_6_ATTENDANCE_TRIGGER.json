@@ -1,0 +1,101 @@
+{
+  "phase": "43.6",
+  "report": "ATTENDANCE_TRIGGER",
+  "status": "VERIFIED",
+  "timestamp": "2026-08-31T14:34:00+07:00",
+  "trigger_chain": [
+    "Track",
+    "CrossingEvent",
+    "RawInOutEvent",
+    "ResolvedTransition",
+    "AttendanceRecord",
+    "ImmediateEvent"
+  ],
+  "state_machines": {
+    "CrossingEngine": {
+      "TrackCrossingState": ["current_side", "confirmed_side", "frames_on_current_side", "last_crossing_timestamp", "last_crossing_direction", "recent_positions"],
+      "line_crossing_checks": ["min_crossing_distance >= 5px", "temporal_debounce >= 1.0s", "side_confirmation_frames >= 2", "max_trajectory_gap_frames <= 5"],
+      "zone_crossing_checks": ["same_as_line"],
+      "direction_determinism": "Based on geometry semantics + trajectory (no randomness)"
+    },
+    "RepeatedInOutResolver": {
+      "TrackResolutionState": ["current_state", "last_transition_timestamp", "transition_count", "in_count", "out_count"],
+      "state_transitions": {
+        "UNKNOWN + IN": {"new_state": "INSIDE", "transition": "IN", "status": "ACCEPTED"},
+        "UNKNOWN + OUT": {"new_state": "OUTSIDE", "transition": "OUT", "status": "ACCEPTED", "policy": "ACCEPT_AS_INITIAL_STATE"},
+        "INSIDE + IN": {"new_state": "INSIDE", "transition": "NONE", "status": "SUPPRESSED"},
+        "INSIDE + OUT": {"new_state": "OUTSIDE", "transition": "OUT", "status": "ACCEPTED"},
+        "OUTSIDE + IN": {"new_state": "INSIDE", "transition": "IN", "status": "ACCEPTED"},
+        "OUTSIDE + OUT": {"new_state": "OUTSIDE", "transition": "NONE", "status": "SUPPRESSED"}
+      },
+      "rapid_reversal_protection": "2.0 seconds minimum between transitions"
+    }
+  },
+  "hysteresis_debounce": {
+    "CrossingPolicyConfig": {"min_crossing_distance": 5.0, "temporal_debounce_seconds": 1.0, "side_confirmation_frames": 2, "max_trajectory_gap_frames": 5, "crossing_policy": "STRICT"},
+    "ResolverConfig": {"resolver_version": "1.0", "initial_out_policy": "ACCEPT_AS_INITIAL_STATE", "out_of_order_policy": "SORT", "equal_timestamp_policy": "EVENT_ID", "enable_rapid_reversal_protection": true, "min_transition_interval_seconds": 2.0}
+  },
+  "duplicate_suppression": {
+    "level_1_CrossingEngine": ["side_confirmation_frames", "temporal_debounce", "min_crossing_distance"],
+    "level_2_Resolver": ["state_machine", "rapid_reversal_protection", "idempotency"],
+    "level_3_AttendanceRecord": ["only_from_actual_transitions", "deterministic_ID_from_source_resolution_id"],
+    "level_4_ImmediateEvent": ["deterministic_ID", "delivery_status_tracking"]
+  },
+  "direction_determinism": {
+    "line": "SIDE_A_TO_B_IN: +1->-1=IN, -1->+1=OUT | SIDE_B_TO_A_IN: -1->+1=IN, +1->-1=OUT",
+    "zone": "OUTSIDE_TO_INSIDE_IN: entry=IN, exit=OUT | INSIDE_TO_OUTSIDE_IN: entry=OUT, exit=IN"
+  },
+  "identity_handling": {
+    "propagation": "Track.global_observation_id -> CrossingEvent -> RawInOutEvent -> ResolvedTransition -> AttendanceRecord -> ImmediateEvent",
+    "unknown_identity": "identity_certainty=UNKNOWN, identity_candidate=None, identity_confidence=0.0, no_false_named_events, provenance_preserved"
+  },
+  "attendance_integration": {
+    "single_linear_chain": true,
+    "no_parallel_engine": true,
+    "integration_points": {
+      "CrossingEvent_to_RawInOutEvent": "create_raw_event_from_crossing()",
+      "RawInOutEvent_to_ResolvedTransition": "RepeatedInOutResolver.resolve_events()",
+      "ResolvedTransition_to_AttendanceRecord": "create_attendance_record_from_resolution()",
+      "AttendanceRecord_to_ImmediateEvent": "create_immediate_event_from_attendance()",
+      "ImmediateEvent_to_WebSocket": "ImmediateEventPublisher",
+      "AttendanceRecord_to_Repository": "AttendanceRepository.add()",
+      "Repository_to_Query_API": "AttendanceQueryBuilder"
+    },
+    "api_endpoints": [
+      "GET /api/v1/attendance/summary",
+      "GET /api/v1/attendance/records",
+      "GET /api/v1/attendance/records/{record_id}",
+      "GET /api/v1/attendance/person/{person_id}",
+      "GET /api/v1/attendance/timeline",
+      "GET /api/v1/attendance/daily-counts",
+      "GET /api/v1/attendance/track-history",
+      "GET /api/v1/attendance/stats"
+    ]
+  },
+  "policy_semantics": {
+    "timetable": ["CLASSROOM", "BREAK", "OUTSIDE_LESSON", "LAB", "OTHER", "entry/exit_windows", "late/early_thresholds"],
+    "resolver": ["initial_out=ACCEPT_AS_INITIAL_STATE", "out_of_order=SORT", "equal_timestamp=EVENT_ID", "rapid_reversal=2s"],
+    "crossing": ["STRICT", "min_distance=5px", "debounce=1s", "confirmation=2_frames"]
+  },
+  "acceptance_matrix": {
+    "full_chain_traced": true,
+    "CrossingEngine_state_machine": true,
+    "RepeatedInOutResolver_state_machine": true,
+    "hysteresis_debounce_configured": true,
+    "duplicate_suppression_all_levels": true,
+    "direction_determinism_verified": true,
+    "unknown_identity_handled": true,
+    "no_parallel_attendance_engine": true,
+    "attendance_API_functional": true,
+    "repository_persistence": true,
+    "realtime_delivery_path": true,
+    "provenance_chain_complete": true
+  },
+  "known_limitations": [
+    {"limitation": "Identity confidence always 0.0 in AttendanceRecord", "impact": "Low", "mitigation": "GlobalObservation linkage allows later enrichment"},
+    {"limitation": "Timetable CRUD in-memory only", "impact": "Medium", "mitigation": "Documented from Phase 43.5"},
+    {"limitation": "No attendance metrics in /health/metrics", "impact": "Low", "mitigation": "Placeholder zeros documented"},
+    {"limitation": "Enrollment quality check mock", "impact": "Low", "mitigation": "Documented limitation"}
+  ],
+  "verdict": "ATTENDANCE TRIGGER SEMANTICS: VERIFIED"
+}
