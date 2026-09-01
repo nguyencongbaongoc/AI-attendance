@@ -149,6 +149,9 @@ class RTSPSource:
             )
             self._info = self._iterator.info
             
+            # Create iterator from iterable for next() calls
+            self._frame_iter = iter(self._iterator)
+            
             fps = self._info.fps if self._info.fps > 0 else self.config.expected_fps
             self._clock = ReplayClock(camera_id=self.camera_id, fps=fps)
             
@@ -227,7 +230,7 @@ class RTSPSource:
             raise self._error
         
         try:
-            frame = next(self._iterator)
+            frame = next(self._frame_iter)
             
             # For live RTSP streams, use wall-clock receive time as timestamp
             # since frame_index/FPS doesn't work for live streams
@@ -272,7 +275,7 @@ class RTSPSource:
             replay_frame = CanonicalFrame(
                 data=frame.data,
                 metadata=new_metadata,
-                conversions_applied=frame.conversions_applied,
+                conversions_applied={},
             )
             
             self._frame_count += 1
