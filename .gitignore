@@ -1,49 +1,47 @@
-# Python Virtual Environments
+# Environments & Runtimes
 .venv/
-.venv*/
+.venv2/
 venv/
-env/
-**/Lib/site-packages/
-*.dll
-*.pyd
-*.exe
+ENV/
 TensorRT*/
 
-# Agent internal files & worktrees
+# Agent & Worktrees
 .kilo/
-**/.kilo/
-**/worktrees/
-new_engine/audit/phase_0_2/quarantine/
-**/quarantine/
 
-# Heavy AI Models & Compiled Engines (>50MB)
-models/
-weights/
+# AI Model weights & engines
+models/**/*.engine
+models/**/*.onnx
+models/**/*.pt
+models/**/*.bin
 *.engine
-*.trt
 *.onnx
-*.pt
-*.bin
 
-# Video Recordings & Test Dumps
-recordings/
-**/recordings/
+# Media & Quarantine videos
 *.mp4
-*.fmp4
 *.mkv
 *.avi
-
-# Heavy Graphify JSON dumps (>50MB)
-**/graph.json
-graphify-out/
-artifacts/**/graphify_out/*.json
-
-# Runtime Data & Evidence Storage
-app/data/*.db
-app/data/*.sqlite*
-app/data/backups/
+recordings/
 app/static/evidence/
-.env
-__pycache__/
-*.py[cod]
-.pytest_cache/
+new_engine/audit/quarantine/
+
+# Binary executables
+mediamtx/mediamtx.exe
+*.exe
+
+# Analysis & Benchmarks
+artifacts/
+graphify-out/
+benchmark_results/
+
+# Database & Runtime data
+app/data/*.db
+app/data/embeddings/*.npy
+app/data/backups/
+*.db
+*.sqlite3
+
+# Logs & Excel test files
+logs/
+*.log
+test_students.xlsx
+reports/*.xlsx

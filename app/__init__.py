@@ -1,0 +1,1 @@
+"""Application package for Windows native AI attendance system."""

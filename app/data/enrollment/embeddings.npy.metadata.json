@@ -1,0 +1,28 @@
+{
+  "creation_timestamp": "2026-10-04T08:07:01.912695Z",
+  "model_sha256": "test_model_sha256_placeholder",
+  "embedding_dimension": 512,
+  "person_ids": [
+    "TEST-001",
+    "TEST-002",
+    "TEST-003"
+  ],
+  "sample_provenance": [
+    {
+      "person_id": "TEST-001",
+      "sample_index": 0,
+      "quality": 0.95
+    },
+    {
+      "person_id": "TEST-002",
+      "sample_index": 0,
+      "quality": 0.92
+    },
+    {
+      "person_id": "TEST-003",
+      "sample_index": 0,
+      "quality": 0.88
+    }
+  ],
+  "embedding_count": 3
+}

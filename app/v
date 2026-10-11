@@ -1,0 +1,103 @@
+"""
+Phase 8 — Face Detector Factory.
+
+Provides a single entry point to create face detector adapters.
+Downstream code uses this factory, not specific adapter classes.
+"""
+
+from __future__ import annotations
+
+from typing import List, Optional
+
+from app.vision.detector_contract import (
+    FaceDetectorInterface,
+    DetectorModelId,
+    DetectorStatus,
+)
+from app.vision.scrfd_adapter import SCRFDAdapter, create_scrfd_adapter
+from app.vision.retinaface_adapter import RetinaFaceAdapter, create_retinaface_adapter, RetinaFaceNotImplementedError
+
+
+def get_detector(
+    model_id: str = "scrfd",
+    confidence_threshold: Optional[float] = None,
+    nms_threshold: Optional[float] = None,
+    providers: Optional[List[str]] = None,
+) -> FaceDetectorInterface:
+    """
+    Get a face detector adapter by model ID.
+    
+    This is the single entry point for creating face detectors.
+    Downstream code should use this function, not import specific adapters.
+    
+    Args:
+        model_id: Detector model identifier ("scrfd" or "retinaface").
+        confidence_threshold: Override confidence threshold.
+        nms_threshold: Override NMS threshold.
+        providers: ONNX Runtime providers.
+        
+    Returns:
+        FaceDetectorInterface implementation.
+        
+    Raises:
+        ValueError: If model_id is not supported.
+        RetinaFaceNotImplementedError: If RetinaFace is requested (not yet implemented).
+    """
+    if model_id == DetectorModelId.SCRFD.value:
+        return create_scrfd_adapter(
+            confidence_threshold=confidence_threshold,
+            nms_threshold=nms_threshold,
+            providers=providers,
+        )
+    elif model_id == DetectorModelId.RETINAFACE.value:
+        return create_retinaface_adapter(
+            confidence_threshold=confidence_threshold,
+            nms_threshold=nms_threshold,
+            providers=providers,
+        )
+    else:
+        raise ValueError(
+            f"Unsupported detector model_id: '{model_id}'. "
+            f"Supported: {[m.value for m in DetectorModelId]}"
+        )
+
+
+def list_available_detectors() -> List[dict]:
+    """
+    List all available detector backends with their status.
+    
+    Returns:
+        List of dicts with model_id, status, and description.
+    """
+    return [
+        {
+            "model_id": DetectorModelId.SCRFD.value,
+            "status": DetectorStatus.ACTIVE.value,
+            "description": "SCRFD 10G face detector (640x640 input, 5 keypoints)",
+            "input_size": "640x640",
+        },
+        {
+            "model_id": DetectorModelId.RETINAFACE.value,
+            "status": DetectorStatus.NOT_IMPLEMENTED.value,
+            "description": "RetinaFace detector (placeholder - not yet implemented)",
+            "input_size": "TBD",
+        },
+    ]
+
+
+def get_detector_status(model_id: str) -> DetectorStatus:
+    """
+    Get the implementation status of a detector.
+    
+    Args:
+        model_id: Detector model identifier.
+        
+    Returns:
+        DetectorStatus enum value.
+    """
+    if model_id == DetectorModelId.SCRFD.value:
+        return DetectorStatus.ACTIVE
+    elif model_id == DetectorModelId.RETINAFACE.value:
+        return DetectorStatus.NOT_IMPLEMENTED
+    else:
+        raise ValueError(f"Unknown detector model_id: '{model_id}'")
