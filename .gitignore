@@ -1,0 +1,49 @@
+# Python Virtual Environments
+.venv/
+.venv*/
+venv/
+env/
+**/Lib/site-packages/
+*.dll
+*.pyd
+*.exe
+TensorRT*/
+
+# Agent internal files & worktrees
+.kilo/
+**/.kilo/
+**/worktrees/
+new_engine/audit/phase_0_2/quarantine/
+**/quarantine/
+
+# Heavy AI Models & Compiled Engines (>50MB)
+models/
+weights/
+*.engine
+*.trt
+*.onnx
+*.pt
+*.bin
+
+# Video Recordings & Test Dumps
+recordings/
+**/recordings/
+*.mp4
+*.fmp4
+*.mkv
+*.avi
+
+# Heavy Graphify JSON dumps (>50MB)
+**/graph.json
+graphify-out/
+artifacts/**/graphify_out/*.json
+
+# Runtime Data & Evidence Storage
+app/data/*.db
+app/data/*.sqlite*
+app/data/backups/
+app/static/evidence/
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
