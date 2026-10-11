@@ -365,16 +365,16 @@ def create_app() -> FastAPI:
     evidence_path.mkdir(parents=True, exist_ok=True)
     app.mount("/static/evidence", StaticFiles(directory=str(evidence_path), check_dir=False), name="evidence")
 
+    # Mount frontend static files
+    frontend_path = Path("frontend")
+    frontend_path.mkdir(parents=True, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=str(frontend_path), check_dir=False), name="frontend")
+
     @app.get("/")
     async def root():
-        """Root endpoint."""
-        return {
-            "service": "AI Attendance System API",
-            "version": "1.0.0",
-            "status": "running",
-            "docs": "/docs",
-            "health": "/api/v1/health/system",
-        }
+        """Serve the frontend HTML."""
+        from fastapi.responses import FileResponse
+        return FileResponse(frontend_path / "index.html")
 
     @app.get("/api/v1/health/live")
     async def liveness():

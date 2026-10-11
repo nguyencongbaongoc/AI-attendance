@@ -1,0 +1,71 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, mock-3.15.1, xdist-3.8.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window FAILED [100%]
+
+================================== FAILURES ===================================
+_________ TestAttendanceEngine.test_make_decision_within_entry_window _________
+app\attendance\engine.py:235: in make_decision
+    asyncio.create_task(event_client.push_attendance_event(record_result.record))
+    ^^^^^^^
+E   NameError: name 'asyncio' is not defined. Did you forget to import 'asyncio'
+
+During handling of the above exception, another exception occurred:
+tests\unit\test_attendance_engine.py:150: in test_make_decision_within_entry_window
+    decision = engine.make_decision(context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\attendance\engine.py:238: in make_decision
+    logger.warning(f"Failed to push attendance event to WebSocket: {e}")
+    ^^^^^^
+E   NameError: name 'logger' is not defined
+============================== warnings summary ===============================
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+  C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\app\attendance\policy.py:67: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+  C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\app\attendance\policy.py:68: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+  C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\app\in_out\resolver_contract.py:96: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+  C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\app\attendance\timetable.py:99: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+  C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\app\attendance\timetable.py:100: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+  C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\app\attendance\timetable.py:238: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+  C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\app\attendance\timetable.py:239: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+  C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\app\attendance\policy.py:227: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+  C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\app\attendance\contract.py:99: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+
+tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+  C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\app\attendance\contract.py:102: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    persisted_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/test_attendance_engine.py::TestAttendanceEngine::test_make_decision_within_entry_window
+======================= 1 failed, 10 warnings in 3.88s ========================

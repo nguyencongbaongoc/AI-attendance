@@ -382,10 +382,10 @@ backend:
 
 # Frontend Configuration
 frontend:
-  enabled: false
+  enabled: true
   dev_mode: false
   dev_server_url: "http://localhost:5173"
-  build_path: "frontend/dist"
+  build_path: "frontend"
   
   # Integration
   api_base_url: ""               # Empty = same origin

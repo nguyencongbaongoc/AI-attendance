@@ -1,0 +1,28 @@
+[graphify] WARNING: PDF text extraction skipped: 'pypdf' is not installed. Install the pdf extra: uv tool install 'graphifyy[pdf]'
+[graphify extract] --force: full re-scan, semantic cache reads skipped
+[graphify extract] scanning C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE
+[graphify extract] --code-only: skipping 1364 non-code file(s) (1329 docs, 9 papers, 26 images) — no LLM extraction
+[graphify extract] found 1611 code, 0 docs, 0 papers, 0 images
+[graphify extract] 176 file(s) not classified (no supported extension or shebang), skipped: .gitattributes, .gitignore, .graphifyignore, 05_quarantine_sha256_manifest.csv, BLOCKER4_MUX_INTEGRATION_OUTPUT.h264, CMakeCXXCompiler.cmake (+170 more)
+[graphify extract] 2 file(s) skipped as potentially sensitive (rename or move if wrongly flagged): auto.crt, auto.key
+[graphify extract] AST extraction on 1611 code files...
+  AST extraction: 100/1611 uncached files (6%) [12 workers]
+  AST extraction: 200/1611 uncached files (12%) [12 workers]
+  AST extraction: 300/1611 uncached files (18%) [12 workers]
+  AST extraction: 400/1611 uncached files (24%) [12 workers]
+  AST extraction: 500/1611 uncached files (31%) [12 workers]
+  AST extraction: 600/1611 uncached files (37%) [12 workers]
+  AST extraction: 700/1611 uncached files (43%) [12 workers]
+  AST extraction: 800/1611 uncached files (49%) [12 workers]
+  AST extraction: 900/1611 uncached files (55%) [12 workers]
+  AST extraction: 1000/1611 uncached files (62%) [12 workers]
+  AST extraction: 1100/1611 uncached files (68%) [12 workers]
+  AST extraction: 1200/1611 uncached files (74%) [12 workers]
+  AST extraction: 1300/1611 uncached files (80%) [12 workers]
+  AST extraction: 1400/1611 uncached files (86%) [12 workers]
+  AST extraction: 1500/1611 uncached files (93%) [12 workers]
+  AST extraction: 1600/1611 uncached files (99%) [12 workers]
+  AST extraction: 1611/1611 uncached files (100%) [12 workers]
+  warning: 15 file(s) had syntax errors and may be partially extracted: TensorRT-11.3.0.99/include/NvInferImpl.h (first error at line 303, 635 symbol(s) extracted), TensorRT-11.3.0.99/include/NvInferPlugin.h (first error at line 38, no symbols extracted), TensorRT-11.3.0.99/include/NvInferRuntime.h (first error at line 1717, 451 symbol(s) extracted), TensorRT-11.3.0.99/include/NvInferRuntimePlugin.h (first error at line 97, 62 symbol(s) extracted), Video_Codec_SDK_13.0.37/Video_Codec_SDK_13.0.37/Samples/AppEncode/AppMotionEstimationVkCuda/AppMotionEstimationVkCuda.cpp (first error at line 70, 28 symbol(s) extracted) (+10 more)
+  warning: 124 code file(s) yielded no symbols (0.17 MB) — a data file, or source this extractor models no symbols for: TensorRT-11.3.0.99/include/NvInferVersion.h, Video_Codec_SDK_13.0.37/Video_Codec_SDK_13.0.37/Samples/AppEncode/AppEncGL/GraphicsUtils.h, Video_Codec_SDK_13.0.37/Video_Codec_SDK_13.0.37/Samples/Utils/ColorSpace.h, analyze_quarantine.py, app/video/pynvcodec/__init__.py (+119 more)
+[graphify extract] wrote C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\artifacts\phase_10_1\graphify_after\graphify-out\graph.json — 24374 nodes, 52354 edges (no clustering)

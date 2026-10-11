@@ -1,0 +1,20 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, mock-3.15.1, xdist-3.8.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/unit/test_detector_contract.py::TestSCRFDAdapter::test_preprocessing_contract FAILED [100%]
+
+================================== FAILURES ===================================
+________________ TestSCRFDAdapter.test_preprocessing_contract _________________
+tests\unit\test_detector_contract.py:281: in test_preprocessing_contract
+    assert contract.input_height == 640
+           ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ModelContract' object has no attribute 'input_height'
+=========================== short test summary info ===========================
+FAILED tests/unit/test_detector_contract.py::TestSCRFDAdapter::test_preprocessing_contract
+============================== 1 failed in 3.43s ==============================

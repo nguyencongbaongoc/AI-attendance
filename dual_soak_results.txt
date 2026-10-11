@@ -1,0 +1,562 @@
+[app.runtime.cuda] Setting up CUDA DLL search path...
+[app.runtime.cuda] Torch lib: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\.venv2\Lib\site-packages\torch\lib
+[app.runtime.cuda] Added C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\.venv2\Lib\site-packages\torch\lib to PATH and DLL directories
+[app.runtime.cuda] Added NVIDIA CUDA bin: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\.venv2\Lib\site-packages\nvidia\cu13\bin\x86_64
+[app.runtime.cuda] Added NVIDIA cuDNN bin: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\.venv2\Lib\site-packages\nvidia\cudnn\bin
+2026-10-10 00:53:40 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CameraRuntimeManager(CAM1): initialized
+2026-10-10 00:53:40 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CameraRuntimeManager(CAM2): initialized
+Starting both cameras...
+2026-10-10 00:53:40 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: stopped -> starting
+2026-10-10 00:53:40 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Starting camera runtime...
+2026-10-10 00:53:40 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: starting -> connecting
+2026-10-10 00:53:40 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Creating ingestion worker...
+2026-10-10 00:53:40 | INFO     | app.streaming.ingestion_worker | Worker CAM1: stopped -> starting
+2026-10-10 00:53:40 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Ingestion worker started
+2026-10-10 00:53:40 | INFO     | app.streaming.ingestion_worker | Worker CAM1: starting -> connecting
+2026-10-10 00:53:40 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: connecting -> decoding
+2026-10-10 00:53:40 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Waiting for ingestion worker RUNNING state...
+2026-10-10 00:53:40 | INFO     | app.streaming.rtsp_source | Opening RTSP source: camera_id=CAM1, url=rtsp://localhost:8554/live/cam1?transport=tcp
+2026-10-10 00:53:40 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Attempting to create pynvvideocodec backend for pyav_iterator
+2026-10-10 00:53:40 | INFO     | app.streaming.cuda_context_manager | CUDA driver initialized globally
+2026-10-10 00:53:40 | INFO     | app.streaming.cuda_context_manager | CUDAContextManager(GPU 0): Primary context retained: 1632897251840
+2026-10-10 00:53:41 | INFO     | app.streaming.cuda_context_manager | SharedContextManager(GPU 0): Created stream for pyav_iterator: 1632857266288
+2026-10-10 00:53:41 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Injected shared context 1632897251840 and stream 1632857266288 for pyav_iterator
+2026-10-10 00:53:41 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Initializing decoder on GPU 0
+2026-10-10 00:53:41 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Using shared context=1632897251840, stream=1632857266288
+[INFO ][00:53:41] enabling stream aware allocations!
+
+2026-10-10 00:53:41 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Decoder created with context=1632897251840, stream=1632857266288
+2026-10-10 00:53:41 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Successfully created pynvvideocodec backend for pyav_iterator
+2026-10-10 00:53:41 | INFO     | app.data.input_adapter | VideoFrameIterator(pyav_iterator): Using pynvvideocodec backend
+2026-10-10 00:53:41 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Opening demuxer for rtsp://localhost:8554/live/cam1?transport=tcp
+2026-10-10 00:53:43 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Stream info - codec=h264, width=3840, height=2160, pix_fmt=yuv420p
+2026-10-10 00:53:43 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Opened successfully (3840x2160@30.0fps, NVDEC gpu=0)
+2026-10-10 00:53:43 | INFO     | app.streaming.rtsp_source | Stream validation passed for CAM1
+2026-10-10 00:53:43 | INFO     | app.streaming.rtsp_source | RTSP source opened: camera_id=CAM1, resolution=3840x2160, fps=30.0, frames=0, decoder=pynvvideocodec
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | Worker CAM1: Connected to rtsp://localhost:8554/live/cam1
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | Worker CAM1: connecting -> running
+2026-10-10 00:53:43 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Ingestion worker reached RUNNING state
+2026-10-10 00:53:43 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Waiting for decoder to produce frames...
+2026-10-10 00:53:43 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: decoding -> first_gpu_frame
+2026-10-10 00:53:43 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Creating GPU AI Bridge...
+2026-10-10 00:53:43 | INFO     | app.vision.gpu_ai_bridge | Initializing SCRFD GPU session...
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568423.231019 frame_index=0 width=3840 height=2160
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:43 | ERROR    | app.streaming.health | [2m2026-10-09 17:53:43[0m [[31m[1merror    [0m] [1mCamera reconnected            [0m [[0m[1m[34mapp.streaming.health[0m][0m [36maction[0m=[35mframe_received[0m [36mcamera_id[0m=[35mCAM1[0m [36mcomponent[0m=[35mcamera[0m [36mfailure_class[0m=[35mCameraReconnected[0m [36mfailure_reason[0m=[35mframe_flow_restored[0m [36mprevious_state[0m=[35moffline[0m [36mresult[0m=[35mfailure[0m [36mretry_state[0m=[35msuccess[0m
+2026-10-10 00:53:43 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: FIRST_GPU_FRAME received (frame=1, width=3840, height=2160, fps=30.0, codec=nv12)
+2026-10-10 00:53:43 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: first_gpu_frame -> ready
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568423.243470 frame_index=1 width=3840 height=2160
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568423.246895 frame_index=2 width=3840 height=2160
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568423.249187 frame_index=3 width=3840 height=2160
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:43 | INFO     | app.vision.gpu_ai_bridge | Initializing ArcFace GPU session...
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568423.744023 frame_index=4 width=3840 height=2160
+2026-10-10 00:53:43 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+ [ 0 ; 9 3 m 2 0 2 6 - 1 0 - 1 0   0 0 : 5 3 : 4 3 . 9 9 7 2 5 8 1   [ W : o n n x r u n t i m e : D e f a u l t ,   o n n x r u n t i m e _ p y b i n d _ s t a t e . c c : 7 1 1   o n n x r u n t i m e : : p y t h o n : : C r e a t e E x e c u t i o n P r o v i d e r F a c t o r y I n s t a n c e : : < l a m b d a _ 1 > : : o p e r a t o r   ( ) ]   N o   r e g i s t e r e d   p l u g i n   E P   d e v i c e   f o u n d   f o r   ' C U D A E x e c u t i o n P r o v i d e r '   w i t h   d e v i c e _ i d = 0  [ m 
+2026-10-10 00:53:44 | INFO     | app.vision.gpu_ai_bridge | Initializing YOLO GPU session...
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.233778 frame_index=5 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.234823 frame_index=6 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.238172 frame_index=7 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.240814 frame_index=8 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.241902 frame_index=9 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.243524 frame_index=10 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.246330 frame_index=11 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.251148 frame_index=12 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.257260 frame_index=13 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.264932 frame_index=14 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.268277 frame_index=15 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.272859 frame_index=16 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.277832 frame_index=17 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.285815 frame_index=18 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.288862 frame_index=19 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.293721 frame_index=20 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.300095 frame_index=21 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.305634 frame_index=22 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.311545 frame_index=23 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.315628 frame_index=24 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.321451 frame_index=25 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.327044 frame_index=26 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.335022 frame_index=27 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.338437 frame_index=28 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.342877 frame_index=29 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.348768 frame_index=30 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.354738 frame_index=31 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.360151 frame_index=32 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.365149 frame_index=33 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.380200 frame_index=34 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.382906 frame_index=35 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.384683 frame_index=36 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.387995 frame_index=37 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.394754 frame_index=38 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.397980 frame_index=39 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.403118 frame_index=40 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.408285 frame_index=41 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.413329 frame_index=42 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.418843 frame_index=43 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.425882 frame_index=44 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.430038 frame_index=45 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.436154 frame_index=46 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.441222 frame_index=47 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.446701 frame_index=48 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.452120 frame_index=49 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.459087 frame_index=50 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.463046 frame_index=51 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.467845 frame_index=52 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.473133 frame_index=53 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.492665 frame_index=54 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.495494 frame_index=55 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.496585 frame_index=56 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.498199 frame_index=57 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.498751 frame_index=58 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.500462 frame_index=59 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.592823 frame_index=60 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.602149 frame_index=61 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.637738 frame_index=62 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.673631 frame_index=63 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.722341 frame_index=64 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.748524 frame_index=65 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.779601 frame_index=66 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.815336 frame_index=67 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568424.850082 frame_index=68 width=3840 height=2160
+2026-10-10 00:53:44 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:44 | INFO     | app.vision.gpu_ai_bridge | YOLO person detector initialized
+2026-10-10 00:53:44 | INFO     | app.vision.gpu_ai_bridge | Initializing ReID GPU session...
+2026-10-10 00:53:45 | INFO     | app.vision.gpu_ai_bridge | All 4 GPU AI model sessions initialized successfully
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: GPU AI Bridge initialized
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Creating tracking & attendance processor...
+2026-10-10 00:53:45 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568425.094219 frame_index=69 width=3840 height=2160
+2026-10-10 00:53:45 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:53:45 | WARNING  | app.streaming.camera_runtime_manager | [BOOT] CAM1: Timetable/policy not loaded: 'Settings' object has no attribute 'timetable'
+2026-10-10 00:53:45 | INFO     | app.vision.tracking_attendance_telemetry | TrackingAttendanceProcessor(CAM1): initialized
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Tracking & attendance processor created
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Telemetry initialized
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Creating annotated publisher...
+2026-10-10 00:53:45 | INFO     | app.streaming.publisher_liveness | PublisherLivenessWatchdog(CAM1): started
+2026-10-10 00:53:45 | INFO     | app.streaming.annotated_publisher | AnnotatedFramePublisher(CAM1): liveness watchdog started (ai_path=live/cam1-ai)
+2026-10-10 00:53:45 | INFO     | app.streaming.annotated_publisher | AnnotatedFramePublisher(CAM1): started (target=rtsp://localhost:8554/live/cam1-ai)
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Annotated publisher started
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Waiting for READY state (timeout=180s)...
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: READY state achieved
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: ready -> running
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM1: Camera runtime RUNNING
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: stopped -> starting
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Starting camera runtime...
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: starting -> connecting
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Creating ingestion worker...
+2026-10-10 00:53:45 | INFO     | app.streaming.ingestion_worker | Worker CAM2: stopped -> starting
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Ingestion worker started
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: connecting -> decoding
+2026-10-10 00:53:45 | INFO     | app.streaming.ingestion_worker | Worker CAM2: starting -> connecting
+2026-10-10 00:53:45 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Waiting for ingestion worker RUNNING state...
+2026-10-10 00:53:45 | INFO     | app.streaming.rtsp_source | Opening RTSP source: camera_id=CAM2, url=rtsp://localhost:8554/live/cam2?transport=tcp
+2026-10-10 00:53:45 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Attempting to create pynvvideocodec backend for pyav_iterator
+2026-10-10 00:53:45 | WARNING  | app.streaming.cuda_context_manager | SharedContextManager(GPU 0): Stream for pyav_iterator already exists
+2026-10-10 00:53:45 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Injected shared context 1632897251840 and stream 1632857266288 for pyav_iterator
+2026-10-10 00:53:45 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Initializing decoder on GPU 0
+2026-10-10 00:53:45 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Using shared context=1632897251840, stream=1632857266288
+[INFO ][00:53:45] enabling stream aware allocations!
+
+2026-10-10 00:53:45 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Decoder created with context=1632897251840, stream=1632857266288
+2026-10-10 00:53:45 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Successfully created pynvvideocodec backend for pyav_iterator
+2026-10-10 00:53:45 | INFO     | app.data.input_adapter | VideoFrameIterator(pyav_iterator): Using pynvvideocodec backend
+2026-10-10 00:53:45 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Opening demuxer for rtsp://localhost:8554/live/cam2?transport=tcp
+2026-10-10 00:53:46 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Stream info - codec=h264, width=3840, height=2160, pix_fmt=yuv420p
+2026-10-10 00:53:46 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(pyav_iterator): Opened successfully (3840x2160@30.0fps, NVDEC gpu=0)
+2026-10-10 00:53:46 | INFO     | app.streaming.rtsp_source | Stream validation passed for CAM2
+2026-10-10 00:53:46 | INFO     | app.streaming.rtsp_source | RTSP source opened: camera_id=CAM2, resolution=3840x2160, fps=30.0, frames=0, decoder=pynvvideocodec
+2026-10-10 00:53:46 | INFO     | app.streaming.ingestion_worker | Worker CAM2: Connected to rtsp://localhost:8554/live/cam2
+2026-10-10 00:53:46 | INFO     | app.streaming.ingestion_worker | Worker CAM2: connecting -> running
+2026-10-10 00:53:46 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Ingestion worker reached RUNNING state
+2026-10-10 00:53:46 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Waiting for decoder to produce frames...
+2026-10-10 00:53:46 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: decoding -> first_gpu_frame
+2026-10-10 00:53:46 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Creating GPU AI Bridge...
+2026-10-10 00:53:46 | INFO     | app.vision.gpu_ai_bridge | Initializing SCRFD GPU session...
+2026-10-10 00:53:47 | INFO     | app.vision.gpu_ai_bridge | Initializing ArcFace GPU session...
+  [ 0 ; 9 3 m 2 0 2 6 - 1 0 - 1 0   0 0 : 5 3 : 4 7 . 5 1 3 0 7 1 4   [ W : o n n x r u n t i m e : D e f a u l t ,   o n n x r u n t i m e _ p y b i n d _ s t a t e . c c : 7 1 1   o n n x r u n t i m e : : p y t h o n : : C r e a t e E x e c u t i o n P r o v i d e r F a c t o r y I n s t a n c e : : < l a m b d a _ 1 > : : o p e r a t o r   ( ) ]   N o   r e g i s t e r e d   p l u g i n   E P   d e v i c e   f o u n d   f o r   ' C U D A E x e c u t i o n P r o v i d e r '   w i t h   d e v i c e _ i d = 0  [ m 
+2026-10-10 00:53:47 | INFO     | app.vision.gpu_ai_bridge | Initializing YOLO GPU session...
+2026-10-10 00:53:47 | INFO     | app.streaming.rtsp_source | RTSP source exhausted: camera_id=CAM2, frames=0
+2026-10-10 00:54:10 | INFO     | app.vision.gpu_ai_bridge | YOLO person detector initialized
+2026-10-10 00:54:10 | INFO     | app.vision.gpu_ai_bridge | Initializing ReID GPU session...
+2026-10-10 00:54:10 | INFO     | app.vision.gpu_ai_bridge | All 4 GPU AI model sessions initialized successfully
+2026-10-10 00:54:10 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: GPU AI Bridge initialized
+2026-10-10 00:54:10 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Creating tracking & attendance processor...
+2026-10-10 00:54:11 | WARNING  | app.streaming.camera_runtime_manager | [BOOT] CAM2: Timetable/policy not loaded: 'Settings' object has no attribute 'timetable'
+2026-10-10 00:54:11 | INFO     | app.vision.tracking_attendance_telemetry | TrackingAttendanceProcessor(CAM2): initialized
+2026-10-10 00:54:11 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Tracking & attendance processor created
+2026-10-10 00:54:11 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Telemetry initialized
+2026-10-10 00:54:11 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Creating annotated publisher...
+2026-10-10 00:54:16 | INFO     | app.streaming.publisher_liveness | PublisherLivenessWatchdog(CAM2): started
+2026-10-10 00:54:16 | INFO     | app.streaming.annotated_publisher | AnnotatedFramePublisher(CAM2): liveness watchdog started (ai_path=live/cam2-ai)
+2026-10-10 00:54:16 | INFO     | app.streaming.annotated_publisher | AnnotatedFramePublisher(CAM2): started (target=rtsp://localhost:8554/live/cam2-ai)
+2026-10-10 00:54:16 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Annotated publisher started
+2026-10-10 00:54:16 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Waiting for READY state (timeout=180s)...
+2026-10-10 00:56:41 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=1):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     1 |   1.0 |   1.0 |   1.0 |   1.0 |   1.0 |   0.0
+  total_e2e_ms       |     1 | 1791568599300.1 | 1791568599300.1 | 1791568599300.1 | 1791568599300.1 | 1791568599300.1 |   0.0
+  VRAM Allocated:  p50=51 p95=51 max=51 MB
+  VRAM Reserved:   p50=416 p95=416 max=416 MB
+  Frames: total=1 dropped=0
+2026-10-10 00:56:42 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568602.027019 frame_index=999 width=3840 height=2160
+2026-10-10 00:56:42 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:56:49 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568609.475914 frame_index=1046 width=3840 height=2160
+2026-10-10 00:56:49 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:56:57 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   1.1 |   1.1 |   1.1 |   1.0 |   1.1 |   0.1
+  total_e2e_ms       |     2 | 1791568430887.1 | 1791568431086.7 | 1791568431104.4 | 1791568430665.3 | 1791568431108.9 | 217.3
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=3 dropped=0
+2026-10-10 00:56:57 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568617.519269 frame_index=1092 width=3840 height=2160
+2026-10-10 00:56:57 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:57:08 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=1):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     1 |   1.1 |   1.1 |   1.1 |   1.1 |   1.1 |   0.0
+  total_e2e_ms       |     1 | 1791568434080.9 | 1791568434080.9 | 1791568434080.9 | 1791568434080.9 | 1791568434080.9 |   0.0
+  VRAM Allocated:  p50=51 p95=51 max=51 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=4 dropped=0
+2026-10-10 00:57:08 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568628.613287 frame_index=1141 width=3840 height=2160
+2026-10-10 00:57:08 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:57:13 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568633.737519 frame_index=1176 width=3840 height=2160
+2026-10-10 00:57:13 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:57:16 | WARNING  | app.streaming.camera_runtime_manager | [BOOT] CAM2: READY timeout after 180s (state=first_gpu_frame)
+2026-10-10 00:57:16 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: first_gpu_frame -> running
+2026-10-10 00:57:16 | INFO     | app.streaming.camera_runtime_manager | [BOOT] CAM2: Camera runtime RUNNING
+CAM1: True, CAM2: True
+2026-10-10 00:57:21 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   0.8 |   1.0 |   1.0 |   0.6 |   1.0 |   0.2
+  total_e2e_ms       |     2 | 1791568429813.4 | 1791568431039.5 | 1791568431148.5 | 1791568428451.1 | 1791568431175.7 | 1335.1
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=6 dropped=0
+2026-10-10 00:57:21 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568641.865377 frame_index=1220 width=3840 height=2160
+2026-10-10 00:57:21 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[10s] CAM1: fps=0.6 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:57:28 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568648.444276 frame_index=1259 width=3840 height=2160
+2026-10-10 00:57:28 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[20s] CAM1: fps=0.3 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:57:37 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   0.8 |   1.0 |   1.0 |   0.5 |   1.0 |   0.2
+  total_e2e_ms       |     2 | 1791568430881.2 | 1791568431818.3 | 1791568431901.6 | 1791568429840.0 | 1791568431922.4 | 1020.4
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=8 dropped=0
+2026-10-10 00:57:37 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568657.167843 frame_index=1317 width=3840 height=2160
+2026-10-10 00:57:37 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:57:46 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568666.088334 frame_index=1367 width=3840 height=2160
+2026-10-10 00:57:46 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[30s] CAM1: fps=0.3 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:57:53 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   1.4 |   1.7 |   1.8 |   1.0 |   1.8 |   0.4
+  total_e2e_ms       |     2 | 1791568431432.1 | 1791568432054.5 | 1791568432109.8 | 1791568430740.6 | 1791568432123.6 | 677.7
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=10 dropped=0
+2026-10-10 00:57:53 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568673.752750 frame_index=1410 width=3840 height=2160
+2026-10-10 00:57:53 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[40s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:58:01 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568681.431081 frame_index=1454 width=3840 height=2160
+2026-10-10 00:58:01 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[50s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:58:11 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   1.3 |   1.5 |   1.5 |   1.2 |   1.5 |   0.1
+  total_e2e_ms       |     2 | 1791568432067.1 | 1791568433068.0 | 1791568433157.0 | 1791568430954.9 | 1791568433179.2 | 1089.9
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=12 dropped=0
+2026-10-10 00:58:11 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568691.671854 frame_index=1510 width=3840 height=2160
+2026-10-10 00:58:11 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[60s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:58:21 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568701.468747 frame_index=1568 width=3840 height=2160
+2026-10-10 00:58:21 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[70s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:58:30 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   1.0 |   1.1 |   1.1 |   1.0 |   1.1 |   0.0
+  total_e2e_ms       |     2 | 1791568432667.5 | 1791568432950.4 | 1791568432975.5 | 1791568432353.1 | 1791568432981.8 | 308.1
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=14 dropped=0
+2026-10-10 00:58:30 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568710.785751 frame_index=1619 width=3840 height=2160
+2026-10-10 00:58:30 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+Decode Error occurred for picture 190
+Decode Error occurred for picture 205
+Decode Error occurred for picture 322
+Decode Error occurred for picture 248
+Decode Error occurred for picture 365
+Decode Error occurred for picture 260
+Decode Error occurred for picture 303
+Decode Error occurred for picture 328
+Decode Error occurred for picture 344
+Decode Error occurred for picture 355
+Decode Error occurred for picture 447
+Decode Error occurred for picture 463
+Decode Error occurred for picture 384
+Decode Error occurred for picture 488
+Decode Error occurred for picture 516
+Decode Error occurred for picture 532
+Decode Error occurred for picture 412
+Decode Error occurred for picture 456
+Decode Error occurred for picture 558
+Decode Error occurred for picture 465
+Decode Error occurred for picture 573
+Decode Error occurred for picture 653
+Decode Error occurred for picture 638
+Decode Error occurred for picture 558
+Decode Error occurred for picture 664
+Decode Error occurred for picture 508
+Decode Error occurred for picture 679
+Decode Error occurred for picture 599
+Decode Error occurred for picture 703
+Decode Error occurred for picture 572
+Decode Error occurred for picture 718
+Decode Error occurred for picture 626
+Decode Error occurred for picture 729
+Decode Error occurred for picture 651
+Decode Error occurred for picture 772
+Decode Error occurred for picture 680
+Decode Error occurred for picture 786
+Decode Error occurred for picture 710
+Decode Error occurred for picture 811
+Decode Error occurred for picture 725
+Decode Error occurred for picture 838
+Decode Error occurred for picture 852
+Decode Error occurred for picture 776
+Decode Error occurred for picture 791
+Decode Error occurred for picture 805
+Decode Error occurred for picture 907
+Decode Error occurred for picture 931
+Decode Error occurred for picture 837
+Decode Error occurred for picture 942
+Decode Error occurred for picture 867
+Decode Error occurred for picture 973
+Decode Error occurred for picture 1001
+Decode Error occurred for picture 927
+Decode Error occurred for picture 883
+Decode Error occurred for picture 1030
+Decode Error occurred for picture 939
+Decode Error occurred for picture 957
+Decode Error occurred for picture 1046
+Decode Error occurred for picture 954
+Decode Error occurred for picture 1060
+Decode Error occurred for picture 1092
+Decode Error occurred for picture 1076
+Decode Error occurred for picture 1008
+Decode Error occurred for picture 1103
+Decode Error occurred for picture 1025
+Decode Error occurred for picture 1128
+Decode Error occurred for picture 1039
+Decode Error occurred for picture 1144
+Decode Error occurred for picture 1159
+Decode Error occurred for picture 1068
+Decode Error occurred for picture 1083
+Decode Error occurred for picture 1190
+Decode Error occurred for picture 1205
+Decode Error occurred for picture 1123
+Decode Error occurred for picture 1226
+Decode Error occurred for picture 1139
+Decode Error occurred for picture 1109
+Decode Error occurred for picture 1236
+Decode Error occurred for picture 1095
+Decode Error occurred for picture 1252
+Decode Error occurred for picture 1279
+Decode Error occurred for picture 1199
+Decode Error occurred for picture 1183
+Decode Error occurred for picture 1209
+Decode Error occurred for picture 1253
+Decode Error occurred for picture 1269
+Decode Error occurred for picture 1363
+Decode Error occurred for picture 1298
+Decode Error occurred for picture 1406
+Decode Error occurred for picture 1329
+Decode Error occurred for picture 1378
+Decode Error occurred for picture 1344
+Decode Error occurred for picture 1361
+Decode Error occurred for picture 1477
+Decode Error occurred for picture 1375
+Decode Error occurred for picture 1488
+Decode Error occurred for picture 1420
+Decode Error occurred for picture 1518
+Decode Error occurred for picture 1433
+Decode Error occurred for picture 1534
+Decode Error occurred for picture 1448
+Decode Error occurred for picture 1559
+Decode Error occurred for picture 1582
+Decode Error occurred for picture 1492
+Decode Error occurred for picture 1597
+Decode Error occurred for picture 1609
+Decode Error occur[80s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:58:41 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=1):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     1 |   1.8 |   1.8 |   1.8 |   1.8 |   1.8 |   0.0
+  total_e2e_ms       |     1 | 1791568433350.6 | 1791568433350.6 | 1791568433350.6 | 1791568433350.6 | 1791568433350.6 |   0.0
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=15 dropped=0
+2026-10-10 00:58:41 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568721.072511 frame_index=1674 width=3840 height=2160
+2026-10-10 00:58:41 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:58:46 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568726.161946 frame_index=1710 width=3840 height=2160
+2026-10-10 00:58:46 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[90s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:58:52 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   1.1 |   1.1 |   1.1 |   1.0 |   1.1 |   0.0
+  total_e2e_ms       |     2 | 1791568428691.5 | 1791568429036.9 | 1791568429067.6 | 1791568428307.8 | 1791568429075.3 | 376.1
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=17 dropped=0
+2026-10-10 00:58:52 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568732.142805 frame_index=1754 width=3840 height=2160
+2026-10-10 00:58:52 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:58:53 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568733.152529 frame_index=1772 width=3840 height=2160
+2026-10-10 00:58:53 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[100s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:58:57 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568737.439118 frame_index=1799 width=3840 height=2160
+2026-10-10 00:58:57 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:59:04 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   1.7 |   2.0 |   2.0 |   1.5 |   2.0 |   0.2
+  total_e2e_ms       |     2 | 1791568428860.5 | 1791568430106.3 | 1791568430217.1 | 1791568427476.2 | 1791568430244.8 | 1356.6
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=20 dropped=0
+2026-10-10 00:59:04 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568744.698899 frame_index=1839 width=3840 height=2160
+2026-10-10 00:59:04 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[110s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:59:14 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568754.212031 frame_index=1891 width=3840 height=2160
+2026-10-10 00:59:14 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[120s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:59:22 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   1.3 |   1.6 |   1.6 |   1.0 |   1.6 |   0.3
+  total_e2e_ms       |     2 | 1791568432005.6 | 1791568432616.8 | 1791568432671.1 | 1791568431326.5 | 1791568432684.7 | 665.5
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=22 dropped=0
+2026-10-10 00:59:22 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568762.535830 frame_index=1941 width=3840 height=2160
+2026-10-10 00:59:22 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[130s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:59:28 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568768.907688 frame_index=1986 width=3840 height=2160
+2026-10-10 00:59:28 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+2026-10-10 00:59:37 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   1.2 |   1.4 |   1.4 |   1.0 |   1.4 |   0.2
+  total_e2e_ms       |     2 | 1791568430373.4 | 1791568431121.6 | 1791568431188.1 | 1791568429542.1 | 1791568431204.7 | 814.6
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=24 dropped=0
+2026-10-10 00:59:37 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568777.171897 frame_index=2035 width=3840 height=2160
+2026-10-10 00:59:37 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[140s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:59:46 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568786.931729 frame_index=2094 width=3840 height=2160
+2026-10-10 00:59:46 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[150s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 00:59:56 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   1.3 |   1.6 |   1.6 |   1.0 |   1.7 |   0.3
+  crossing_ms        |     1 |   0.6 |   0.6 |   0.6 |   0.6 |   0.6 |   0.0
+  total_e2e_ms       |     2 | 1791568432913.0 | 1791568432989.0 | 1791568432995.8 | 1791568432828.4 | 1791568432997.5 |  82.8
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=26 dropped=0
+2026-10-10 00:59:56 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568796.755703 frame_index=2149 width=3840 height=2160
+2026-10-10 00:59:56 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[160s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 01:00:02 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568802.757521 frame_index=2186 width=3840 height=2160
+2026-10-10 01:00:02 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600
+[170s] CAM1: fps=0.2 drops=70 | CAM2: fps=0.0 drops=0
+2026-10-10 01:00:11 | INFO     | app.vision.tracking_attendance_telemetry | [CAM1] E2E TELEMETRY (window=10.0s, frames=2):
+  Component         | Count |   p50 |   p95 |   p99 |  Min  |  Max  | Jitter
+  ------------------|-------|-------|-------|-------|-------|-------|-------
+  tracking_ms        |     2 |   0.8 |   1.0 |   1.0 |   0.5 |   1.0 |   0.3
+  crossing_ms        |     1 |   0.5 |   0.5 |   0.5 |   0.5 |   0.5 |   0.0
+  total_e2e_ms       |     2 | 1791568430677.0 | 1791568431950.1 | 1791568432063.3 | 1791568429262.4 | 1791568432091.6 | 1386.3
+  VRAM Allocated:  p50=52 p95=52 max=52 MB
+  VRAM Reserved:   p50=464 p95=464 max=464 MB
+  Frames: total=28 dropped=0
+2026-10-10 01:00:11 | INFO     | app.streaming.ingestion_worker | [H2K][CANONICAL_FRAME] camera=CAM1 timestamp=1791568811.814517 frame_index=2233 width=3840 height=2160
+2026-10-10 01:00:11 | INFO     | app.streaming.ingestion_worker | [BOOT-GPU] IngestionWorker(CAM1) .nbytes context: payload_type=GPUFrameContract is_dict=False has_nbytes=True adapter_contract_present=False adapter_contract_type=None payload_nbytes=12441600

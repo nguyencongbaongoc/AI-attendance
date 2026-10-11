@@ -10,6 +10,7 @@ import logging
 import threading
 import time
 import concurrent.futures
+from queue import Empty
 from dataclasses import dataclass, field
 from typing import Optional, Dict, List, Any, Iterator
 from enum import Enum
@@ -582,35 +583,17 @@ class CameraManager:
             while self._running and camera["state"] == CameraState.RUNNING:
                 loop_start = time.perf_counter()
                 
-                # Get packet from RTSP
-                packet = rtsp_source.get_packet(timeout=1.0)
-                if packet is None:
-                    # Check health
-                    if not rtsp_source.is_healthy():
-                        with self._lock:
-                            camera["state"] = CameraState.UNHEALTHY
-                        logger.warning(f"CameraManager: Camera {camera_id} unhealthy")
-                    elif rtsp_source.is_degraded():
-                        with self._lock:
-                            camera["state"] = CameraState.DEGRADED
-                    continue
-                
-                # Check for stream epoch changes (PTS discontinuity)
-                if packet.pts is not None and frame_counter > 0:
-                    # Could detect PTS jumps here if needed
-                    pass
-                
-                frame_counter += 1
-                camera["metrics"].frames_received += 1
-                
-                # ========== STAGE 1: DECODE ==========
+                # ========== STAGE 1: DECODE (Latest-Only Frame Drop Policy) ==========
                 decode_start = time.perf_counter()
-                gpu_frame = decoder.get_frame(timeout=1.0)
+                gpu_frame = self._drain_to_latest_frame(decoder, max_age_ms=80.0)
                 decode_ms = (time.perf_counter() - decode_start) * 1000
                 
                 if gpu_frame is None:
-                    camera["metrics"].decode_errors += 1
+                    # No valid frame available - brief sleep to prevent tight loop
+                    time.sleep(0.005)
                     continue
+                
+                camera["metrics"].frames_decoded += 1
                 
                 # Transfer ownership to decoder
                 gpu_frame.transfer_ownership(FrameOwnership.DECODER)
@@ -619,12 +602,13 @@ class CameraManager:
                 gpu_frame.camera_id = camera_id
                 gpu_frame.frame_id = frame_counter
                 gpu_frame.timestamp = time.time()
-                gpu_frame.pts = packet.pts
-                gpu_frame.dts = packet.dts
-                gpu_frame.time_base = rtsp_source._stream.time_base if hasattr(rtsp_source, '_stream') and rtsp_source._stream else None
+                gpu_frame.pts = gpu_frame.pts  # Keep original PTS from decoder
+                gpu_frame.dts = gpu_frame.dts
+                gpu_frame.time_base = gpu_frame.time_base
                 gpu_frame.stream_epoch = stream_epoch
                 
-                camera["metrics"].frames_decoded += 1
+                frame_counter += 1
+                camera["metrics"].frames_received += 1
                 
                 # ========== STAGE 2: AI INFERENCE ==========
                 ai_start = time.perf_counter()
@@ -839,7 +823,34 @@ class CameraManager:
         finally:
             logger.info(f"CameraManager({camera_id}): Pipeline loop ended")
 
-    def _extract_aligned_face(self, frame: GPUFrame, face_det) -> Optional[torch.Tensor]:
+    def _drain_to_latest_frame(self, decoder, max_age_ms: float = 80.0) -> Optional[Any]:
+        """Drain decoder queue, keeping only the latest valid frame."""
+        latest_frame = None
+        now = time.time()
+        
+        while True:
+            try:
+                frame = decoder._frame_queue.get_nowait()
+                frame_age_ms = (now - getattr(frame, "timestamp", now)) * 1000.0
+                
+                if frame_age_ms > max_age_ms:
+                    # Stale frame - return to pool
+                    if getattr(decoder, "_frame_pool", None):
+                        decoder._frame_pool.return_to_pool(frame)
+                    decoder._metrics.frames_dropped += 1
+                    continue
+                
+                # Drop previous latest if we have a newer one
+                if latest_frame and getattr(decoder, "_frame_pool", None):
+                    decoder._frame_pool.return_to_pool(latest_frame)
+                    decoder._metrics.frames_dropped += 1
+                
+                latest_frame = frame
+                
+            except Empty:
+                break
+        
+        return latest_frame
         """Extract and align 112x112 face crop from GPUFrame using face landmarks."""
         try:
             y_tensor, uv_tensor = frame.get_tensors()

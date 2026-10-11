@@ -1,0 +1,8 @@
+{
+  "frontend": 8443,
+  "backend": 8000,
+  "mediamtx_api": 9997,
+  "mediamtx_rtsp": 8554,
+  "mediamtx_rtmp": 1935,
+  "mediamtx_hls": 8888
+}

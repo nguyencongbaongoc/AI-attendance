@@ -1,0 +1,39 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, mock-3.15.1, xdist-3.8.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 3 items
+
+test_reconnect_qualification.py::test_reconnect_single ERROR             [ 33%]
+test_reconnect_qualification.py::test_reconnect_dual PASSED              [ 66%]
+test_reconnect_qualification.py::test_forced_reconnect_during_stream PASSED [100%]
+
+=================================== ERRORS ====================================
+___________________ ERROR at setup of test_reconnect_single ___________________
+file C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\test_reconnect_qualification.py, line 27
+  def test_reconnect_single(camera_id: str, rtsp_url: str):
+E       fixture 'camera_id' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\test_reconnect_qualification.py:27
+============================== warnings summary ===============================
+test_reconnect_qualification.py::test_reconnect_dual
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_reconnect_qualification.py::test_reconnect_dual returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_reconnect_qualification.py::test_forced_reconnect_during_stream
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_reconnect_qualification.py::test_forced_reconnect_during_stream returned <class 'dict'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR test_reconnect_qualification.py::test_reconnect_single
+=================== 2 passed, 2 warnings, 1 error in 35.90s ===================

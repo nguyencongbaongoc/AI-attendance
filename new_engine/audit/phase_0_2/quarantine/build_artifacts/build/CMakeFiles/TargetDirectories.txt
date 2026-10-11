@@ -1,0 +1,4 @@
+C:/Users/Nguyen Cong Thong/Documents/AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE/build/CMakeFiles/nvcv_bridge.dir
+C:/Users/Nguyen Cong Thong/Documents/AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE/build/CMakeFiles/INSTALL.dir
+C:/Users/Nguyen Cong Thong/Documents/AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/Nguyen Cong Thong/Documents/AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE/build/CMakeFiles/ZERO_CHECK.dir

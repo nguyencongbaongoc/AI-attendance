@@ -1,0 +1,18 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, mock-3.15.1, xdist-3.8.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+tests/unit/test_fallback_mechanism.py::TestFallbackMechanism::test_backend_b_failure_falls_back_to_a PASSED [ 14%]
+tests/unit/test_fallback_mechanism.py::TestFallbackMechanism::test_backend_a_failure_no_fallback PASSED [ 28%]
+tests/unit/test_fallback_mechanism.py::TestFallbackMechanism::test_explicit_backend_a_no_fallback_attempt PASSED [ 42%]
+tests/unit/test_fallback_mechanism.py::TestFallbackMechanism::test_runtime_decode_error_no_fallback PASSED [ 57%]
+tests/unit/test_fallback_mechanism.py::TestFallbackMechanism::test_fallback_chain_correct PASSED [ 71%]
+tests/unit/test_fallback_mechanism.py::TestFallbackMechanism::test_fallback_disabled_primary_fails PASSED [ 85%]
+tests/unit/test_fallback_mechanism.py::TestVideoFrameIteratorFallback::test_fallback_emits_event PASSED [100%]
+
+============================== 7 passed in 4.46s ==============================

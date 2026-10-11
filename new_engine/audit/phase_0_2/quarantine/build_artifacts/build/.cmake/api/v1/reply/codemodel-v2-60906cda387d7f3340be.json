@@ -1,0 +1,844 @@
+{
+	"configurations" : 
+	[
+		{
+			"abstractTargets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Interpreter::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Interpreter-Debug-1203b19a7c8e449cb5d0.json",
+					"name" : "Python3::Interpreter",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::InterpreterMultiConfig::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__InterpreterMultiConfig-Debug-0f7fb7575a433199173e.json",
+					"name" : "Python3::InterpreterMultiConfig",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Module-Debug-03801f4f3f98031b318b.json",
+					"name" : "Python3::Module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Python::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Python-Debug-58ccfdaa5c8161e09676.json",
+					"name" : "Python3::Python",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::embed::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__embed-Debug-f3349725305dab6b2b14.json",
+					"name" : "pybind11::embed",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__headers-Debug-b5be31b5e71e83817138.json",
+					"name" : "pybind11::headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::lto::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__lto-Debug-5adf8b322bd399b808e7.json",
+					"name" : "pybind11::lto",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__module-Debug-b4e3b237e31313084be3.json",
+					"name" : "pybind11::module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::opt_size::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__opt_size-Debug-99fab0701e27064b0721.json",
+					"name" : "pybind11::opt_size",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::pybind11::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__pybind11-Debug-4379003392b914c366ac.json",
+					"name" : "pybind11::pybind11",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::pybind11_headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__pybind11_headers-Debug-4c9635ff64939610fc8b.json",
+					"name" : "pybind11::pybind11_headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::python_headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__python_headers-Debug-d1f2fdd34afe04f6423d.json",
+					"name" : "pybind11::python_headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::python_link_helper::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__python_link_helper-Debug-eb45de6b008bfe22226f.json",
+					"name" : "pybind11::python_link_helper",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::thin_lto::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__thin_lto-Debug-6aba60b6f9b53e619b8e.json",
+					"name" : "pybind11::thin_lto",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::windows_extras::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__windows_extras-Debug-48a9443176dea11c22ba.json",
+					"name" : "pybind11::windows_extras",
+					"projectIndex" : 0
+				}
+			],
+			"directories" : 
+			[
+				{
+					"abstractTargetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14
+					],
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-8ef9cacb60c08b2a5176.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"abstractTargetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "nvcv_bridge",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ALL_BUILD::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ALL_BUILD-Debug-7ed5aba94f5b3d277944.json",
+					"name" : "ALL_BUILD",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ZERO_CHECK-Debug-0375f840e4f36dc6d6d9.json",
+					"name" : "ZERO_CHECK",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "nvcv_bridge::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-nvcv_bridge-Debug-fe5a72e1d31e742e160d.json",
+					"name" : "nvcv_bridge",
+					"projectIndex" : 0
+				}
+			]
+		},
+		{
+			"abstractTargets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Interpreter::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Interpreter-Release-1203b19a7c8e449cb5d0.json",
+					"name" : "Python3::Interpreter",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::InterpreterMultiConfig::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__InterpreterMultiConfig-Release-0f7fb7575a433199173e.json",
+					"name" : "Python3::InterpreterMultiConfig",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Module-Release-03801f4f3f98031b318b.json",
+					"name" : "Python3::Module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Python::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Python-Release-58ccfdaa5c8161e09676.json",
+					"name" : "Python3::Python",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::embed::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__embed-Release-f3349725305dab6b2b14.json",
+					"name" : "pybind11::embed",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__headers-Release-b5be31b5e71e83817138.json",
+					"name" : "pybind11::headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::lto::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__lto-Release-5adf8b322bd399b808e7.json",
+					"name" : "pybind11::lto",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__module-Release-b4e3b237e31313084be3.json",
+					"name" : "pybind11::module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::opt_size::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__opt_size-Release-99fab0701e27064b0721.json",
+					"name" : "pybind11::opt_size",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::pybind11::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__pybind11-Release-4379003392b914c366ac.json",
+					"name" : "pybind11::pybind11",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::pybind11_headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__pybind11_headers-Release-4c9635ff64939610fc8b.json",
+					"name" : "pybind11::pybind11_headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::python_headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__python_headers-Release-d1f2fdd34afe04f6423d.json",
+					"name" : "pybind11::python_headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::python_link_helper::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__python_link_helper-Release-eb45de6b008bfe22226f.json",
+					"name" : "pybind11::python_link_helper",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::thin_lto::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__thin_lto-Release-6aba60b6f9b53e619b8e.json",
+					"name" : "pybind11::thin_lto",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::windows_extras::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__windows_extras-Release-48a9443176dea11c22ba.json",
+					"name" : "pybind11::windows_extras",
+					"projectIndex" : 0
+				}
+			],
+			"directories" : 
+			[
+				{
+					"abstractTargetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14
+					],
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Release-fc4aed320230d37696f9.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"abstractTargetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "nvcv_bridge",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ALL_BUILD::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ALL_BUILD-Release-7ed5aba94f5b3d277944.json",
+					"name" : "ALL_BUILD",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ZERO_CHECK-Release-0375f840e4f36dc6d6d9.json",
+					"name" : "ZERO_CHECK",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "nvcv_bridge::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-nvcv_bridge-Release-c7d171e603ca64d61a6a.json",
+					"name" : "nvcv_bridge",
+					"projectIndex" : 0
+				}
+			]
+		},
+		{
+			"abstractTargets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Interpreter::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Interpreter-MinSizeRel-1203b19a7c8e449cb5d0.json",
+					"name" : "Python3::Interpreter",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::InterpreterMultiConfig::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__InterpreterMultiConfig-MinSizeRel-0f7fb7575a433199173e.json",
+					"name" : "Python3::InterpreterMultiConfig",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Module-MinSizeRel-03801f4f3f98031b318b.json",
+					"name" : "Python3::Module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Python::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Python-MinSizeRel-58ccfdaa5c8161e09676.json",
+					"name" : "Python3::Python",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::embed::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__embed-MinSizeRel-f3349725305dab6b2b14.json",
+					"name" : "pybind11::embed",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__headers-MinSizeRel-b5be31b5e71e83817138.json",
+					"name" : "pybind11::headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::lto::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__lto-MinSizeRel-5adf8b322bd399b808e7.json",
+					"name" : "pybind11::lto",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__module-MinSizeRel-b4e3b237e31313084be3.json",
+					"name" : "pybind11::module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::opt_size::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__opt_size-MinSizeRel-99fab0701e27064b0721.json",
+					"name" : "pybind11::opt_size",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::pybind11::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__pybind11-MinSizeRel-4379003392b914c366ac.json",
+					"name" : "pybind11::pybind11",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::pybind11_headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__pybind11_headers-MinSizeRel-4c9635ff64939610fc8b.json",
+					"name" : "pybind11::pybind11_headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::python_headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__python_headers-MinSizeRel-d1f2fdd34afe04f6423d.json",
+					"name" : "pybind11::python_headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::python_link_helper::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__python_link_helper-MinSizeRel-eb45de6b008bfe22226f.json",
+					"name" : "pybind11::python_link_helper",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::thin_lto::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__thin_lto-MinSizeRel-6aba60b6f9b53e619b8e.json",
+					"name" : "pybind11::thin_lto",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::windows_extras::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__windows_extras-MinSizeRel-48a9443176dea11c22ba.json",
+					"name" : "pybind11::windows_extras",
+					"projectIndex" : 0
+				}
+			],
+			"directories" : 
+			[
+				{
+					"abstractTargetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14
+					],
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-MinSizeRel-e361d0d046af84afb7dd.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "MinSizeRel",
+			"projects" : 
+			[
+				{
+					"abstractTargetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "nvcv_bridge",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ALL_BUILD::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ALL_BUILD-MinSizeRel-7ed5aba94f5b3d277944.json",
+					"name" : "ALL_BUILD",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ZERO_CHECK-MinSizeRel-0375f840e4f36dc6d6d9.json",
+					"name" : "ZERO_CHECK",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "nvcv_bridge::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-nvcv_bridge-MinSizeRel-44c9236102813c4c9386.json",
+					"name" : "nvcv_bridge",
+					"projectIndex" : 0
+				}
+			]
+		},
+		{
+			"abstractTargets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Interpreter::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Interpreter-RelWithDebInfo-1203b19a7c8e449cb5d0.json",
+					"name" : "Python3::Interpreter",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::InterpreterMultiConfig::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__InterpreterMultiConfig-RelWithDebInfo-0f7fb7575a433199173e.json",
+					"name" : "Python3::InterpreterMultiConfig",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Module-RelWithDebInfo-03801f4f3f98031b318b.json",
+					"name" : "Python3::Module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Python3::Python::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Python3__Python-RelWithDebInfo-58ccfdaa5c8161e09676.json",
+					"name" : "Python3::Python",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::embed::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__embed-RelWithDebInfo-f3349725305dab6b2b14.json",
+					"name" : "pybind11::embed",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__headers-RelWithDebInfo-b5be31b5e71e83817138.json",
+					"name" : "pybind11::headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::lto::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__lto-RelWithDebInfo-5adf8b322bd399b808e7.json",
+					"name" : "pybind11::lto",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__module-RelWithDebInfo-b4e3b237e31313084be3.json",
+					"name" : "pybind11::module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::opt_size::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__opt_size-RelWithDebInfo-99fab0701e27064b0721.json",
+					"name" : "pybind11::opt_size",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::pybind11::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__pybind11-RelWithDebInfo-4379003392b914c366ac.json",
+					"name" : "pybind11::pybind11",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::pybind11_headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__pybind11_headers-RelWithDebInfo-4c9635ff64939610fc8b.json",
+					"name" : "pybind11::pybind11_headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::python_headers::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__python_headers-RelWithDebInfo-d1f2fdd34afe04f6423d.json",
+					"name" : "pybind11::python_headers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::python_link_helper::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__python_link_helper-RelWithDebInfo-eb45de6b008bfe22226f.json",
+					"name" : "pybind11::python_link_helper",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::thin_lto::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__thin_lto-RelWithDebInfo-6aba60b6f9b53e619b8e.json",
+					"name" : "pybind11::thin_lto",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pybind11::windows_extras::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pybind11__windows_extras-RelWithDebInfo-48a9443176dea11c22ba.json",
+					"name" : "pybind11::windows_extras",
+					"projectIndex" : 0
+				}
+			],
+			"directories" : 
+			[
+				{
+					"abstractTargetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14
+					],
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-RelWithDebInfo-26533ddbac8e62f60bd9.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "RelWithDebInfo",
+			"projects" : 
+			[
+				{
+					"abstractTargetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "nvcv_bridge",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ALL_BUILD::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ALL_BUILD-RelWithDebInfo-7ed5aba94f5b3d277944.json",
+					"name" : "ALL_BUILD",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ZERO_CHECK-RelWithDebInfo-0375f840e4f36dc6d6d9.json",
+					"name" : "ZERO_CHECK",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "nvcv_bridge::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-nvcv_bridge-RelWithDebInfo-e356d9dc72dcf8c05629.json",
+					"name" : "nvcv_bridge",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/Nguyen Cong Thong/Documents/AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE/build",
+		"source" : "C:/Users/Nguyen Cong Thong/Documents/AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE/artifacts/phase9_pynvcodec/nvcv_bridge"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 11
+	}
+}

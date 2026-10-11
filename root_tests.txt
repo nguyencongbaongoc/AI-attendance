@@ -1,0 +1,312 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, mock-3.15.1, xdist-3.8.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 21 items
+
+test_fallback_final.py::test_fallback_chain_structure PASSED             [  4%]
+test_fallback_final.py::test_normal_backend_b PASSED                     [  9%]
+test_fallback_final.py::test_explicit_backend_a PASSED                   [ 14%]
+test_fallback_final.py::test_fallback_on_failure PASSED                  [ 19%]
+test_fallback_final.py::test_no_oscillation PASSED                       [ 23%]
+test_fallback_final.py::test_fallback_reason_observable PASSED           [ 28%]
+test_fallback_final.py::test_selected_backend_observable PASSED          [ 33%]
+test_fallback_final.py::test_manual_backend_a PASSED                     [ 38%]
+test_fallback_final.py::test_fallback_disabled PASSED                    [ 42%]
+test_fallback_final.py::test_max_one_fallback_hop PASSED                 [ 47%]
+test_fallback_final.py::test_factory_boundary_no_bypass PASSED           [ 52%]
+test_dual_camera_backend_b.py::test_sequential_dual_camera PASSED        [ 57%]
+test_dual_camera_backend_b.py::test_concurrent_dual_camera PASSED        [ 61%]
+test_dual_camera_backend_b.py::test_sustained_dual_camera PASSED         [ 66%]
+test_reconnect_qualification.py::test_reconnect_dual PASSED              [ 71%]
+test_reconnect_qualification.py::test_forced_reconnect_during_stream FAILED [ 76%]
+test_phase94_fixes.py::test_L1_init_lock FAILED                          [ 80%]
+test_phase94_fixes.py::test_L4_frame_provenance FAILED                   [ 85%]
+test_phase94_fixes.py::test_L7_fallback_safety PASSED                    [ 90%]
+test_phase94_fixes.py::test_L1_concurrent_lock_contention PASSED         [ 95%]
+test_phase94_fixes.py::test_factory_call_chain FAILED                    [100%]
+
+================================== FAILURES ===================================
+_____________________ test_forced_reconnect_during_stream _____________________
+test_reconnect_qualification.py:171: in test_forced_reconnect_during_stream
+    info = backend.open()
+           ^^^^^^^^^^^^^^
+app\streaming\pynvvideocodec_backend.py:208: in open
+    self._open_demuxer()
+app\streaming\pynvvideocodec_backend.py:162: in _open_demuxer
+    self._container = av.open(
+av/container/core.py:578: in av.container.core.open
+    return InputContainer(
+    ^^^^^^^^^^^
+av/container/core.py:344: in av.container.core.Container.__cinit__
+    self.err_check(res)
+    ^^^^^^^^^^^
+av/container/core.py:369: in av.container.core.Container.err_check
+    return err_check(value, filename=self.name)
+    ^^^^^^^^^^^
+av/error.py:354: in av.error.err_check
+    raise cls(code, message, filename, log)
+    ^^^^^^^^^^^
+E   av.error.HTTPNotFoundError: [Errno 875574520] Server returned 404 Not Found: 'rtsp://localhost:8554/live/cam1'
+---------------------------- Captured stdout call -----------------------------
+2026-10-09 04:39:25 | INFO     | test_reconnect_qualification | ============================================================
+2026-10-09 04:39:25 | INFO     | test_reconnect_qualification | FORCED RECONNECT DURING STREAM TEST
+2026-10-09 04:39:25 | INFO     | test_reconnect_qualification | ============================================================
+2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Attempting to create pynvvideocodec backend for CAM1
+2026-10-09 04:39:25 | WARNING  | app.streaming.cuda_context_manager | SharedContextManager(GPU 0): Stream for CAM1 already exists
+2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Injected shared context 1451560886576 and stream 1451505674064 for CAM1
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Using shared context=1451560886576, stream=1451505674064
+[INFO ][04:39:25] enabling stream aware allocations!
+
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Decoder created with context=1451560886576, stream=1451505674064
+2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Successfully created pynvvideocodec backend for CAM1
+2026-10-09 04:39:25 | INFO     | test_reconnect_qualification | [CAM1] Initial backend: pynvvideocodec
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Opening demuxer for rtsp://localhost:8554/live/cam1
+------------------------------ Captured log call ------------------------------
+INFO     test_reconnect_qualification:test_reconnect_qualification.py:148 ============================================================
+INFO     test_reconnect_qualification:test_reconnect_qualification.py:149 FORCED RECONNECT DURING STREAM TEST
+INFO     test_reconnect_qualification:test_reconnect_qualification.py:150 ============================================================
+INFO     app.streaming.decoder_backend:decoder_backend.py:387 DecoderBackendFactory: Attempting to create pynvvideocodec backend for CAM1
+WARNING  app.streaming.cuda_context_manager:cuda_context_manager.py:215 SharedContextManager(GPU 0): Stream for CAM1 already exists
+INFO     app.streaming.decoder_backend:decoder_backend.py:403 DecoderBackendFactory: Injected shared context 1451560886576 and stream 1451505674064 for CAM1
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:64 PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:75 PyNvVideoCodecBackend(CAM1): Using shared context=1451560886576, stream=1451505674064
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:134 PyNvVideoCodecBackend(CAM1): Decoder created with context=1451560886576, stream=1451505674064
+INFO     app.streaming.decoder_backend:decoder_backend.py:410 DecoderBackendFactory: Successfully created pynvvideocodec backend for CAM1
+INFO     test_reconnect_qualification:test_reconnect_qualification.py:170 [CAM1] Initial backend: pynvvideocodec
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:159 PyNvVideoCodecBackend(CAM1): Opening demuxer for rtsp://localhost:8554/live/cam1
+______________________________ test_L1_init_lock ______________________________
+test_phase94_fixes.py:54: in test_L1_init_lock
+    info1 = backend1.open()
+            ^^^^^^^^^^^^^^^
+app\streaming\pynvvideocodec_backend.py:208: in open
+    self._open_demuxer()
+app\streaming\pynvvideocodec_backend.py:162: in _open_demuxer
+    self._container = av.open(
+av/container/core.py:578: in av.container.core.open
+    return InputContainer(
+    ^^^^^^^^^^^
+av/container/core.py:344: in av.container.core.Container.__cinit__
+    self.err_check(res)
+    ^^^^^^^^^^^
+av/container/core.py:369: in av.container.core.Container.err_check
+    return err_check(value, filename=self.name)
+    ^^^^^^^^^^^
+av/error.py:354: in av.error.err_check
+    raise cls(code, message, filename, log)
+    ^^^^^^^^^^^
+E   av.error.HTTPNotFoundError: [Errno 875574520] Server returned 404 Not Found: 'rtsp://localhost:8554/live/cam1'
+---------------------------- Captured stdout call -----------------------------
+2026-10-09 04:39:25 | INFO     | test_phase94_fixes | ============================================================
+2026-10-09 04:39:25 | INFO     | test_phase94_fixes | L1 TEST: Per-GPU Initialization Lock
+2026-10-09 04:39:25 | INFO     | test_phase94_fixes | ============================================================
+2026-10-09 04:39:25 | INFO     | test_phase94_fixes | Test 1: Sequential init (lock serializes)
+2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Attempting to create pynvvideocodec backend for CAM1
+2026-10-09 04:39:25 | WARNING  | app.streaming.cuda_context_manager | SharedContextManager(GPU 0): Stream for CAM1 already exists
+2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Injected shared context 1451560886576 and stream 1451505674064 for CAM1
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Using shared context=1451560886576, stream=1451505674064
+[INFO ][04:39:25] enabling stream aware allocations!
+
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Decoder created with context=1451560886576, stream=1451505674064
+2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Successfully created pynvvideocodec backend for CAM1
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Opening demuxer for rtsp://localhost:8554/live/cam1
+------------------------------ Captured log call ------------------------------
+INFO     test_phase94_fixes:test_phase94_fixes.py:33 ============================================================
+INFO     test_phase94_fixes:test_phase94_fixes.py:34 L1 TEST: Per-GPU Initialization Lock
+INFO     test_phase94_fixes:test_phase94_fixes.py:35 ============================================================
+INFO     test_phase94_fixes:test_phase94_fixes.py:50 Test 1: Sequential init (lock serializes)
+INFO     app.streaming.decoder_backend:decoder_backend.py:387 DecoderBackendFactory: Attempting to create pynvvideocodec backend for CAM1
+WARNING  app.streaming.cuda_context_manager:cuda_context_manager.py:215 SharedContextManager(GPU 0): Stream for CAM1 already exists
+INFO     app.streaming.decoder_backend:decoder_backend.py:403 DecoderBackendFactory: Injected shared context 1451560886576 and stream 1451505674064 for CAM1
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:64 PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:75 PyNvVideoCodecBackend(CAM1): Using shared context=1451560886576, stream=1451505674064
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:134 PyNvVideoCodecBackend(CAM1): Decoder created with context=1451560886576, stream=1451505674064
+INFO     app.streaming.decoder_backend:decoder_backend.py:410 DecoderBackendFactory: Successfully created pynvvideocodec backend for CAM1
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:159 PyNvVideoCodecBackend(CAM1): Opening demuxer for rtsp://localhost:8554/live/cam1
+__________________________ test_L4_frame_provenance ___________________________
+test_phase94_fixes.py:95: in test_L4_frame_provenance
+    info = backend.open()
+           ^^^^^^^^^^^^^^
+app\streaming\pynvvideocodec_backend.py:208: in open
+    self._open_demuxer()
+app\streaming\pynvvideocodec_backend.py:162: in _open_demuxer
+    self._container = av.open(
+av/container/core.py:578: in av.container.core.open
+    return InputContainer(
+    ^^^^^^^^^^^
+av/container/core.py:344: in av.container.core.Container.__cinit__
+    self.err_check(res)
+    ^^^^^^^^^^^
+av/container/core.py:369: in av.container.core.Container.err_check
+    return err_check(value, filename=self.name)
+    ^^^^^^^^^^^
+av/error.py:354: in av.error.err_check
+    raise cls(code, message, filename, log)
+    ^^^^^^^^^^^
+E   av.error.HTTPNotFoundError: [Errno 875574520] Server returned 404 Not Found: 'rtsp://localhost:8554/live/cam1'
+---------------------------- Captured stdout call -----------------------------
+2026-10-09 04:39:25 | INFO     | test_phase94_fixes | ============================================================
+2026-10-09 04:39:25 | INFO     | test_phase94_fixes | L4 TEST: Frame Provenance (memory_owner)
+2026-10-09 04:39:25 | INFO     | test_phase94_fixes | ============================================================
+2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Attempting to create pynvvideocodec backend for CAM1
+2026-10-09 04:39:25 | WARNING  | app.streaming.cuda_context_manager | SharedContextManager(GPU 0): Stream for CAM1 already exists
+2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Injected shared context 1451560886576 and stream 1451505674064 for CAM1
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Using shared context=1451560886576, stream=1451505674064
+[INFO ][04:39:25] enabling stream aware allocations!
+
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Decoder created with context=1451560886576, stream=1451505674064
+2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Successfully created pynvvideocodec backend for CAM1
+2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Opening demuxer for rtsp://localhost:8554/live/cam1
+------------------------------ Captured log call ------------------------------
+INFO     test_phase94_fixes:test_phase94_fixes.py:75 ============================================================
+INFO     test_phase94_fixes:test_phase94_fixes.py:76 L4 TEST: Frame Provenance (memory_owner)
+INFO     test_phase94_fixes:test_phase94_fixes.py:77 ============================================================
+INFO     app.streaming.decoder_backend:decoder_backend.py:387 DecoderBackendFactory: Attempting to create pynvvideocodec backend for CAM1
+WARNING  app.streaming.cuda_context_manager:cuda_context_manager.py:215 SharedContextManager(GPU 0): Stream for CAM1 already exists
+INFO     app.streaming.decoder_backend:decoder_backend.py:403 DecoderBackendFactory: Injected shared context 1451560886576 and stream 1451505674064 for CAM1
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:64 PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:75 PyNvVideoCodecBackend(CAM1): Using shared context=1451560886576, stream=1451505674064
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:134 PyNvVideoCodecBackend(CAM1): Decoder created with context=1451560886576, stream=1451505674064
+INFO     app.streaming.decoder_backend:decoder_backend.py:410 DecoderBackendFactory: Successfully created pynvvideocodec backend for CAM1
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:159 PyNvVideoCodecBackend(CAM1): Opening demuxer for rtsp://localhost:8554/live/cam1
+___________________________ test_factory_call_chain ___________________________
+test_phase94_fixes.py:308: in test_factory_call_chain
+    info = backend.open()
+           ^^^^^^^^^^^^^^
+app\streaming\pynvvideocodec_backend.py:208: in open
+    self._open_demuxer()
+app\streaming\pynvvideocodec_backend.py:162: in _open_demuxer
+    self._container = av.open(
+av/container/core.py:578: in av.container.core.open
+    return InputContainer(
+    ^^^^^^^^^^^
+av/container/core.py:344: in av.container.core.Container.__cinit__
+    self.err_check(res)
+    ^^^^^^^^^^^
+av/container/core.py:369: in av.container.core.Container.err_check
+    return err_check(value, filename=self.name)
+    ^^^^^^^^^^^
+av/error.py:354: in av.error.err_check
+    raise cls(code, message, filename, log)
+    ^^^^^^^^^^^
+E   av.error.HTTPNotFoundError: [Errno 875574520] Server returned 404 Not Found: 'rtsp://localhost:8554/live/cam1'
+---------------------------- Captured stdout call -----------------------------
+2026-10-09 04:39:25 | INFO     | test_phase94_fixes | ============================================================\n2026-10-09 04:39:25 | INFO     | test_phase94_fixes | FACTORY CALL CHAIN VERIFICATION\n2026-10-09 04:39:25 | INFO     | test_phase94_fixes | ============================================================\n2026-10-09 04:39:25 | INFO     | test_phase94_fixes | 1. DecoderBackendFactory.create_with_fallback()\n2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Attempting to create pynvvideocodec backend for CAM1\n2026-10-09 04:39:25 | WARNING  | app.streaming.cuda_context_manager | SharedContextManager(GPU 0): Stream for CAM1 already exists\n2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Injected shared context 1451560886576 and stream 1451505675104 for CAM1\n2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0\n2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Using shared context=1451560886576, stream=1451505675104\n[INFO ][04:39:25] enabling stream aware allocations!\n\n2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Decoder created with context=1451560886576, stream=1451505675104\n2026-10-09 04:39:25 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Successfully created pynvvideocodec backend for CAM1\n2026-10-09 04:39:25 | INFO     | test_phase94_fixes |    \u2192 Backend: pynvvideocodec\n2026-10-09 04:39:25 | INFO     | test_phase94_fixes | 2. Backend.initialize()\n2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0\n2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Using shared context=1451560886576, stream=1451505675104\n[INFO ][04:39:25] enabling stream aware allocations!\n\n2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Decoder created with context=1451560886576, stream=1451505675104\n2026-10-09 04:39:25 | INFO     | test_phase94_fixes |    \u2192 Decoder created: PyNvDecoder\n2026-10-09 04:39:25 | INFO     | test_phase94_fixes | 3. Backend.open()\n2026-10-09 04:39:25 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Opening demuxer for rtsp://localhost:8554/live/cam1
+------------------------------ Captured log call ------------------------------
+INFO     test_phase94_fixes:test_phase94_fixes.py:276 ============================================================\nINFO     test_phase94_fixes:test_phase94_fixes.py:277 FACTORY CALL CHAIN VERIFICATION\nINFO     test_phase94_fixes:test_phase94_fixes.py:278 ============================================================\nINFO     test_phase94_fixes:test_phase94_fixes.py:294 1. DecoderBackendFactory.create_with_fallback()\nINFO     app.streaming.decoder_backend:decoder_backend.py:387 DecoderBackendFactory: Attempting to create pynvvideocodec backend for CAM1\nWARNING  app.streaming.cuda_context_manager:cuda_context_manager.py:215 SharedContextManager(GPU 0): Stream for CAM1 already exists\nINFO     app.streaming.decoder_backend:decoder_backend.py:403 DecoderBackendFactory: Injected shared context 1451560886576 and stream 1451505675104 for CAM1\nINFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:64 PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0\nINFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:75 PyNvVideoCodecBackend(CAM1): Using shared context=1451560886576, stream=1451505675104\nINFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:134 PyNvVideoCodecBackend(CAM1): Decoder created with context=1451560886576, stream=1451505675104\nINFO     app.streaming.decoder_backend:decoder_backend.py:410 DecoderBackendFactory: Successfully created pynvvideocodec backend for CAM1\nINFO     test_phase94_fixes:test_phase94_fixes.py:298    \u2192 Backend: pynvvideocodec\nINFO     test_phase94_fixes:test_phase94_fixes.py:302 2. Backend.initialize()\nINFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:64 PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0\nINFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:75 PyNvVideoCodecBackend(CAM1): Using shared context=1451560886576, stream=1451505675104\nINFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:134 PyNvVideoCodecBackend(CAM1): Decoder created with context=1451560886576, stream=1451505675104\nINFO     test_phase94_fixes:test_phase94_fixes.py:304    \u2192 Decoder created: PyNvDecoder\nINFO     test_phase94_fixes:test_phase94_fixes.py:307 3. Backend.open()\nINFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:159 PyNvVideoCodecBackend(CAM1): Opening demuxer for rtsp://localhost:8554/live/cam1
+============================== warnings summary ===============================
+test_fallback_final.py::test_fallback_chain_structure
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_fallback_chain_structure returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_fallback_final.py::test_normal_backend_b
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_normal_backend_b returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_fallback_final.py::test_explicit_backend_a
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_explicit_backend_a returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_fallback_final.py::test_fallback_on_failure
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_fallback_on_failure returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_fallback_final.py::test_no_oscillation
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_no_oscillation returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_fallback_final.py::test_fallback_reason_observable
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_fallback_reason_observable returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_fallback_final.py::test_selected_backend_observable
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_selected_backend_observable returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_fallback_final.py::test_manual_backend_a
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_manual_backend_a returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_fallback_final.py::test_fallback_disabled
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_fallback_disabled returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_fallback_final.py::test_max_one_fallback_hop
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_max_one_fallback_hop returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_fallback_final.py::test_factory_boundary_no_bypass
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_fallback_final.py::test_factory_boundary_no_bypass returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_dual_camera_backend_b.py::test_sequential_dual_camera
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_dual_camera_backend_b.py::test_sequential_dual_camera returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_dual_camera_backend_b.py::test_concurrent_dual_camera
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_dual_camera_backend_b.py::test_concurrent_dual_camera returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_dual_camera_backend_b.py::test_sustained_dual_camera
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_dual_camera_backend_b.py::test_sustained_dual_camera returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_reconnect_qualification.py::test_reconnect_dual
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_reconnect_qualification.py::test_reconnect_dual returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_phase94_fixes.py::test_L7_fallback_safety
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_phase94_fixes.py::test_L7_fallback_safety returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_phase94_fixes.py::test_L1_concurrent_lock_contention
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_phase94_fixes.py::test_L1_concurrent_lock_contention returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED test_reconnect_qualification.py::test_forced_reconnect_during_stream
+FAILED test_phase94_fixes.py::test_L1_init_lock - av.error.HTTPNotFoundError:...
+FAILED test_phase94_fixes.py::test_L4_frame_provenance - av.error.HTTPNotFoun...
+FAILED test_phase94_fixes.py::test_factory_call_chain - av.error.HTTPNotFound...
+============ 4 failed, 17 passed, 17 warnings in 68.93s (0:01:08) =============

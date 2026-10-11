@@ -1,0 +1,2 @@
+error: unknown command 'analyze'
+Run 'graphify --help' for usage.

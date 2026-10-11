@@ -1,0 +1,19 @@
+# Base requirements for Windows native AI attendance system
+# Python version: 3.11+
+
+# Core utilities
+pydantic>=2.5.0,<3.0.0
+pyyaml>=6.0.1,<7.0.0
+python-dotenv>=1.0.0,<2.0.0
+
+# Logging
+structlog>=24.1.0,<25.0.0
+
+# Testing
+pytest>=7.4.0,<8.0.0
+pytest-cov>=4.1.0,<5.0.0
+pytest-mock>=3.12.0,<4.0.0
+
+# Type checking
+mypy>=1.7.0,<2.0.0
+types-PyYAML>=6.0.12,<7.0.0

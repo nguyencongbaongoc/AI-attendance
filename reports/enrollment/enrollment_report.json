@@ -1,0 +1,1166 @@
+{
+  "summary": {
+    "total_persons": 3,
+    "total_source_images": 9,
+    "accepted_images": 9,
+    "rejected_images": 81,
+    "embeddings_generated": 9,
+    "embedding_dimension": 512,
+    "database_version": "1.0",
+    "model_identifier": "arcface/glintr100.onnx",
+    "preprocessing_version": "1.0",
+    "source_dataset": "data",
+    "generation_timestamp": "2026-08-23T14:01:34.967402Z"
+  },
+  "rejection_reasons": {
+    "processing_error: Crop too small: 30x45 < 32x32": 9,
+    "processing_error: Crop too small: 30x62 < 32x32": 9,
+    "processing_error: Crop too small: 26x44 < 32x32": 9,
+    "processing_error: Crop too small: 22x37 < 32x32": 9,
+    "duplicate: similarity=0.986082 >= 0.98": 18,
+    "processing_error: Crop too small: 28x96 < 32x32": 9,
+    "processing_error: Crop too small: 26x55 < 32x32": 9,
+    "processing_error: Crop too small: 26x50 < 32x32": 9
+  },
+  "person_embedding_counts": {
+    "HS001": 3,
+    "HS002": 3,
+    "HS003": 3
+  },
+  "rejections": [
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x45 < 32x32",
+      "detection_confidence": 0.7933417558670044,
+      "bbox": [
+        175.61573791503906,
+        34.273616790771484,
+        204.9316864013672,
+        78.76435852050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x62 < 32x32",
+      "detection_confidence": 0.7162570357322693,
+      "bbox": [
+        157.13003540039062,
+        39.5817985534668,
+        186.57960510253906,
+        100.90498352050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x44 < 32x32",
+      "detection_confidence": 0.6441695094108582,
+      "bbox": [
+        205.17123413085938,
+        239.9641876220703,
+        230.49942016601562,
+        282.30487060546875
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 22x37 < 32x32",
+      "detection_confidence": 0.6155738234519958,
+      "bbox": [
+        176.66380310058594,
+        58.30072021484375,
+        197.51358032226562,
+        94.13578796386719
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.6136693954467773,
+      "bbox": [
+        130.89089965820312,
+        56.111228942871094,
+        161.87417602539062,
+        122.22755432128906
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 28x96 < 32x32",
+      "detection_confidence": 0.5217305421829224,
+      "bbox": [
+        327.2916564941406,
+        210.54495239257812,
+        354.147705078125,
+        305.7066650390625
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x55 < 32x32",
+      "detection_confidence": 0.5180282592773438,
+      "bbox": [
+        87.6631088256836,
+        345.93853759765625,
+        112.58866119384766,
+        399.99310302734375
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x50 < 32x32",
+      "detection_confidence": 0.5147500038146973,
+      "bbox": [
+        283.2394714355469,
+        338.57330322265625,
+        308.02862548828125,
+        387.7549133300781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.509371280670166,
+      "bbox": [
+        309.01666259765625,
+        240.9801025390625,
+        340.512939453125,
+        280.80987548828125
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x45 < 32x32",
+      "detection_confidence": 0.7933417558670044,
+      "bbox": [
+        175.61573791503906,
+        34.273616790771484,
+        204.9316864013672,
+        78.76435852050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x62 < 32x32",
+      "detection_confidence": 0.7162570357322693,
+      "bbox": [
+        157.13003540039062,
+        39.5817985534668,
+        186.57960510253906,
+        100.90498352050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x44 < 32x32",
+      "detection_confidence": 0.6441695094108582,
+      "bbox": [
+        205.17123413085938,
+        239.9641876220703,
+        230.49942016601562,
+        282.30487060546875
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 22x37 < 32x32",
+      "detection_confidence": 0.6155738234519958,
+      "bbox": [
+        176.66380310058594,
+        58.30072021484375,
+        197.51358032226562,
+        94.13578796386719
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.6136693954467773,
+      "bbox": [
+        130.89089965820312,
+        56.111228942871094,
+        161.87417602539062,
+        122.22755432128906
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 28x96 < 32x32",
+      "detection_confidence": 0.5217305421829224,
+      "bbox": [
+        327.2916564941406,
+        210.54495239257812,
+        354.147705078125,
+        305.7066650390625
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x55 < 32x32",
+      "detection_confidence": 0.5180282592773438,
+      "bbox": [
+        87.6631088256836,
+        345.93853759765625,
+        112.58866119384766,
+        399.99310302734375
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x50 < 32x32",
+      "detection_confidence": 0.5147500038146973,
+      "bbox": [
+        283.2394714355469,
+        338.57330322265625,
+        308.02862548828125,
+        387.7549133300781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.509371280670166,
+      "bbox": [
+        309.01666259765625,
+        240.9801025390625,
+        340.512939453125,
+        280.80987548828125
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x45 < 32x32",
+      "detection_confidence": 0.7933417558670044,
+      "bbox": [
+        175.61573791503906,
+        34.273616790771484,
+        204.9316864013672,
+        78.76435852050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x62 < 32x32",
+      "detection_confidence": 0.7162570357322693,
+      "bbox": [
+        157.13003540039062,
+        39.5817985534668,
+        186.57960510253906,
+        100.90498352050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x44 < 32x32",
+      "detection_confidence": 0.6441695094108582,
+      "bbox": [
+        205.17123413085938,
+        239.9641876220703,
+        230.49942016601562,
+        282.30487060546875
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 22x37 < 32x32",
+      "detection_confidence": 0.6155738234519958,
+      "bbox": [
+        176.66380310058594,
+        58.30072021484375,
+        197.51358032226562,
+        94.13578796386719
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.6136693954467773,
+      "bbox": [
+        130.89089965820312,
+        56.111228942871094,
+        161.87417602539062,
+        122.22755432128906
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 28x96 < 32x32",
+      "detection_confidence": 0.5217305421829224,
+      "bbox": [
+        327.2916564941406,
+        210.54495239257812,
+        354.147705078125,
+        305.7066650390625
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x55 < 32x32",
+      "detection_confidence": 0.5180282592773438,
+      "bbox": [
+        87.6631088256836,
+        345.93853759765625,
+        112.58866119384766,
+        399.99310302734375
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x50 < 32x32",
+      "detection_confidence": 0.5147500038146973,
+      "bbox": [
+        283.2394714355469,
+        338.57330322265625,
+        308.02862548828125,
+        387.7549133300781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS001",
+      "source_image": "data\\enrollment_test\\HS001\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.509371280670166,
+      "bbox": [
+        309.01666259765625,
+        240.9801025390625,
+        340.512939453125,
+        280.80987548828125
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x45 < 32x32",
+      "detection_confidence": 0.7933417558670044,
+      "bbox": [
+        175.61573791503906,
+        34.273616790771484,
+        204.9316864013672,
+        78.76435852050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x62 < 32x32",
+      "detection_confidence": 0.7162570357322693,
+      "bbox": [
+        157.13003540039062,
+        39.5817985534668,
+        186.57960510253906,
+        100.90498352050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x44 < 32x32",
+      "detection_confidence": 0.6441695094108582,
+      "bbox": [
+        205.17123413085938,
+        239.9641876220703,
+        230.49942016601562,
+        282.30487060546875
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 22x37 < 32x32",
+      "detection_confidence": 0.6155738234519958,
+      "bbox": [
+        176.66380310058594,
+        58.30072021484375,
+        197.51358032226562,
+        94.13578796386719
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.6136693954467773,
+      "bbox": [
+        130.89089965820312,
+        56.111228942871094,
+        161.87417602539062,
+        122.22755432128906
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 28x96 < 32x32",
+      "detection_confidence": 0.5217305421829224,
+      "bbox": [
+        327.2916564941406,
+        210.54495239257812,
+        354.147705078125,
+        305.7066650390625
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x55 < 32x32",
+      "detection_confidence": 0.5180282592773438,
+      "bbox": [
+        87.6631088256836,
+        345.93853759765625,
+        112.58866119384766,
+        399.99310302734375
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x50 < 32x32",
+      "detection_confidence": 0.5147500038146973,
+      "bbox": [
+        283.2394714355469,
+        338.57330322265625,
+        308.02862548828125,
+        387.7549133300781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.509371280670166,
+      "bbox": [
+        309.01666259765625,
+        240.9801025390625,
+        340.512939453125,
+        280.80987548828125
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x45 < 32x32",
+      "detection_confidence": 0.7933417558670044,
+      "bbox": [
+        175.61573791503906,
+        34.273616790771484,
+        204.9316864013672,
+        78.76435852050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x62 < 32x32",
+      "detection_confidence": 0.7162570357322693,
+      "bbox": [
+        157.13003540039062,
+        39.5817985534668,
+        186.57960510253906,
+        100.90498352050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x44 < 32x32",
+      "detection_confidence": 0.6441695094108582,
+      "bbox": [
+        205.17123413085938,
+        239.9641876220703,
+        230.49942016601562,
+        282.30487060546875
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 22x37 < 32x32",
+      "detection_confidence": 0.6155738234519958,
+      "bbox": [
+        176.66380310058594,
+        58.30072021484375,
+        197.51358032226562,
+        94.13578796386719
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.6136693954467773,
+      "bbox": [
+        130.89089965820312,
+        56.111228942871094,
+        161.87417602539062,
+        122.22755432128906
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 28x96 < 32x32",
+      "detection_confidence": 0.5217305421829224,
+      "bbox": [
+        327.2916564941406,
+        210.54495239257812,
+        354.147705078125,
+        305.7066650390625
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x55 < 32x32",
+      "detection_confidence": 0.5180282592773438,
+      "bbox": [
+        87.6631088256836,
+        345.93853759765625,
+        112.58866119384766,
+        399.99310302734375
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x50 < 32x32",
+      "detection_confidence": 0.5147500038146973,
+      "bbox": [
+        283.2394714355469,
+        338.57330322265625,
+        308.02862548828125,
+        387.7549133300781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.509371280670166,
+      "bbox": [
+        309.01666259765625,
+        240.9801025390625,
+        340.512939453125,
+        280.80987548828125
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x45 < 32x32",
+      "detection_confidence": 0.7933417558670044,
+      "bbox": [
+        175.61573791503906,
+        34.273616790771484,
+        204.9316864013672,
+        78.76435852050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x62 < 32x32",
+      "detection_confidence": 0.7162570357322693,
+      "bbox": [
+        157.13003540039062,
+        39.5817985534668,
+        186.57960510253906,
+        100.90498352050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x44 < 32x32",
+      "detection_confidence": 0.6441695094108582,
+      "bbox": [
+        205.17123413085938,
+        239.9641876220703,
+        230.49942016601562,
+        282.30487060546875
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 22x37 < 32x32",
+      "detection_confidence": 0.6155738234519958,
+      "bbox": [
+        176.66380310058594,
+        58.30072021484375,
+        197.51358032226562,
+        94.13578796386719
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.6136693954467773,
+      "bbox": [
+        130.89089965820312,
+        56.111228942871094,
+        161.87417602539062,
+        122.22755432128906
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 28x96 < 32x32",
+      "detection_confidence": 0.5217305421829224,
+      "bbox": [
+        327.2916564941406,
+        210.54495239257812,
+        354.147705078125,
+        305.7066650390625
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x55 < 32x32",
+      "detection_confidence": 0.5180282592773438,
+      "bbox": [
+        87.6631088256836,
+        345.93853759765625,
+        112.58866119384766,
+        399.99310302734375
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x50 < 32x32",
+      "detection_confidence": 0.5147500038146973,
+      "bbox": [
+        283.2394714355469,
+        338.57330322265625,
+        308.02862548828125,
+        387.7549133300781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS002",
+      "source_image": "data\\enrollment_test\\HS002\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.509371280670166,
+      "bbox": [
+        309.01666259765625,
+        240.9801025390625,
+        340.512939453125,
+        280.80987548828125
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x45 < 32x32",
+      "detection_confidence": 0.7933417558670044,
+      "bbox": [
+        175.61573791503906,
+        34.273616790771484,
+        204.9316864013672,
+        78.76435852050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x62 < 32x32",
+      "detection_confidence": 0.7162570357322693,
+      "bbox": [
+        157.13003540039062,
+        39.5817985534668,
+        186.57960510253906,
+        100.90498352050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x44 < 32x32",
+      "detection_confidence": 0.6441695094108582,
+      "bbox": [
+        205.17123413085938,
+        239.9641876220703,
+        230.49942016601562,
+        282.30487060546875
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 22x37 < 32x32",
+      "detection_confidence": 0.6155738234519958,
+      "bbox": [
+        176.66380310058594,
+        58.30072021484375,
+        197.51358032226562,
+        94.13578796386719
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.6136693954467773,
+      "bbox": [
+        130.89089965820312,
+        56.111228942871094,
+        161.87417602539062,
+        122.22755432128906
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 28x96 < 32x32",
+      "detection_confidence": 0.5217305421829224,
+      "bbox": [
+        327.2916564941406,
+        210.54495239257812,
+        354.147705078125,
+        305.7066650390625
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x55 < 32x32",
+      "detection_confidence": 0.5180282592773438,
+      "bbox": [
+        87.6631088256836,
+        345.93853759765625,
+        112.58866119384766,
+        399.99310302734375
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x50 < 32x32",
+      "detection_confidence": 0.5147500038146973,
+      "bbox": [
+        283.2394714355469,
+        338.57330322265625,
+        308.02862548828125,
+        387.7549133300781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_001.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.509371280670166,
+      "bbox": [
+        309.01666259765625,
+        240.9801025390625,
+        340.512939453125,
+        280.80987548828125
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x45 < 32x32",
+      "detection_confidence": 0.7933417558670044,
+      "bbox": [
+        175.61573791503906,
+        34.273616790771484,
+        204.9316864013672,
+        78.76435852050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x62 < 32x32",
+      "detection_confidence": 0.7162570357322693,
+      "bbox": [
+        157.13003540039062,
+        39.5817985534668,
+        186.57960510253906,
+        100.90498352050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x44 < 32x32",
+      "detection_confidence": 0.6441695094108582,
+      "bbox": [
+        205.17123413085938,
+        239.9641876220703,
+        230.49942016601562,
+        282.30487060546875
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 22x37 < 32x32",
+      "detection_confidence": 0.6155738234519958,
+      "bbox": [
+        176.66380310058594,
+        58.30072021484375,
+        197.51358032226562,
+        94.13578796386719
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.6136693954467773,
+      "bbox": [
+        130.89089965820312,
+        56.111228942871094,
+        161.87417602539062,
+        122.22755432128906
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 28x96 < 32x32",
+      "detection_confidence": 0.5217305421829224,
+      "bbox": [
+        327.2916564941406,
+        210.54495239257812,
+        354.147705078125,
+        305.7066650390625
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x55 < 32x32",
+      "detection_confidence": 0.5180282592773438,
+      "bbox": [
+        87.6631088256836,
+        345.93853759765625,
+        112.58866119384766,
+        399.99310302734375
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x50 < 32x32",
+      "detection_confidence": 0.5147500038146973,
+      "bbox": [
+        283.2394714355469,
+        338.57330322265625,
+        308.02862548828125,
+        387.7549133300781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_002.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.509371280670166,
+      "bbox": [
+        309.01666259765625,
+        240.9801025390625,
+        340.512939453125,
+        280.80987548828125
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x45 < 32x32",
+      "detection_confidence": 0.7933417558670044,
+      "bbox": [
+        175.61573791503906,
+        34.273616790771484,
+        204.9316864013672,
+        78.76435852050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 30x62 < 32x32",
+      "detection_confidence": 0.7162570357322693,
+      "bbox": [
+        157.13003540039062,
+        39.5817985534668,
+        186.57960510253906,
+        100.90498352050781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x44 < 32x32",
+      "detection_confidence": 0.6441695094108582,
+      "bbox": [
+        205.17123413085938,
+        239.9641876220703,
+        230.49942016601562,
+        282.30487060546875
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 22x37 < 32x32",
+      "detection_confidence": 0.6155738234519958,
+      "bbox": [
+        176.66380310058594,
+        58.30072021484375,
+        197.51358032226562,
+        94.13578796386719
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.6136693954467773,
+      "bbox": [
+        130.89089965820312,
+        56.111228942871094,
+        161.87417602539062,
+        122.22755432128906
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 28x96 < 32x32",
+      "detection_confidence": 0.5217305421829224,
+      "bbox": [
+        327.2916564941406,
+        210.54495239257812,
+        354.147705078125,
+        305.7066650390625
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x55 < 32x32",
+      "detection_confidence": 0.5180282592773438,
+      "bbox": [
+        87.6631088256836,
+        345.93853759765625,
+        112.58866119384766,
+        399.99310302734375
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "processing_error: Crop too small: 26x50 < 32x32",
+      "detection_confidence": 0.5147500038146973,
+      "bbox": [
+        283.2394714355469,
+        338.57330322265625,
+        308.02862548828125,
+        387.7549133300781
+      ],
+      "face_count": 0
+    },
+    {
+      "person_id": "HS003",
+      "source_image": "data\\enrollment_test\\HS003\\img_003.jpg",
+      "status": "REJECTED",
+      "reason": "duplicate: similarity=0.986082 >= 0.98",
+      "detection_confidence": 0.509371280670166,
+      "bbox": [
+        309.01666259765625,
+        240.9801025390625,
+        340.512939453125,
+        280.80987548828125
+      ],
+      "face_count": 0
+    }
+  ]
+}

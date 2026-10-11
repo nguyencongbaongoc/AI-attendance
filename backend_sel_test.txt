@@ -1,0 +1,24 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, mock-3.15.1, xdist-3.8.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 13 items
+
+tests/unit/test_backend_selection.py::TestDecoderBackendFactory::test_available_backends PASSED [  7%]
+tests/unit/test_backend_selection.py::TestDecoderBackendFactory::test_unknown_backend_raises PASSED [ 15%]
+tests/unit/test_backend_selection.py::TestDecoderBackendFactory::test_create_pyav_backend PASSED [ 23%]
+tests/unit/test_backend_selection.py::TestDecoderBackendFactory::test_fallback_chain_exists PASSED [ 30%]
+tests/unit/test_backend_selection.py::TestCreateWithFallback::test_fallback_chain_structure PASSED [ 38%]
+tests/unit/test_backend_selection.py::TestCreateWithFallback::test_create_with_fallback_signature PASSED [ 46%]
+tests/unit/test_backend_selection.py::TestCreateWithFallback::test_create_with_fallback_returns_tuple PASSED [ 53%]
+tests/unit/test_backend_selection.py::TestVideoFrameIteratorBackend::test_default_backend_is_pynvvideocodec PASSED [ 61%]
+tests/unit/test_backend_selection.py::TestVideoFrameIteratorBackend::test_explicit_backend_a PASSED [ 69%]
+tests/unit/test_backend_selection.py::TestVideoFrameIteratorBackend::test_actual_backend_property PASSED [ 76%]
+tests/unit/test_backend_selection.py::TestSettingsDecoderBackend::test_settings_default_is_pynvvideocodec PASSED [ 84%]
+tests/unit/test_backend_selection.py::TestSettingsDecoderBackend::test_settings_accepts_pyav_nvdec PASSED [ 92%]
+tests/unit/test_backend_selection.py::TestSettingsDecoderBackend::test_settings_rejects_invalid PASSED [100%]
+
+============================= 13 passed in 4.05s ==============================

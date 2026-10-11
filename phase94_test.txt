@@ -1,0 +1,48 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, mock-3.15.1, xdist-3.8.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 5 items
+
+test_phase94_fixes.py::test_L1_init_lock PASSED                          [ 20%]
+test_phase94_fixes.py::test_L4_frame_provenance PASSED                   [ 40%]
+test_phase94_fixes.py::test_L7_fallback_safety PASSED                    [ 60%]
+test_phase94_fixes.py::test_L1_concurrent_lock_contention PASSED         [ 80%]
+test_phase94_fixes.py::test_factory_call_chain PASSED                    [100%]
+
+============================== warnings summary ===============================
+test_phase94_fixes.py::test_L1_init_lock
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_phase94_fixes.py::test_L1_init_lock returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_phase94_fixes.py::test_L4_frame_provenance
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_phase94_fixes.py::test_L4_frame_provenance returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_phase94_fixes.py::test_L7_fallback_safety
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_phase94_fixes.py::test_L7_fallback_safety returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_phase94_fixes.py::test_L1_concurrent_lock_contention
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_phase94_fixes.py::test_L1_concurrent_lock_contention returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+test_phase94_fixes.py::test_factory_call_chain
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_phase94_fixes.py::test_factory_call_chain returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 5 passed, 5 warnings in 17.93s ========================

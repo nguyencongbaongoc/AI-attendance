@@ -307,6 +307,43 @@ class ServiceManager:
         self.frontend_process: Optional[subprocess.Popen] = None
         self._frontend_started_by_us = False
     
+    def _kill_processes_on_ports(self, ports: List[int]) -> None:
+        """Kill any processes holding the specified ports (Windows)."""
+        if os.name != 'nt':
+            return
+        
+        for port in ports:
+            try:
+                # Find PID using netstat
+                result = subprocess.run(
+                    ["netstat", "-ano"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                
+                for line in result.stdout.split('\n'):
+                    if f":{port} " in line and "LISTENING" in line:
+                        parts = line.split()
+                        if len(parts) >= 5:
+                            pid = parts[-1]
+                            if pid.isdigit():
+                                logger.warning(f"Killing process {pid} holding port {port}")
+                                subprocess.run(
+                                    ["taskkill", "/F", "/PID", pid],
+                                    capture_output=True,
+                                    timeout=5
+                                )
+            except Exception as e:
+                logger.debug(f"Port cleanup for {port} failed: {e}")
+    
+    def _ensure_ports_available(self) -> None:
+        """Ensure critical ports are free before starting services."""
+        critical_ports = [8000, 3000, 8554, 8888, 9997]
+        logger.info("Checking for orphaned processes on critical ports...")
+        self._kill_processes_on_ports(critical_ports)
+        time.sleep(1)  # Give OS time to release ports
+    
     def start_mediamtx(self) -> bool:
         """Start MediaMTX if not running."""
         # Check if already running
@@ -660,6 +697,10 @@ class Bootstrap:
         logger.info("=" * 60)
         logger.info("AI Attendance Pipeline Engine - Starting")
         logger.info("=" * 60)
+        
+        # Step 0: Ensure critical ports are available (kill zombies)
+        if self.service_manager:
+            self.service_manager._ensure_ports_available()
         
         # Step 1: Validate environment
         if not self.validator.validate_all():

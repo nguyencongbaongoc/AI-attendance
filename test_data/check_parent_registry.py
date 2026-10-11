@@ -1,0 +1,12 @@
+import sqlite3
+conn = sqlite3.connect('data/parent_registry.db')
+cursor = conn.cursor()
+cursor.execute('SELECT name FROM sqlite_master WHERE type="table"')
+print('Tables:', cursor.fetchall())
+cursor.execute('SELECT * FROM parents')
+print('Parents:', cursor.fetchall())
+cursor.execute('SELECT * FROM student_parent_links')
+print('Student-Parents:', cursor.fetchall())
+cursor.execute('SELECT * FROM link_codes')
+print('Link codes:', cursor.fetchall())
+conn.close()

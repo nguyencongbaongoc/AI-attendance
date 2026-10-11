@@ -1,9 +1,8 @@
 """
 NVDEC Decoder - Hardware-accelerated H.264/H.265 decoding to GPUFrame.
 
-Uses PyAV with CUDA hwaccel for zero-copy decode directly to GPU memory.
-On Windows with GTX 1660 Ti, cuvid outputs dxva2_vld which can't easily convert to CUDA.
-Falls back to software decode + GPU upload for reliable operation.
+Uses PyNvVideoCodec for zero-copy NVDEC decode directly to GPU memory.
+On Windows with GTX 1660 Ti, provides true hardware decoding in VRAM.
 """
 
 from __future__ import annotations
@@ -18,7 +17,6 @@ from enum import Enum
 from queue import Queue, Empty, Full
 
 import torch
-import av
 
 from pipeline_engine.memory.gpu_frame import GPUFrame, PixelFormat, CUDAContext, FrameOwnership
 from pipeline_engine.memory.frame_pool import FramePool
@@ -26,6 +24,18 @@ from pipeline_engine.memory.synchronization import CUDASyncManager
 from pipeline_engine.config import get_camera_config
 
 logger = logging.getLogger(__name__)
+
+# Import PyNvVideoCodec
+try:
+    import PyNvVideoCodec as nvc
+    PYNVIDEOCODEC_AVAILABLE = True
+except ImportError:
+    try:
+        import PyNvVideoCodec as nvc
+        PYNVIDEOCODEC_AVAILABLE = True
+    except ImportError:
+        PYNVIDEOCODEC_AVAILABLE = False
+        nvc = None
 
 
 class DecoderState(str, Enum):
@@ -160,19 +170,17 @@ class NVDECDecoder:
                 logger.info(f"NVDECDecoder({self.camera_id}): state {old_state.value} → {state.value}")
 
     def _build_hwaccel(self):
-        """Build PyAV HWAccel for CUDA decoding."""
-        # On Windows, cuvid outputs dxva2_vld frames, not cuda.
-        # We'll use software decode + GPU upload as primary approach.
-        hw = av.codec.hwaccel.HWAccel(
-            device_type="cuvid",
-            is_hw_owned=True,
-            allow_software_fallback=True,
-        )
-        return hw
+        """Build PyNvVideoCodec decoder for true hardware NVDEC."""
+        if not PYNVIDEOCODEC_AVAILABLE:
+            raise RuntimeError("PyNvVideoCodec not available. Cannot use hardware NVDEC.")
+        return None  # Not used with PyNvVideoCodec
 
     def _open_container(self) -> None:
-        """Open PyAV container with best available hardware acceleration."""
-        # Use the packet source's URL
+        """Initialize PyNvVideoCodec decoder for true hardware NVDEC."""
+        if not PYNVIDEOCODEC_AVAILABLE:
+            raise RuntimeError("PyNvVideoCodec not available. Cannot use hardware NVDEC.")
+        
+        # Get URL from packet source
         if hasattr(self.config.packet_source, 'url'):
             url = self.config.packet_source.url
         elif hasattr(self.config.packet_source, 'config') and hasattr(self.config.packet_source.config, 'url'):
@@ -180,13 +188,14 @@ class NVDECDecoder:
         else:
             raise ValueError("Packet source must have 'url' attribute")
         
-        # Determine format and options based on URL
+        self._rtsp_url = url
+        
+        # Determine if it's a local file or network stream
         is_rtmp = url.lower().startswith("rtmp://")
         is_rtsp = url.lower().startswith("rtsp://")
         is_file = not (is_rtmp or is_rtsp)
         
-        # Try cuvid first; it outputs dxva2_vld on Windows which we can't easily convert to CUDA
-        # So we'll use software decode + GPU upload as reliable approach
+        # Open PyAV container for demuxing only (packet extraction)
         if is_file:
             format_name = "mp4"
             options = {}
@@ -197,17 +206,14 @@ class NVDECDecoder:
             format_name = "rtsp"
             options = {"rtsp_transport": "tcp"}
         
-        # Don't use hwaccel - we'll do software decode + GPU upload
-        self._hwaccel = None
-        
+        import av
         self._container = av.open(
             url,
             format=format_name,
             options=options,
-            hwaccel=self._hwaccel,
         )
         
-        # Get video stream
+        # Get video stream for metadata
         self._stream = self._container.streams.video[0]
         self._codec_context = self._stream.codec_context
         
@@ -217,17 +223,55 @@ class NVDECDecoder:
         self._fps = float(self._stream.average_rate) if self._stream.average_rate else 30.0
         self._time_base = float(self._stream.time_base) if self._stream.time_base else None
         
-        # Pre-allocate GPU tensors for reuse
-        torch.cuda.set_device(self._cuda_device)
-        self._y_gpu = torch.zeros((self._height, self._width), dtype=torch.uint8, device=f'cuda:{self._cuda_device}')
-        # UV interleaved: H/2, W/2, 2
-        self._uv_gpu = torch.zeros((self._height // 2, self._width // 2, 2), dtype=torch.uint8, device=f'cuda:{self._cuda_device}')
+        # Initialize PyNvVideoCodec decoder
+        self._init_pynv_decoder()
         
         logger.info(
-            f"NVDECDecoder({self.camera_id}): opened {self._width}x{self._height}@{self._fps}fps "
-            f"codec={self._codec_context.name} (software decode + GPU upload)"
+            f"NVDECDecoder({self.camera_id}): Hardware NVDEC ACTIVE via PyNvVideoCodec "
+            f"on GPU {self._cuda_device} ({self._width}x{self._height}@{self._fps}fps)"
         )
-        self._use_hw_decode = False
+        self._use_hw_decode = True
+    
+    def _init_pynv_decoder(self):
+        """Initialize PyNvVideoCodec decoder with CUDA context."""
+        import ctypes
+        import torch
+        
+        # Set CUDA device
+        torch.cuda.set_device(self._cuda_device)
+        
+        # Get or create CUDA stream
+        if self._cuda_stream is None:
+            self._cuda_stream = torch.cuda.Stream(device=f'cuda:{self._cuda_device}')
+        
+        stream_handle = self._cuda_stream.cuda_stream
+        
+        # Use default CUDA context (0) - PyNvVideoCodec will use the current context
+        cudacontext = self._cuda_context if self._cuda_context is not None else 0
+        
+        # Map output color type - NV12 native
+        output_color_type = nvc.OutputColorType.NATIVE
+        
+        # Create decoder
+        self._decoder = nvc.CreateDecoder(
+            gpuid=self._cuda_device,
+            codec=nvc.cudaVideoCodec.H264,
+            cudacontext=cudacontext,
+            cudastream=stream_handle,
+            usedevicememory=True,
+            enableasyncallocations=True,
+            maxwidth=self._width,
+            maxheight=self._height,
+            outputColorType=output_color_type,
+            enableSEIMessage=False,
+            latency=nvc.DisplayDecodeLatencyType.NATIVE,
+            enableDecodeStats=False,
+        )
+        
+        logger.info(
+            f"NVDECDecoder({self.camera_id}): PyNvVideoCodec decoder created "
+            f"(gpu={self._cuda_device}, context={cudacontext}, stream={stream_handle})"
+        )
 
     def start(self) -> bool:
         """Start the decoder."""
@@ -266,61 +310,133 @@ class NVDECDecoder:
                 return False
 
     def _reader_loop(self) -> None:
-        """Read frames from decoder and convert to GPUFrame (software decode + GPU upload)."""
+        """Read packets from demuxer, decode with PyNvVideoCodec, push frames to queue."""
+        import ctypes
+        import av
+        
         try:
-            for frame in self._container.decode(video=0):
+            # Use PyAV container for demuxing (RTSP/RTMP)
+            for packet in self._container.demux(self._stream):
                 if self._stop_event.is_set():
                     break
                 
+                if packet.is_corrupt:
+                    continue
+                
                 decode_start = time.perf_counter()
                 
-                # Frame is yuv420p (software decode) - 3 planes: Y, U, V
+                # Create PyNvVideoCodec PacketData from PyAV packet
+                pnv_packet = nvc.PacketData()
+                pnv_packet.bsl = packet.size
+                pnv_packet.bsl_data = packet.buffer_ptr
+                pnv_packet.pts = packet.pts if packet.pts is not None else 0
+                pnv_packet.dts = packet.dts if packet.dts is not None else 0
+                pnv_packet.duration = packet.duration if packet.duration is not None else 0
+                pnv_packet.decode_flag = 0
+                pnv_packet.key = 1 if packet.is_keyframe else 0
+                pnv_packet.is_video = 1
+                pnv_packet.stream_index = 0
+                
+                # Decode packet with PyNvVideoCodec
                 try:
-                    # Get plane data
-                    y_plane = frame.planes[0]
-                    u_plane = frame.planes[1]
-                    v_plane = frame.planes[2]
+                    decoded_frames = self._decoder.Decode(pnv_packet)
+                except Exception as e:
+                    logger.error(f"NVDECDecoder({self.camera_id}): Decode failed: {e}")
+                    self._metrics.decode_errors += 1
+                    continue
+                
+                # Process decoded frames
+                for decoded_frame in decoded_frames:
+                    if self._stop_event.is_set():
+                        break
                     
-                    # Get plane data via memoryview
-                    y_mv = memoryview(y_plane)
-                    u_mv = memoryview(u_plane)
-                    v_mv = memoryview(v_plane)
+                    # Get frame timestamp
+                    timestamp = time.time()
+                    pts = decoded_frame.getPTS()
                     
-                    # Copy to pre-allocated GPU tensors
-                    # Y plane: H x W
-                    y_cpu = torch.frombuffer(y_mv, dtype=torch.uint8).reshape(frame.height, frame.width)
-                    self._y_gpu.copy_(y_cpu, non_blocking=True)
+                    # Get frame dimensions from shape
+                    shape = decoded_frame.shape
+                    if len(shape) == 2:
+                        height = shape[0] * 2 // 3  # NV12 is 1.5x height
+                        width = shape[1]
+                    else:
+                        width = self._width
+                        height = self._height
                     
-                    # U plane: H/2 x W/2, V plane: H/2 x W/2
-                    u_cpu = torch.frombuffer(memoryview(u_plane), dtype=torch.uint8).reshape(frame.height // 2, frame.width // 2)
-                    v_cpu = torch.frombuffer(memoryview(v_plane), dtype=torch.uint8).reshape(frame.height // 2, frame.width // 2)
+                    # Verify NV12 format
+                    pixel_format = str(decoded_frame.format)
+                    if "NV12" not in pixel_format.upper():
+                        logger.warning(f"NVDECDecoder({self.camera_id}): Unexpected pixel format: {pixel_format}, assuming NV12")
                     
-                    # Interleave U and V for NV12 format: (H/2, W/2, 2)
-                    uv_cpu = torch.stack([u_cpu, v_cpu], dim=-1)  # (H/2, W/2, 2)
-                    self._uv_gpu.copy_(uv_cpu, non_blocking=True)
+                    # Get CAI memory views (zero-copy)
+                    try:
+                        cai_views = decoded_frame.cuda()
+                    except Exception as e:
+                        logger.error(f"NVDECDecoder({self.camera_id}): CAI export failed: {e}")
+                        try:
+                            self._decoder.UnlockFrame(0)
+                        except Exception:
+                            pass
+                        continue
                     
-                    torch.cuda.synchronize()
+                    if len(cai_views) < 2:
+                        logger.error(f"NVDECDecoder({self.camera_id}): Expected 2 CAI views (Y, UV), got {len(cai_views)}")
+                        try:
+                            self._decoder.UnlockFrame(0)
+                        except Exception:
+                            pass
+                        continue
+                    
+                    y_view = cai_views[0]
+                    uv_view = cai_views[1]
+                    
+                    # Convert CAI views to PyTorch CUDA tensors (zero-copy)
+                    try:
+                        y_tensor = torch.as_tensor(y_view, device='cuda')
+                        uv_tensor = torch.as_tensor(uv_view, device='cuda')
+                    except Exception as e:
+                        logger.error(f"NVDECDecoder({self.camera_id}): PyTorch tensor creation failed: {e}")
+                        try:
+                            self._decoder.UnlockFrame(0)
+                        except Exception:
+                            pass
+                        continue
+                    
+                    # Squeeze Y if needed (H, W, 1) -> (H, W)
+                    if y_tensor.dim() == 3 and y_tensor.shape[2] == 1:
+                        y_tensor = y_tensor.squeeze(2)
+                    
+                    # Validate tensors
+                    assert y_tensor.is_cuda, f"y_tensor must be on CUDA, got {y_tensor.device}"
+                    assert uv_tensor.is_cuda, f"uv_tensor must be on CUDA, got {uv_tensor.device}"
+                    assert y_tensor.dtype == torch.uint8, f"y_tensor must be uint8, got {y_tensor.dtype}"
+                    assert uv_tensor.dtype == torch.uint8, f"uv_tensor must be uint8, got {uv_tensor.dtype}"
                     
                     # Acquire frame from pool or create new
                     if self._frame_pool:
                         try:
                             gpu_frame = self._frame_pool.acquire(
                                 frame_id=self._frame_id,
-                                timestamp=time.time(),
-                                pts=frame.pts if frame.pts is not None else self._frame_id,
+                                timestamp=timestamp,
+                                pts=pts if pts is not None else self._frame_id,
                             )
-                            # Copy to pooled frame
-                            gpu_frame.y_tensor.copy_(self._y_gpu)
-                            gpu_frame.uv_tensor.copy_(self._uv_gpu)
-                            gpu_frame.pts = frame.pts if frame.pts is not None else self._frame_id
-                            gpu_frame.dts = frame.pts if frame.pts is not None else self._frame_id
+                            # Copy to pooled frame (zero-copy via tensor assignment)
+                            gpu_frame.y_tensor.copy_(y_tensor)
+                            gpu_frame.uv_tensor.copy_(uv_tensor)
+                            gpu_frame.pts = pts if pts is not None else self._frame_id
+                            gpu_frame.dts = pts if pts is not None else self._frame_id
                             gpu_frame.time_base = self._time_base
-                            gpu_frame.width = self._width
-                            gpu_frame.height = self._height
-                            gpu_frame.actual_width = self._width
-                            gpu_frame.actual_height = self._height
+                            gpu_frame.width = width
+                            gpu_frame.height = height
+                            gpu_frame.actual_width = width
+                            gpu_frame.actual_height = height
                         except RuntimeError:
                             self._metrics.frames_dropped += 1
+                            # Unlock frame
+                            try:
+                                self._decoder.UnlockFrame(0)
+                            except Exception:
+                                pass
                             continue
                     else:
                         # Create GPUFrame directly
@@ -328,17 +444,17 @@ class NVDECDecoder:
                             camera_id=self.camera_id,
                             frame_id=self._frame_id,
                             source_provenance="rtsp",
-                            timestamp=time.time(),
-                            pts=frame.pts if frame.pts is not None else self._frame_id,
-                            dts=frame.pts if frame.pts is not None else self._frame_id,
+                            timestamp=timestamp,
+                            pts=pts if pts is not None else self._frame_id,
+                            dts=pts if pts is not None else self._frame_id,
                             time_base=self._time_base,
-                            width=self._width,
-                            height=self._height,
-                            actual_width=self._width,
-                            actual_height=self._height,
+                            width=width,
+                            height=height,
+                            actual_width=width,
+                            actual_height=height,
                             pixel_format=PixelFormat.NV12,
-                            y_tensor=self._y_gpu,
-                            uv_tensor=self._uv_gpu,
+                            y_tensor=y_tensor,
+                            uv_tensor=uv_tensor,
                             memory_owner=FrameOwnership.DECODER,
                         )
                     
@@ -375,16 +491,18 @@ class NVDECDecoder:
                     self._metrics.avg_decode_ms = sum(self._decode_times) / len(self._decode_times)
                     self._metrics.last_decode_time = time.time()
                     
-                except Exception as e:
-                    self._metrics.decode_errors += 1
-                    logger.error(f"NVDECDecoder({self.camera_id}): Frame conversion failed: {e}")
-                    continue
-                    
+                    # Unlock frame after creating tensor references
+                    try:
+                        self._decoder.UnlockFrame(0)
+                    except Exception as e:
+                        logger.debug(f"NVDECDecoder({self.camera_id}): UnlockFrame error: {e}")
+                        
         except av.error.FFmpegError as e:
-            logger.error(f"NVDECDecoder({self.camera_id}): FFmpeg decode error: {e}")
+            logger.error(f"NVDECDecoder({self.camera_id}): FFmpeg demux error: {e}")
             self._error = e
         except Exception as e:
             logger.error(f"NVDECDecoder({self.camera_id}): Reader loop error: {e}")
+            logger.debug(traceback.format_exc())
             self._error = e
         finally:
             logger.debug(f"NVDECDecoder({self.camera_id}): Reader loop exited")
@@ -464,6 +582,10 @@ class NVDECDecoder:
         
         if self._reader_thread and self._reader_thread.is_alive():
             self._reader_thread.join(timeout=3.0)
+        
+        # Cleanup PyNvVideoCodec decoder
+        if self._decoder:
+            self._decoder = None
         
         if self._container:
             try:
@@ -558,11 +680,11 @@ if __name__ == "__main__":
     
     if len(sys.argv) > 1:
         test_file = sys.argv[1]
-        
+
         from pipeline_engine.ingestion.rtsp_source import RTSPSource, RTSPSourceConfig
-        
-        packet_source = RTSPSource(RTPSourceConfig(camera_id="test_cam", url=test_file))
-        
+
+        packet_source = RTSPSource(RTSPSourceConfig(camera_id="test_cam", url=test_file))
+
         decoder = create_nvdec_decoder("test_cam", packet_source)
         decoder.start()
         

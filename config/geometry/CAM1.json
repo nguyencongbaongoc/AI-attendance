@@ -1,0 +1,25 @@
+{
+  "camera_id": "CAM1",
+  "frame_width": 3840,
+  "frame_height": 2160,
+  "coordinate_space": "original_frame",
+  "geometry_type": "line",
+  "line": {
+    "type": "line",
+    "p1": {"x": 1920, "y": 0},
+    "p2": {"x": 1920, "y": 2160},
+    "direction_semantics": "side_a_to_b_in"
+  },
+  "crossing_policy": {
+    "min_crossing_distance": 5.0,
+    "temporal_debounce_seconds": 1.0,
+    "side_confirmation_frames": 2,
+    "max_trajectory_gap_frames": 5
+  },
+  "version": 1,
+  "config_hash": "",
+  "created_at": "2026-09-02T02:00:00Z",
+  "updated_at": "2026-09-02T02:00:00Z",
+  "description": "Phase 44.7 runtime geometry for CAM1 - vertical center line, SIDE_A_TO_B_IN means left-to-right = IN",
+  "tags": ["phase44", "runtime", "CAM1"]
+}

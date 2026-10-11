@@ -1,0 +1,73 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, mock-3.15.1, xdist-3.8.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 2 items
+
+test_reconnect_qualification.py::test_reconnect_dual PASSED              [ 50%]
+test_reconnect_qualification.py::test_forced_reconnect_during_stream FAILED [100%]
+
+================================== FAILURES ===================================
+_____________________ test_forced_reconnect_during_stream _____________________
+test_reconnect_qualification.py:171: in test_forced_reconnect_during_stream
+    info = backend.open()
+           ^^^^^^^^^^^^^^
+app\streaming\pynvvideocodec_backend.py:208: in open
+    self._open_demuxer()
+app\streaming\pynvvideocodec_backend.py:162: in _open_demuxer
+    self._container = av.open(
+av/container/core.py:578: in av.container.core.open
+    return InputContainer(
+    ^^^^^^^^^^^
+av/container/core.py:344: in av.container.core.Container.__cinit__
+    self.err_check(res)
+    ^^^^^^^^^^^
+av/container/core.py:369: in av.container.core.Container.err_check
+    return err_check(value, filename=self.name)
+    ^^^^^^^^^^^
+av/error.py:354: in av.error.err_check
+    raise cls(code, message, filename, log)
+    ^^^^^^^^^^^
+E   av.error.HTTPNotFoundError: [Errno 875574520] Server returned 404 Not Found: 'rtsp://localhost:8554/live/cam1'
+---------------------------- Captured stdout call -----------------------------
+2026-10-09 04:21:54 | INFO     | test_reconnect_qualification | ============================================================
+2026-10-09 04:21:54 | INFO     | test_reconnect_qualification | FORCED RECONNECT DURING STREAM TEST
+2026-10-09 04:21:54 | INFO     | test_reconnect_qualification | ============================================================
+2026-10-09 04:21:54 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Attempting to create pynvvideocodec backend for CAM1
+2026-10-09 04:21:54 | WARNING  | app.streaming.cuda_context_manager | SharedContextManager(GPU 0): Stream for CAM1 already exists
+2026-10-09 04:21:54 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Injected shared context 1547649515744 and stream 1547658878048 for CAM1
+2026-10-09 04:21:54 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0
+2026-10-09 04:21:54 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Using shared context=1547649515744, stream=1547658878048
+[INFO ][04:21:54] enabling stream aware allocations!
+
+2026-10-09 04:21:54 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Decoder created with context=1547649515744, stream=1547658878048
+2026-10-09 04:21:54 | INFO     | app.streaming.decoder_backend | DecoderBackendFactory: Successfully created pynvvideocodec backend for CAM1
+2026-10-09 04:21:54 | INFO     | test_reconnect_qualification | [CAM1] Initial backend: pynvvideocodec
+2026-10-09 04:21:54 | INFO     | app.streaming.pynvvideocodec_backend | PyNvVideoCodecBackend(CAM1): Opening demuxer for rtsp://localhost:8554/live/cam1
+------------------------------ Captured log call ------------------------------
+INFO     test_reconnect_qualification:test_reconnect_qualification.py:148 ============================================================
+INFO     test_reconnect_qualification:test_reconnect_qualification.py:149 FORCED RECONNECT DURING STREAM TEST
+INFO     test_reconnect_qualification:test_reconnect_qualification.py:150 ============================================================
+INFO     app.streaming.decoder_backend:decoder_backend.py:387 DecoderBackendFactory: Attempting to create pynvvideocodec backend for CAM1
+WARNING  app.streaming.cuda_context_manager:cuda_context_manager.py:215 SharedContextManager(GPU 0): Stream for CAM1 already exists
+INFO     app.streaming.decoder_backend:decoder_backend.py:403 DecoderBackendFactory: Injected shared context 1547649515744 and stream 1547658878048 for CAM1
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:64 PyNvVideoCodecBackend(CAM1): Initializing decoder on GPU 0
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:75 PyNvVideoCodecBackend(CAM1): Using shared context=1547649515744, stream=1547658878048
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:134 PyNvVideoCodecBackend(CAM1): Decoder created with context=1547649515744, stream=1547658878048
+INFO     app.streaming.decoder_backend:decoder_backend.py:410 DecoderBackendFactory: Successfully created pynvvideocodec backend for CAM1
+INFO     test_reconnect_qualification:test_reconnect_qualification.py:170 [CAM1] Initial backend: pynvvideocodec
+INFO     app.streaming.pynvvideocodec_backend:pynvvideocodec_backend.py:159 PyNvVideoCodecBackend(CAM1): Opening demuxer for rtsp://localhost:8554/live/cam1
+============================== warnings summary ===============================
+test_reconnect_qualification.py::test_reconnect_dual
+  C:\Users\Nguyen Cong Thong\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but test_reconnect_qualification.py::test_reconnect_dual returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED test_reconnect_qualification.py::test_forced_reconnect_during_stream
+=================== 1 failed, 1 passed, 1 warning in 3.25s ====================

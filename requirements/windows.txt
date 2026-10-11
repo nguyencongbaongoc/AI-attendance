@@ -1,0 +1,40 @@
+# Windows-specific requirements for AI attendance system
+# These packages are Windows-specific or have Windows-specific behavior
+#
+# Python version: 3.12.10
+# PyTorch CUDA: 2.13.0+cu126 (CUDA 12.6)
+# CUDA Toolkit: 13.3 (system), cuDNN 9.10.2 (bundled with torch)
+# ONNX Runtime: 1.28.0 (onnxruntime-gpu)
+
+# Windows system utilities
+pywin32>=306,<307
+wmi>=1.5.1,<2.0.0
+
+# GPU/CUDA detection
+nvidia-ml-py>=12.535.133,<13.0.0
+
+# FFmpeg wrapper (for detection only, not execution)
+ffmpeg-python>=0.2.0,<1.0.0
+
+# Hardware detection
+psutil>=5.9.0,<6.0.0
+
+# --- Phase 3 AI Runtime (installed for CUDA validation) ---
+# PyTorch with CUDA 12.6 support
+torch==2.13.0+cu126
+torchvision==0.28.0+cu126
+torchaudio==2.11.0+cu126
+
+# ONNX Runtime with GPU support (CUDA Execution Provider)
+onnxruntime-gpu==1.28.0
+
+# ONNX model format support (for creating test models)
+onnx==1.22.0
+
+# NumPy (required by torch and onnxruntime)
+numpy==2.5.2
+
+# Download PyTorch CUDA wheels from:
+#   --index-url https://download.pytorch.org/whl/cu126
+# Download onnxruntime-gpu from:
+#   --extra-index-url https://pypi.org/simple

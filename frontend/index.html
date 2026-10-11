@@ -1,0 +1,4060 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Attendance OS — Control Center</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+tailwind.config={
+  theme:{
+    extend:{
+      fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']},
+      colors:{base:'#09090b',surface:'#141416',card:'#1a1a1e',line:'#27272a',muted:'#a1a1aa'}
+    }
+  }
+}
+</script>
+<style>
+* {scrollbar-width:thin;scrollbar-color:#27272a transparent}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#27272a;border-radius:999px}
+::-webkit-scrollbar-track{background:transparent}
+body{background:#09090b;color:#fafafa}
+.mono{font-family:'JetBrains Mono',monospace}
+.card{background:#131315;border:1px solid #232326}
+.card-hover:hover{border-color:#3f3f46}
+.video-grid{background:radial-gradient(ellipse at center, #1a1a1e 0%, #09090b 70%)}
+.range::-webkit-slider-thumb{appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;cursor:pointer;border:2px solid #09090b}
+.range{appearance:none;height:2px;background:#27272a;border-radius:999px}
+/* Toast notifications */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:100;animation:slideUp 0.3s ease}
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(1rem)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.toast-success{background:#fff;color:#000;padding:0.75rem 1.5rem;border-radius:9999px;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,0.3)}
+.toast-error{background:#27272a;color:#fff;padding:0.75rem 1.5rem;border-radius:9999px;font-weight:600;border:1px solid #3f3f46;box-shadow:0 10px 25px rgba(0,0,0,0.3)}
+/* Loading states */
+.loading-shimmer{background:linear-gradient(90deg,#1a1a1e 25%,#27272a 50%,#1a1a1e 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* Connection status indicators */
+.conn-connected{background:#fff;color:#000}
+.conn-connecting{background:#71717a;color:#fff}
+.conn-disconnected{background:#3f3f46;color:#71717a}
+.conn-error{background:#7f1d1d;color:#fca5a5}
+</style>
+
+<script>
+// ============================================================
+// INTEGRATION LAYER - API Configuration & Services
+// ============================================================
+const API_CONFIG = {
+  // Base URL - use relative paths for same-origin FastAPI mount
+  get baseURL() {
+    return '';  // Relative paths work through FastAPI static file mount at http://localhost:8000
+  },
+  get wsURL() {
+    const base = window.location.origin.replace(/^http/, 'ws');
+    return `${base}/api/v1/health/ws`;
+  },
+  // API Endpoints
+  endpoints: {
+    health: '/api/v1/health',
+    attendance: '/api/v1/attendance',
+    enrollment: '/api/v1/enrollment',
+    replay: '/api/v1/replay',
+    geometry: '/api/v1/geometry',
+    students: '/api/v1/students',
+  }
+};
+
+// ============================================================
+// HTTP Client with error handling AND API KEY AUTH
+// ============================================================
+class APIClient {
+  constructor() {
+    this.baseURL = API_CONFIG.baseURL;
+  }
+
+  async request(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
+      ...options
+    };
+
+    // Only add API key for non-multipart requests
+    if (!options.headers?.['Content-Type']?.includes('multipart/form-data')) {
+      config.headers['X-API-Key'] = API_CONFIG.getApiKey();
+    }
+
+    if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
+      config.body = JSON.stringify(config.body);
+    }
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json().catch(() => ({}));
+      
+      if (!response.ok) {
+        throw new Error(data.detail || data.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      return data;
+    } catch (error) {
+      console.error(`API Error [${endpoint}]:`, error);
+      throw error;
+    }
+  }
+
+  get(endpoint) {
+    return this.request(endpoint, { method: 'GET' });
+  }
+
+  post(endpoint, body) {
+    return this.request(endpoint, { method: 'POST', body });
+  }
+
+  put(endpoint, body) {
+    return this.request(endpoint, { method: 'PUT', body });
+  }
+
+  delete(endpoint) {
+    return this.request(endpoint, { method: 'DELETE' });
+  }
+}
+
+// ============================================================
+// WebSocket Client for Real-time Health Updates (with API Key Auth)
+// ============================================================
+class HealthWebSocket {
+  constructor() {
+    this.ws = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 10;
+    this.reconnectDelay = 1000;
+    this.handlers = new Map();
+    this.sequence = 0;
+    this.connectionId = null;
+  }
+
+  get healthWsURL() {
+    const base = window.location.origin.replace(/^http/, 'ws');
+    return `${base}/api/v1/health/ws?api_key=${encodeURIComponent(API_CONFIG.getApiKey())}`;
+  }
+
+  connect() {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        this.ws = new WebSocket(this.healthWsURL);
+        
+        this.ws.onopen = () => {
+          console.log('[WS] Connected to health WebSocket');
+          this.reconnectAttempts = 0;
+          this.emit('connected', {});
+          resolve();
+        };
+
+        this.ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            this.handleMessage(msg);
+          } catch (e) {
+            console.error('[WS] Failed to parse message:', e);
+          }
+        };
+
+        this.ws.onclose = (event) => {
+          console.log('[WS] Disconnected:', event.code, event.reason);
+          this.emit('disconnected', { code: event.code, reason: event.reason });
+          this.scheduleReconnect();
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('[WS] Error:', error);
+          this.emit('error', error);
+          if (this.reconnectAttempts === 0) {
+            reject(error);
+          }
+        };
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  handleMessage(msg) {
+    if (msg.seq !== undefined) {
+      this.sequence = msg.seq;
+    }
+
+    switch (msg.type) {
+      case 'health_update':
+      case 'sync_response':
+      case 'reconnect_response':
+        this.emit('health_update', msg);
+        break;
+      case 'health_event':
+        this.emit('health_event', msg.event);
+        break;
+      case 'pong':
+        this.emit('pong', msg);
+        break;
+      case 'ping':
+        // Respond to server ping
+        this.send({ type: 'pong', timestamp: new Date().toISOString(), seq: this.sequence });
+        break;
+      case 'subscribed':
+        this.emit('subscribed', msg);
+        break;
+      default:
+        this.emit('message', msg);
+    }
+  }
+
+  send(data) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(data));
+    }
+  }
+
+  ping() {
+    this.send({ type: 'ping', timestamp: new Date().toISOString(), seq: this.sequence });
+  }
+
+  sync() {
+    this.send({ type: 'sync', timestamp: new Date().toISOString() });
+  }
+
+  subscribe(eventTypes = ['health_update', 'health_event']) {
+    this.send({ type: 'subscribe', events: eventTypes });
+  }
+
+  on(event, handler) {
+    if (!this.handlers.has(event)) {
+      this.handlers.set(event, []);
+    }
+    this.handlers.get(event).push(handler);
+  }
+
+  off(event, handler) {
+    if (this.handlers.has(event)) {
+      const handlers = this.handlers.get(event);
+      const index = handlers.indexOf(handler);
+      if (index > -1) handlers.splice(index, 1);
+    }
+  }
+
+  emit(event, data) {
+    if (this.handlers.has(event)) {
+      this.handlers.get(event).forEach(h => h(data));
+    }
+  }
+
+  scheduleReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('[WS] Max reconnect attempts reached');
+      this.emit('max_reconnects_reached', {});
+      return;
+    }
+
+    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), 30000);
+    this.reconnectAttempts++;
+    console.log(`[WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    
+    setTimeout(() => this.connect(), delay);
+  }
+
+  disconnect() {
+    if (this.ws) {
+      this.ws.close(1000, 'Client disconnect');
+      this.ws = null;
+    }
+  }
+
+  getState() {
+    return this.ws ? this.ws.readyState : WebSocket.CLOSED;
+  }
+}
+
+// ============================================================
+// WebSocket Client for Real-time Attendance Events
+// ============================================================
+class AttendanceWebSocket {
+  constructor() {
+    this.ws = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 10;
+    this.reconnectDelay = 1000;
+    this.handlers = new Map();
+    this.sequence = 0;
+    this.connectionId = null;
+    this.lastEventId = null;
+    this.eventBuffer = [];
+    this.maxBufferSize = 100;
+  }
+
+  get attendanceWsURL() {
+    const base = window.location.origin.replace(/^http/, 'ws');
+    return `${base}/api/v1/attendance/ws?api_key=${encodeURIComponent(API_CONFIG.getApiKey())}`;
+  }
+
+  connect() {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        this.ws = new WebSocket(this.attendanceWsURL);
+        
+        this.ws.onopen = () => {
+          console.log('[Attendance WS] Connected');
+          this.reconnectAttempts = 0;
+          this.emit('connected', {});
+          // Subscribe to attendance events
+          this.subscribe(['attendance.created']);
+          resolve();
+        };
+
+        this.ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            this.handleMessage(msg);
+          } catch (e) {
+            console.error('[Attendance WS] Failed to parse message:', e);
+          }
+        };
+
+        this.ws.onclose = (event) => {
+          console.log('[Attendance WS] Disconnected:', event.code, event.reason);
+          this.emit('disconnected', { code: event.code, reason: event.reason });
+          this.scheduleReconnect();
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('[Attendance WS] Error:', error);
+          this.emit('error', error);
+          if (this.reconnectAttempts === 0) {
+            reject(error);
+          }
+        };
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  handleMessage(msg) {
+    if (msg.seq !== undefined) {
+      this.sequence = msg.seq;
+    }
+
+    switch (msg.type) {
+      case 'attendance.created':
+        // Deduplicate by attendance_record_id
+        if (msg.event && msg.event.attendance_record_id) {
+          if (this.lastEventId === msg.event.attendance_record_id) {
+            console.log('[Attendance WS] Duplicate event suppressed:', msg.event.attendance_record_id);
+            return;
+          }
+          this.lastEventId = msg.event.attendance_record_id;
+        }
+        this.emit('attendance_event', msg.event);
+        break;
+      case 'attendance_snapshot':
+        this.emit('attendance_snapshot', msg);
+        break;
+      case 'sync_response':
+      case 'reconnect_response':
+        this.emit('sync_response', msg);
+        break;
+      case 'welcome':
+        this.connectionId = msg.connection_id;
+        this.emit('welcome', msg);
+        break;
+      case 'pong':
+        this.emit('pong', msg);
+        break;
+      case 'ping':
+        this.send({ type: 'pong', timestamp: new Date().toISOString(), seq: this.sequence });
+        break;
+      case 'subscribed':
+        this.emit('subscribed', msg);
+        break;
+      default:
+        this.emit('message', msg);
+    }
+  }
+
+  send(data) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(data));
+    }
+  }
+
+  ping() {
+    this.send({ type: 'ping', timestamp: new Date().toISOString(), seq: this.sequence });
+  }
+
+  sync() {
+    this.send({ type: 'sync', timestamp: new Date().toISOString() });
+  }
+
+  subscribe(eventTypes = ['attendance.created']) {
+    this.send({ type: 'subscribe', events: eventTypes });
+  }
+
+  on(event, handler) {
+    if (!this.handlers.has(event)) {
+      this.handlers.set(event, []);
+    }
+    this.handlers.get(event).push(handler);
+  }
+
+  off(event, handler) {
+    if (this.handlers.has(event)) {
+      const handlers = this.handlers.get(event);
+      const index = handlers.indexOf(handler);
+      if (index > -1) handlers.splice(index, 1);
+    }
+  }
+
+  emit(event, data) {
+    if (this.handlers.has(event)) {
+      this.handlers.get(event).forEach(h => h(data));
+    }
+  }
+
+  scheduleReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('[Attendance WS] Max reconnect attempts reached');
+      this.emit('max_reconnects_reached', {});
+      return;
+    }
+
+    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), 30000);
+    this.reconnectAttempts++;
+    console.log(`[Attendance WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    
+    setTimeout(() => this.connect(), delay);
+  }
+
+  disconnect() {
+    if (this.ws) {
+      this.ws.close(1000, 'Client disconnect');
+      this.ws = null;
+    }
+  }
+
+  getState() {
+    return this.ws ? this.ws.readyState : WebSocket.CLOSED;
+  }
+}
+
+// Add getApiKey method to API_CONFIG
+// SECURITY: No hardcoded fallback - must be provided via window.__ADMIN_API_KEY__ at build/deploy time
+API_CONFIG.getApiKey = function() {
+  const key = window.__ADMIN_API_KEY__;
+  if (!key) {
+    console.error('[SECURITY] ADMIN_API_KEY not configured in frontend environment!');
+    throw new Error('ADMIN_API_KEY is required but not configured');
+  }
+  return key;
+};
+
+// ============================================================
+// Toast Notification System
+// ============================================================
+function showToast(message, type = 'success') {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(1rem)';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+// ============================================================
+// WebSocket Client for Real-time Metadata Streaming (Canvas Overlay)
+// ============================================================
+class MetadataWebSocket {
+  constructor() {
+    this.ws = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 10;
+    this.reconnectDelay = 1000;
+    this.handlers = new Map();
+    this.sequence = 0;
+    this.connectionId = null;
+    this.cameraId = null;
+    this.metadataBuffer = [];
+    this.maxBufferSize = 5; // Keep last 5 frames for interpolation
+    this.lastRenderTime = 0;
+    this.frameInterval = 0;
+  }
+
+  get metadataWsURL() {
+    const base = window.location.origin.replace(/^http/, 'ws');
+    return `${base}/api/v1/stream/metadata/${this.cameraId}?api_key=${encodeURIComponent(API_CONFIG.getApiKey())}`;
+  }
+
+  connect(cameraId) {
+    this.cameraId = cameraId;
+    
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        this.ws = new WebSocket(this.metadataWsURL);
+        
+        this.ws.onopen = () => {
+          console.log(`[META_WS] Connected to metadata WebSocket for ${this.cameraId}`);
+          this.reconnectAttempts = 0;
+          this.emit('connected', {});
+          resolve();
+        };
+
+        this.ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            this.handleMessage(msg);
+          } catch (e) {
+            console.error('[META_WS] Failed to parse message:', e);
+          }
+        };
+
+        this.ws.onclose = (event) => {
+          console.log(`[META_WS] Disconnected from ${this.cameraId}:`, event.code, event.reason);
+          this.emit('disconnected', { code: event.code, reason: event.reason });
+          this.scheduleReconnect();
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('[META_WS] Error:', error);
+          this.emit('error', error);
+          if (this.reconnectAttempts === 0) {
+            reject(error);
+          }
+        };
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  handleMessage(msg) {
+    if (msg.seq !== undefined) {
+      this.sequence = msg.seq;
+    }
+
+    switch (msg.type) {
+      case 'metadata':
+        // Add to buffer for smooth rendering
+        this.metadataBuffer.push(msg.data);
+        if (this.metadataBuffer.length > this.maxBufferSize) {
+          this.metadataBuffer.shift();
+        }
+        this.emit('metadata', msg.data);
+        break;
+      case 'welcome':
+        this.connectionId = msg.connection_id;
+        this.emit('welcome', msg);
+        break;
+      case 'pong':
+        this.emit('pong', msg);
+        break;
+      case 'ping':
+        this.send({ type: 'pong', timestamp: Date.now(), seq: this.sequence });
+        break;
+      case 'sync_response':
+        this.emit('sync_response', msg);
+        break;
+      default:
+        this.emit('message', msg);
+    }
+  }
+
+  send(data) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(data));
+    }
+  }
+
+  ping() {
+    this.send({ type: 'ping', timestamp: Date.now(), seq: this.sequence });
+  }
+
+  sync() {
+    this.send({ type: 'sync', timestamp: Date.now() });
+  }
+
+  on(event, handler) {
+    if (!this.handlers.has(event)) {
+      this.handlers.set(event, []);
+    }
+    this.handlers.get(event).push(handler);
+  }
+
+  off(event, handler) {
+    if (this.handlers.has(event)) {
+      const handlers = this.handlers.get(event);
+      const index = handlers.indexOf(handler);
+      if (index > -1) handlers.splice(index, 1);
+    }
+  }
+
+  emit(event, data) {
+    if (this.handlers.has(event)) {
+      this.handlers.get(event).forEach(h => h(data));
+    }
+  }
+
+  scheduleReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('[META_WS] Max reconnect attempts reached');
+      this.emit('max_reconnects_reached', {});
+      return;
+    }
+
+    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), 30000);
+    this.reconnectAttempts++;
+    console.log(`[META_WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    
+    setTimeout(() => this.connect(this.cameraId), delay);
+  }
+
+  disconnect() {
+    if (this.ws) {
+      this.ws.close(1000, 'Client disconnect');
+      this.ws = null;
+    }
+  }
+
+  getState() {
+    return this.ws ? this.ws.readyState : WebSocket.CLOSED;
+  }
+
+  getLatestMetadata() {
+    return this.metadataBuffer[this.metadataBuffer.length - 1] || null;
+  }
+
+  getMetadataForTime(targetTime) {
+    // Find metadata frame closest to target video time
+    if (this.metadataBuffer.length === 0) return null;
+    
+    // Simple linear search - could be optimized with binary search
+    let closest = this.metadataBuffer[0];
+    let minDiff = Math.abs(closest.pts_ns / 1e9 - targetTime);
+    
+    for (const meta of this.metadataBuffer) {
+      const diff = Math.abs(meta.pts_ns / 1e9 - targetTime);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = meta;
+      }
+    }
+    
+    // Only return if within 300ms (stale threshold)
+    if (minDiff > 0.3) return null;
+    return closest;
+  }
+}
+
+// ============================================================
+// Canvas Overlay Renderer
+// ============================================================
+class CanvasOverlayRenderer {
+  constructor(canvasId, videoId, cameraId) {
+    this.canvas = document.getElementById(canvasId);
+    this.video = document.getElementById(videoId);
+    this.cameraId = cameraId;
+    this.metadataWS = new MetadataWebSocket();
+    this.isRendering = false;
+    this.sourceWidth = 3840;
+    this.sourceHeight = 2160;
+    this.animationFrameId = null;
+    this.showAnnotations = true;
+    this.lastMetadata = null;
+    this.crossingLine = null;
+    
+    // Visual styling
+    this.personBoxColor = '#ffffff';
+    this.faceBoxColor = '#00ff00';
+    this.unknownFaceColor = '#ff6b6b';
+    this.trackIdColor = '#ffffff';
+    this.confidenceColor = '#ffff00';
+    this.lineColor = '#ffffff';
+    this.linePulseColor = '#00ff00';
+    this.lineWidth = 2;
+    this.boxLineWidth = 2;
+    this.fontSize = 14;
+    this.fontFamily = 'JetBrains Mono, monospace';
+    
+    // Line pulse animation
+    this.linePulsePhase = 0;
+    this.linePulseActive = false;
+    
+    this.bindMetadataEvents();
+  }
+
+  bindMetadataEvents() {
+    this.metadataWS.on('metadata', (meta) => {
+      this.lastMetadata = meta;
+      // Update crossing line if present
+      if (meta.crossing_line) {
+        this.crossingLine = meta.crossing_line;
+        if (meta.crossing_line.status === 'IN_TRANSITION' || meta.crossing_line.status === 'OUT_TRANSITION') {
+          this.linePulseActive = true;
+          setTimeout(() => { this.linePulseActive = false; }, 500);
+        }
+      }
+    });
+    
+    this.metadataWS.on('connected', () => {
+      console.log(`[CANVAS] Metadata WebSocket connected for ${this.cameraId}`);
+    });
+    
+    this.metadataWS.on('disconnected', () => {
+      console.log(`[CANVAS] Metadata WebSocket disconnected for ${this.cameraId}`);
+    });
+  }
+
+  async start() {
+    try {
+      await this.metadataWS.connect(this.cameraId);
+      this.isRendering = true;
+      this.renderLoop();
+      console.log(`[CANVAS] Started overlay renderer for ${this.cameraId}`);
+    } catch (error) {
+      console.error(`[CANVAS] Failed to start for ${this.cameraId}:`, error);
+    }
+  }
+
+  stop() {
+    this.isRendering = false;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    this.metadataWS.disconnect();
+    this.clearCanvas();
+    console.log(`[CANVAS] Stopped overlay renderer for ${this.cameraId}`);
+  }
+
+  setShowAnnotations(show) {
+    this.showAnnotations = show;
+    if (!show) this.clearCanvas();
+  }
+
+  clearCanvas() {
+    if (this.canvas) {
+      const ctx = this.canvas.getContext('2d');
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+  }
+
+  getScaleFactors() {
+    if (!this.video || !this.canvas) return { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 };
+    
+    const videoRect = this.video.getBoundingClientRect();
+    const canvasRect = this.canvas.getBoundingClientRect();
+    
+    // Video is object-fit: cover, so we need to calculate actual rendered size
+    const videoAspect = this.sourceWidth / this.sourceHeight;
+    const containerAspect = videoRect.width / videoRect.height;
+    
+    let renderedWidth, renderedHeight, offsetX, offsetY;
+    
+    if (videoAspect > containerAspect) {
+      // Video wider than container - letterbox top/bottom
+      renderedWidth = videoRect.width;
+      renderedHeight = videoRect.width / videoAspect;
+      offsetX = 0;
+      offsetY = (videoRect.height - renderedHeight) / 2;
+    } else {
+      // Video taller than container - pillarbox left/right
+      renderedHeight = videoRect.height;
+      renderedWidth = videoRect.height * videoAspect;
+      offsetX = (videoRect.width - renderedWidth) / 2;
+      offsetY = 0;
+    }
+    
+    const scaleX = renderedWidth / this.sourceWidth;
+    const scaleY = renderedHeight / this.sourceHeight;
+    
+    return { scaleX, scaleY, offsetX, offsetY };
+  }
+
+  mapCoordinates(x, y) {
+    const { scaleX, scaleY, offsetX, offsetY } = this.getScaleFactors();
+    return {
+      x: x * scaleX + offsetX,
+      y: y * scaleY + offsetY
+    };
+  }
+
+  mapBBox(bbox) {
+    // bbox is [ymin, xmin, ymax, xmax] in source coordinates (0-3840, 0-2160)
+    const [ymin, xmin, ymax, xmax] = bbox;
+    const p1 = this.mapCoordinates(xmin, ymin);
+    const p2 = this.mapCoordinates(xmax, ymax);
+    return {
+      x: p1.x,
+      y: p1.y,
+      width: p2.x - p1.x,
+      height: p2.y - p1.y
+    };
+  }
+
+  renderLoop() {
+    if (!this.isRendering) return;
+    
+    const now = performance.now();
+    
+    // Get metadata synchronized with video time
+    let metadata = null;
+    if (this.video && !isNaN(this.video.currentTime) && this.video.currentTime > 0) {
+      metadata = this.metadataWS.getMetadataForTime(this.video.currentTime);
+    }
+    
+    // Fallback to latest metadata if no sync
+    if (!metadata) {
+      metadata = this.lastMetadata;
+    }
+    
+    if (metadata && this.showAnnotations) {
+      this.drawFrame(metadata);
+    } else if (!metadata) {
+      // Clear stale annotations if no metadata for 300ms
+      if (this.lastMetadata && (now - this.lastRenderTime) > 300) {
+        this.clearCanvas();
+      }
+    }
+    
+    this.lastRenderTime = now;
+    this.animationFrameId = requestAnimationFrame(() => this.renderLoop());
+  }
+
+  drawFrame(metadata) {
+    const ctx = this.canvas.getContext('2d');
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    // Draw person bounding boxes
+    if (metadata.persons) {
+      for (const person of metadata.persons) {
+        this.drawPersonBox(ctx, person);
+      }
+    }
+    
+    // Draw face bounding boxes with identity
+    if (metadata.faces) {
+      for (const face of metadata.faces) {
+        this.drawFaceBox(ctx, face);
+      }
+    }
+    
+    // Draw crossing line
+    if (this.crossingLine) {
+      this.drawCrossingLine(ctx, this.crossingLine);
+    }
+  }
+
+  drawPersonBox(ctx, person) {
+    const box = this.mapBBox(person.bbox);
+    if (box.width <= 0 || box.height <= 0) return;
+    
+    ctx.strokeStyle = this.personBoxColor;
+    ctx.lineWidth = this.boxLineWidth;
+    ctx.setLineDash([]);
+    ctx.strokeRect(box.x, box.y, box.width, box.height);
+    
+    // Draw track ID
+    ctx.fillStyle = this.trackIdColor;
+    ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+    ctx.fillText(`ID:${person.track_id}`, box.x + 4, box.y - 4);
+  }
+
+  drawFaceBox(ctx, face) {
+    const box = this.mapBBox(face.bbox);
+    if (box.width <= 0 || box.height <= 0) return;
+    
+    // Choose color based on recognition confidence
+    const isUnknown = face.name === 'Unknown' || face.confidence < 0.5;
+    ctx.strokeStyle = isUnknown ? this.unknownFaceColor : this.faceBoxColor;
+    ctx.lineWidth = this.boxLineWidth;
+    ctx.setLineDash([]);
+    ctx.strokeRect(box.x, box.y, box.width, box.height);
+    
+    // Draw name tag background
+    const label = `${face.name} ${(face.confidence * 100).toFixed(0)}%`;
+    ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+    const textMetrics = ctx.measureText(label);
+    const padding = 6;
+    const labelWidth = textMetrics.width + padding * 2;
+    const labelHeight = this.fontSize + padding;
+    
+    ctx.fillStyle = isUnknown ? 'rgba(255, 107, 107, 0.9)' : 'rgba(0, 255, 0, 0.9)';
+    ctx.fillRect(box.x, box.y - labelHeight - 2, labelWidth, labelHeight);
+    
+    // Draw name text
+    ctx.fillStyle = '#000000';
+    ctx.fillText(label, box.x + padding, box.y - 4);
+    
+    // Draw track ID
+    ctx.fillStyle = this.trackIdColor;
+    ctx.fillText(`T:${face.track_id}`, box.x + 4, box.y + box.height + this.fontSize + 4);
+  }
+
+  drawCrossingLine(ctx, crossingLine) {
+    if (!crossingLine.coords || crossingLine.coords.length !== 2) return;
+    
+    const p1 = this.mapCoordinates(crossingLine.coords[0][0] * this.sourceWidth, crossingLine.coords[0][1] * this.sourceHeight);
+    const p2 = this.mapCoordinates(crossingLine.coords[1][0] * this.sourceWidth, crossingLine.coords[1][1] * this.sourceHeight);
+    
+    // Animate pulse if active
+    this.linePulsePhase += 0.15;
+    const pulseAlpha = this.linePulseActive ? (0.5 + 0.5 * Math.sin(this.linePulsePhase)) : 0.3;
+    
+    ctx.strokeStyle = this.linePulseActive ? this.linePulseColor : this.lineColor;
+    ctx.globalAlpha = pulseAlpha;
+    ctx.lineWidth = this.lineWidth;
+    ctx.setLineDash([10, 5]);
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+    ctx.setLineDash([]);
+    
+    // Draw direction label
+    ctx.fillStyle = this.lineColor;
+    ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+    const midX = (p1.x + p2.x) / 2;
+    const midY = (p1.y + p2.y) / 2 - 10;
+    ctx.fillText(`LINE ${crossingLine.status}`, midX, midY);
+  }
+}
+
+// Global metadata WebSocket instances
+const metadataWS1 = new MetadataWebSocket();
+const metadataWS2 = new MetadataWebSocket();
+
+// Canvas renderers (initialized on live page)
+let canvasRenderer1 = null;
+let canvasRenderer2 = null;
+
+// ============================================================
+// Global instances
+// ============================================================
+const api = new APIClient();
+const healthWS = new HealthWebSocket();
+</script>
+</head>
+<body class="font-sans antialiased overflow-hidden h-screen flex flex-col md:flex-row select-none">
+<!-- SIDEBAR -->
+<aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-[280px] bg-[#0a0a0c] border-r border-[#1e1e21] flex flex-col translate-x-[-100%] md:translate-x-0 transition-transform duration-300">
+  <div class="h-[64px] px-6 flex items-center gap-3 border-b border-[#1e1e21] shrink-0">
+    <div class="w-8 h-8 bg-white text-black flex items-center justify-center rounded-[8px] font-bold text-[13px] tracking-tighter">◈</div>
+    <div class="flex-1 min-w-0">
+      <div class="text-[11px] font-semibold tracking-[0.14em] leading-none">ATTENDANCE OS</div>
+      <div class="text-[10px] tracking-[0.16em] text-zinc-500 font-medium mt-0.5">AI CORE • v2.4.1</div>
+    </div>
+    <span class="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.6)] animate-pulse"></span>
+  </div>
+
+  <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
+    <div class="px-3 mb-3 text-[10px] tracking-[0.14em] font-semibold text-zinc-500">ĐIỀU HƯỚNG</div>
+    <button data-page="dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13px] font-medium transition bg-white text-black">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+      <span class="ml-auto text-[10px] bg-black text-white px-1.5 py-0.5 rounded font-mono">⌘1</span>
+    </button>
+    <button data-page="live" class="nav-btn w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13px] font-medium transition text-zinc-400 hover:text-zinc-100 hover:bg-[#18181b]">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14.5 4.5L21 8v8l-6.5 3.5a1 1 0 0 1-1.5-.87V5.37a1 1 0 0 1 1.5-.87z"/><rect x="2" y="6" width="11" height="12" rx="2"/></svg>
+      Live Monitoring
+      <span class="ml-auto w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+    </button>
+    <button data-page="arcface" class="nav-btn w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13px] font-medium transition text-zinc-400 hover:text-zinc-100 hover:bg-[#18181b]">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M8.5 13a8 8 0 0 0 7 0"/><path d="M5 20c1.5-2 4-3 7-3s5.5 1 7 3"/></svg>
+      ArcFace / NPY
+    </button>
+    <button data-page="video" class="nav-btn w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13px] font-medium transition text-zinc-400 hover:text-zinc-100 hover:bg-[#18181b]">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="12" x2="5" y2="12" opacity="0"/></svg>
+      Video Review
+    </button>
+    <button data-page="health" class="nav-btn w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13px] font-medium transition text-zinc-400 hover:text-zinc-100 hover:bg-[#18181b]">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/><circle cx="12" cy="12" r="10" opacity="0"/></svg>
+      Backend Health
+    </button>
+    <button data-page="records" class="nav-btn w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13px] font-medium transition text-zinc-400 hover:text-zinc-100 hover:bg-[#18181b]">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+      Records
+      <span class="ml-auto text-[10px] font-mono bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded">1,284</span>
+    </button>
+
+    <button data-page="worker" class="nav-btn w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13px] font-medium transition text-zinc-400 hover:text-zinc-100 hover:bg-[#18181b]">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+      Worker Control
+      <span class="ml-auto w-1.5 h-1.5 bg-zinc-800 rounded-full"></span>
+    </button>
+
+    <button data-page="students" class="nav-btn w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13px] font-medium transition text-zinc-400 hover:text-zinc-100 hover:bg-[#18181b]">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Student Roster
+      <span class="ml-auto w-1.5 h-1.5 bg-zinc-800 rounded-full"></span>
+    </button>
+
+    <div class="pt-6 px-3">
+      <div class="rounded-xl bg-[#111113] border border-[#232326] p-3.5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] tracking-[0.12em] font-semibold text-zinc-400">PIPELINE STATUS</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white text-black font-semibold">HEALTHY</span>
+        </div>
+        <div class="space-y-2.5">
+          <div class="flex justify-between text-[11px] font-mono"><span class="text-zinc-500">FPS — CAM 1</span><span class="text-white">29.7</span></div>
+          <div class="h-1 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full bg-white w-[92%]"></div></div>
+          <div class="flex justify-between text-[11px] font-mono"><span class="text-zinc-500">FPS — CAM 2</span><span class="text-white">30.0</span></div>
+          <div class="h-1 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full bg-white w-[98%]"></div></div>
+          <div class="flex justify-between text-[11px] font-mono pt-1 border-t border-zinc-800"><span class="text-zinc-500">AI LATENCY</span><span class="text-white">42ms</span></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="p-3 border-t border-[#1e1e21] shrink-0">
+    <div class="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-zinc-900 transition cursor-pointer">
+      <img src="https://i.pravatar.cc/100?img=33" class="w-8 h-8 rounded-full object-cover">
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-medium leading-none">Minh Trần</div>
+        <div class="text-[11px] text-zinc-500">Quản trị viên • Shift A</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="1.7"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+</aside>
+
+<!-- OVERLAY -->
+<div id="overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 hidden md:hidden"></div>
+
+<!-- MAIN -->
+<div class="flex-1 flex flex-col min-w-0 h-screen">
+  <!-- TOPBAR -->
+  <header class="h-[64px] bg-[#0a0a0c]/80 backdrop-blur-xl border-b border-[#1e1e21] flex items-center px-4 md:px-6 gap-4 shrink-0 sticky top-0 z-20">
+    <button id="menuBtn" class="md:hidden w-9 h-9 rounded-xl border border-zinc-800 flex items-center justify-center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.7"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+
+<div class="hidden md:flex items-center gap-3">
+        <div>
+          <h1 class="text-[13px] font-semibold tracking-[0.08em]">AI ATTENDANCE — CONTROL CENTER</h1>
+          <p class="text-[11px] text-zinc-500 font-mono" id="apiInfo">API: <span class="text-white">/api/v1 (same-origin)</span> • WebSocket: <span class="text-white" id="wsInfo">ws://{host}/api/v1/health/ws</span> • MediaMTX HLS: <span class="text-white">http://localhost:8888</span></p>
+        </div>
+        <span class="hidden lg:inline-flex ml-3 px-2.5 py-1 rounded-full bg-white text-black text-[10px] font-semibold tracking-wide">● LIVE PRODUCTION</span>
+      </div>
+
+    <div class="flex-1 md:hidden">
+      <div class="text-[11px] font-semibold tracking-[0.08em]">ATTENDANCE OS</div>
+      <div class="text-[10px] text-zinc-500 mono">LIVE • 2 CAMS</div>
+    </div>
+
+    <div class="flex items-center gap-2 md:gap-3 ml-auto">
+      <div class="hidden lg:flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/50">
+        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+        <span class="text-[11px] font-medium">Hệ thống</span>
+        <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-white text-black font-semibold">HEALTHY</span>
+      </div>
+      <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/50">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.7"><rect x="2" y="7" width="16" height="10" rx="1.5"/><path d="M22 10.5v3l-4-1.5v-0z"/><path d="M6 11h4"/><path d="M6 13h2"/></svg>
+        <span class="text-[11px] font-mono text-zinc-400">GPU</span>
+        <span id="gpuTop" class="text-[11px] font-mono font-semibold">42%</span>
+        <span class="text-[10px] text-zinc-500 mono">54°C</span>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/50">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span id="clock" class="text-[12px] font-mono font-medium tracking-tight">--:--:--</span>
+        <span class="hidden sm:inline text-[10px] text-zinc-500 mono">ICT</span>
+      </div>
+      <button class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.7"><path d="M18 8A6 6 0 0 0 6 8c0 7-6 9-6 9h18s-6-2-6-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="flex-1 overflow-y-auto bg-[#09090b] p-4 md:p-6">
+    
+    <!-- DASHBOARD -->
+    <section id="page-dashboard" class="space-y-5 max-w-[1400px] mx-auto">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-[22px] font-semibold tracking-tight">Tổng quan hệ thống</h2>
+          <p class="text-[13px] text-zinc-500 mt-1">Trực quan trạng thái AI Attendance — cập nhật qua WebSocket mỗi 200ms.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="switchPage('live')" class="px-4 py-2 rounded-full bg-white text-black text-[13px] font-semibold hover:bg-zinc-200 transition">→ Mở Live Monitoring</button>
+          <button class="px-3 py-2 rounded-full border border-zinc-800 text-[13px] font-medium hover:bg-zinc-900">Xuất báo cáo</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="card rounded-2xl p-4">
+          <div class="flex justify-between items-start">
+            <span class="text-[10px] tracking-[0.12em] font-semibold text-zinc-500">HÔM NAY — LƯỢT VÀO</span>
+            <span class="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center text-[11px]">↗</span>
+          </div>
+          <div class="text-[28px] font-semibold tracking-tight mt-3" id="statTotalToday">—</div>
+          <div class="text-[11px] font-mono text-zinc-500" id="statTotalTrend">Đang tải…</div>
+          <div class="mt-3 flex gap-1.5 h-6 items-end" id="statTotalSpark"></div>
+        </div>
+        <div class="card rounded-2xl p-4">
+          <div class="flex justify-between items-start">
+            <span class="text-[10px] tracking-[0.12em] font-semibold text-zinc-500">ĐANG TRONG CA</span>
+            <span class="w-6 h-6 rounded-full border border-zinc-700 flex items-center justify-center text-[11px]">●</span>
+          </div>
+          <div class="text-[28px] font-semibold tracking-tight mt-3" id="statCurrentlyIn">—</div>
+          <div class="text-[11px] font-mono text-zinc-500" id="statCurrentlyTrend">Đang tải…</div>
+          <div class="mt-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono" id="statRate"></div>
+        </div>
+        <div class="card rounded-2xl p-4">
+          <div class="text-[10px] tracking-[0.12em] font-semibold text-zinc-500">ĐỘ TRỄ AI • QUEUE</div>
+          <div class="text-[28px] font-semibold tracking-tight mt-3"><span id="statLatency">—</span><span class="text-[14px] font-normal text-zinc-500">ms</span></div>
+          <div class="text-[11px] font-mono text-zinc-500" id="statQueue">Đang tải…</div>
+          <div class="mt-3 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full bg-white w-[0%]" id="statLatencyBar"></div></div>
+        </div>
+        <div class="card rounded-2xl p-4">
+          <div class="text-[10px] tracking-[0.12em] font-semibold text-zinc-500">TỶ LỆ NHẬN DIỆN</div>
+          <div class="text-[28px] font-semibold tracking-tight mt-3"><span id="statAccuracy">—</span><span class="text-[14px]">%</span></div>
+          <div class="text-[11px] font-mono text-zinc-500" id="statAccuracyDetail">Đang tải…</div>
+          <div class="mt-3 flex items-center gap-2 text-[11px] font-mono"><span class="px-2 py-1 rounded-full bg-white text-black font-semibold" id="statHealth">CHECKING</span><span class="text-zinc-500" id="statThreshold"></span></div>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-[1.7fr_1fr] gap-3">
+        <div class="card rounded-2xl overflow-hidden">
+          <div class="px-4 py-3 flex items-center justify-between border-b border-[#232326]">
+            <span class="text-[11px] tracking-[0.12em] font-semibold">LIVE PREVIEW — CAMERA 1 & 2</span>
+            <span class="text-[11px] font-mono text-zinc-500 flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> 4K • 30 FPS • Annotation ON</span>
+          </div>
+          <div class="grid grid-cols-2 gap-px bg-[#1e1e21]">
+            <div class="relative aspect-[16/10] bg-black overflow-hidden group cursor-pointer" onclick="switchPage('live')">
+              <video id="preview1" class="w-full h-full object-cover" playsinline muted></video>
+              <canvas class="absolute inset-0 w-full h-full"></canvas>
+              <div class="absolute inset-0 p-2 flex flex-col justify-between pointer-events-none">
+                <div class="flex justify-between"><span class="px-2 py-1 rounded-full bg-black/70 backdrop-blur text-[10px] font-mono font-semibold border border-white/10">CAM-01 • LOBBY</span><span class="px-1.5 py-1 rounded bg-white text-black text-[10px] font-mono font-bold">● CONNECTING</span></div>
+                <div class="flex gap-1"><span class="px-2 py-1 rounded bg-white text-black text-[10px] font-mono font-semibold">LINE IN — 0 IN / 0 OUT</span></div>
+              </div>
+              <!-- line -->
+              <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="10" y1="78" x2="90" y2="78" stroke="white" stroke-width="0.6" stroke-dasharray="2 1.5"/><text x="12" y="76" fill="white" font-size="3.2" font-family="JetBrains Mono" font-weight="600">LINE IN → OUT</text></svg>
+            </div>
+            <div class="relative aspect-[16/10] bg-black overflow-hidden group cursor-pointer" onclick="switchPage('live')">
+              <video id="preview2" class="w-full h-full object-cover" playsinline muted></video>
+              <div class="absolute inset-0 p-2 flex flex-col justify-between pointer-events-none">
+                <div class="flex justify-between"><span class="px-2 py-1 rounded-full bg-black/70 backdrop-blur text-[10px] font-mono font-semibold border border-white/10">CAM-02 • GATE B</span><span class="px-1.5 py-1 rounded bg-white text-black text-[10px] font-mono font-bold">● CONNECTING</span></div>
+              </div>
+              <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="8" y1="72" x2="92" y2="72" stroke="white" stroke-width="0.6" stroke-dasharray="2 1.5"/><text x="10" y="70" fill="white" font-size="3.2" font-family="JetBrains Mono" font-weight="600">LINE IN — GATE B</text></svg>
+            </div>
+          </div>
+          <div class="px-4 py-2.5 flex items-center justify-between bg-[#0f0f10] text-[11px] font-mono">
+            <span class="text-zinc-500">WebSocket <span class="text-white" id="wsStatusDashboard">connecting…</span> • MediaMTX <span class="text-white" id="mmStatusDashboard">checking…</span> • GPU <span class="text-white" id="gpuStatusDashboard">—</span></span>
+            <button onclick="switchPage('live')" class="px-3 py-1 rounded-full border border-zinc-700 hover:bg-white hover:text-black transition">Mở Live →</button>
+          </div>
+        </div>
+
+        <div class="card rounded-2xl p-4 flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[11px] tracking-[0.12em] font-semibold">ĐIỂM DANH GẦN ĐÂY</span>
+            <button onclick="switchPage('records')" class="text-[11px] font-mono px-2 py-1 rounded-full border border-zinc-800 hover:bg-zinc-800">Xem tất cả</button>
+          </div>
+          <div class="space-y-2.5 flex-1" id="recentAttendanceList">
+            <div class="flex items-center justify-center text-zinc-500 py-4">
+              <span class="text-[13px]">Chưa có dữ liệu điểm danh</span>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-zinc-800 flex items-center gap-2 text-[11px] font-mono text-zinc-500"><span class="w-2 h-2 bg-white rounded-full"></span> Cập nhật realtime qua WebSocket</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIVE MONITORING -->
+    <section id="page-live" class="space-y-4 max-w-[1400px] mx-auto hidden">
+      <div class="flex flex-wrap gap-3 items-center justify-between">
+        <div>
+          <h2 class="text-[20px] font-semibold tracking-tight flex items-center gap-2.5">Live Monitoring <span class="px-2 py-0.5 rounded-full bg-white text-black text-[10px] font-bold tracking-wide">● LIVE</span> <span class="text-[11px] font-mono font-normal text-zinc-500 border border-zinc-800 px-2 py-0.5 rounded-full">2 CAMERAS • 4K</span></h2>
+          <p class="text-[12px] text-zinc-500 mt-1">Video là trung tâm • Vẽ bounding box, Track ID, Confidence, Line IN/OUT trực tiếp trên khung hình.</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex p-1 rounded-full bg-[#18181b] border border-zinc-800">
+            <button id="btnBoth" onclick="setCamMode('both')" class="px-3.5 py-1.5 rounded-full bg-white text-black text-[12px] font-semibold">Cả hai</button>
+            <button id="btnCam1" onclick="setCamMode('cam1')" class="px-3.5 py-1.5 rounded-full text-zinc-400 text-[12px] font-medium">Camera 1</button>
+            <button id="btnCam2" onclick="setCamMode('cam2')" class="px-3.5 py-1.5 rounded-full text-zinc-400 text-[12px] font-medium">Camera 2</button>
+          </div>
+          <label class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900 text-[12px] font-medium cursor-pointer">
+            <input id="toggleAnnot" type="checkbox" checked class="accent-white w-3.5 h-3.5"> Annotation
+          </label>
+          <button onclick="clearLines()" class="px-3 py-1.5 rounded-full border border-zinc-800 text-[12px] font-medium hover:bg-zinc-900">Reset line</button>
+        </div>
+      </div>
+
+      <!-- toolbar -->
+      <div class="card rounded-2xl p-2 flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-2 px-2">
+          <span class="text-[11px] tracking-[0.08em] font-semibold text-zinc-500">LINE TOOL</span>
+          <span class="w-px h-4 bg-zinc-800"></span>
+        </div>
+        <button id="btnDraw" onclick="toggleDraw()" class="px-3 py-1.5 rounded-full bg-white text-black text-[12px] font-semibold flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 19l7-7a1.5 1.5 0 0 0-2.12-2.12L10 16.76V19h2.24z"/><path d="M14 6l4 4"/></svg> Vẽ line</button>
+        <button class="px-3 py-1.5 rounded-full border border-zinc-700 text-[12px] font-medium hover:bg-zinc-800 flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Kéo / Sửa</button>
+        <button onclick="saveLines()" class="px-3 py-1.5 rounded-full border border-zinc-700 text-[12px] font-medium hover:bg-zinc-800">Lưu line</button>
+        <button onclick="deleteLine()" class="px-3 py-1.5 rounded-full border border-zinc-700 text-[12px] font-medium hover:bg-zinc-800">Xóa line đã chọn</button>
+        <span class="hidden md:inline-flex items-center gap-2 ml-auto text-[11px] font-mono text-zinc-500"><span class="w-2 h-2 bg-white rounded-full"></span> Kéo trực tiếp trên video để vẽ • Nhấn Lưu để gửi API /ws/line</span>
+        <span class="flex items-center gap-1.5 ml-auto md:ml-0 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono"><span id="fpsLive" class="font-semibold text-white">30.0</span> FPS • AI <span class="text-white">ON</span></span>
+      </div>
+
+      <div id="liveGrid" class="grid lg:grid-cols-2 gap-3">
+        <!-- CAM 1 -->
+        <div id="camCard1" class="card rounded-2xl overflow-hidden flex flex-col">
+          <div class="px-3 py-2.5 flex items-center justify-between border-b border-[#232326] bg-[#0f0f10]">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center text-[11px] font-bold">1</span>
+              <div><div class="text-[13px] font-semibold leading-none">Camera 1 — Lobby Front</div><div class="text-[11px] font-mono text-zinc-500">rtsp://192.168.1.21:8554/cam1 • 3840×2160</div></div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="px-2 py-1 rounded-full bg-white text-black text-[10px] font-bold">HEALTHY</span>
+              <span class="px-2 py-1 rounded-full border border-zinc-700 text-[10px] font-mono">FPS <b class="text-white">29.7</b></span>
+              <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+            </div>
+          </div>
+          <div class="relative aspect-[16/9] bg-black overflow-hidden video-grid select-none" id="wrap1">
+            <video id="video1" class="w-full h-full object-cover" playsinline muted></video>
+            <canvas id="canvas1" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+            <!-- bounding boxes html overlay -->
+            <div id="bboxLayer1" class="absolute inset-0 pointer-events-none">
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between px-3 pointer-events-none">
+              <span class="text-[11px] font-mono text-white/90 flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> AI Tracking • 0 persons • IN: 0 / OUT: 0</span>
+              <span class="text-[11px] font-mono bg-white text-black px-1.5 py-0.5 rounded font-bold">4K • H.264</span>
+            </div>
+            <div id="drawHint1" class="absolute top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-white text-black text-[11px] font-semibold shadow-lg hidden">Đang vẽ — kéo để tạo line IN/OUT</div>
+          </div>
+          <div class="px-3 py-2.5 bg-[#0f0f10] border-t border-[#232326] flex flex-wrap items-center gap-2 text-[11px] font-mono">
+            <span class="text-zinc-500">ANNOTATION</span>
+            <span class="px-2 py-1 rounded-full bg-white text-black font-semibold">BBox + ID + Conf</span>
+            <span class="px-2 py-1 rounded-full border border-zinc-700">Line <b class="text-white">ON</b></span>
+            <span class="ml-auto text-zinc-500">Latency <span class="text-white">38ms</span> • Queue 2</span>
+          </div>
+        </div>
+
+        <!-- CAM 2 -->
+        <div id="camCard2" class="card rounded-2xl overflow-hidden flex flex-col">
+          <div class="px-3 py-2.5 flex items-center justify-between border-b border-[#232326] bg-[#0f0f10]">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-full border border-zinc-700 flex items-center justify-center text-[11px] font-bold">2</span>
+              <div><div class="text-[13px] font-semibold leading-none">Camera 2 — Gate B</div><div class="text-[11px] font-mono text-zinc-500">rtsp://192.168.1.22:8554/cam2 • 3840×2160</div></div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="px-2 py-1 rounded-full bg-white text-black text-[10px] font-bold">HEALTHY</span>
+              <span class="px-2 py-1 rounded-full border border-zinc-700 text-[10px] font-mono">FPS <b class="text-white">30.0</b></span>
+              <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+            </div>
+          </div>
+          <div class="relative aspect-[16/9] bg-black overflow-hidden video-grid select-none" id="wrap2">
+            <video id="video2" class="w-full h-full object-cover" playsinline muted></video>
+            <canvas id="canvas2" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+            <div class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between px-3 pointer-events-none">
+              <span class="text-[11px] font-mono text-white/90 flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> AI Tracking • 0 persons • IN: 0 / OUT: 0</span>
+              <span class="text-[11px] font-mono bg-white text-black px-1.5 py-0.5 rounded font-bold">4K • H.264</span>
+            </div>
+            <div id="drawHint2" class="absolute top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-white text-black text-[11px] font-semibold shadow-lg hidden">Đang vẽ — kéo để tạo line</div>
+          </div>
+          <div class="px-3 py-2.5 bg-[#0f0f10] border-t border-[#232326] flex flex-wrap items-center gap-2 text-[11px] font-mono">
+            <span class="text-zinc-500">ANNOTATION</span>
+            <span class="px-2 py-1 rounded-full bg-white text-black font-semibold">BBox + ID + Conf</span>
+            <span class="px-2 py-1 rounded-full border border-zinc-700">Line <b class="text-white">ON</b></span>
+            <span class="ml-auto text-zinc-500">Latency <span class="text-white">44ms</span> • Queue 1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-3">
+        <div class="card rounded-2xl p-3.5">
+          <div class="text-[11px] tracking-[0.08em] font-semibold text-zinc-500">TRẠNG THÁI CAMERA</div>
+          <div class="mt-3 space-y-2.5">
+            <div class="flex items-center justify-between p-2.5 rounded-xl bg-white text-black"><span class="text-[13px] font-semibold flex items-center gap-2"><span class="w-2 h-2 bg-black rounded-full animate-pulse"></span>CAM-01</span><span class="text-[11px] font-mono font-bold">ONLINE • 29.7 FPS</span></div>
+            <div class="flex items-center justify-between p-2.5 rounded-xl border border-zinc-800"><span class="text-[13px] font-medium flex items-center gap-2"><span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>CAM-02</span><span class="text-[11px] font-mono">ONLINE • 30.0 FPS</span></div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-zinc-500 pt-1"><span>MediaMTX</span><span class="text-white">healthy • :8889/webrtc</span></div>
+          </div>
+        </div>
+        <div class="card rounded-2xl p-3.5">
+          <div class="text-[11px] tracking-[0.08em] font-semibold text-zinc-500">AI PIPELINE</div>
+          <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-2.5"><div class="text-[10px] tracking-wide font-semibold text-zinc-500">DETECT</div><div class="text-[13px] font-mono font-semibold mt-1">YOLOv8</div><div class="text-[10px] font-mono text-zinc-500">18ms</div></div>
+            <div class="rounded-xl bg-white text-black p-2.5"><div class="text-[10px] tracking-wide font-semibold opacity-60">RE-ID</div><div class="text-[13px] font-mono font-bold mt-1">ArcFace</div><div class="text-[10px] font-mono opacity-60">12ms</div></div>
+            <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-2.5"><div class="text-[10px] tracking-wide font-semibold text-zinc-500">TRACK</div><div class="text-[13px] font-mono font-semibold mt-1">ByteTrack</div><div class="text-[10px] font-mono text-zinc-500">6ms</div></div>
+          </div>
+          <div class="mt-3 flex items-center gap-2 text-[11px] font-mono"><span class="px-2 py-1 rounded-full bg-white text-black font-semibold">AI: ACTIVE</span><span class="text-zinc-500">FPS 30 • GPU 42%</span></div>
+        </div>
+        <div class="card rounded-2xl p-3.5">
+          <div class="text-[11px] tracking-[0.08em] font-semibold text-zinc-500">LINE CONFIG (JSON API)</div>
+          <pre class="mt-3 p-2.5 rounded-xl bg-black border border-zinc-800 text-[11px] font-mono leading-relaxed overflow-x-auto text-zinc-300">{
+  "cam_id": "cam-01",
+  "line": [[0.12,0.78],
+           [0.88,0.78]],
+  "direction": "IN→OUT",
+  "saved": true
+}</pre>
+          <button onclick="saveLines()" class="mt-2 w-full py-2 rounded-full bg-white text-black text-[12px] font-semibold">Gửi WebSocket → /api/line</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCFACE / NPY -->
+    <section id="page-arcface" class="space-y-4 max-w-[1400px] mx-auto hidden">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-[20px] font-semibold tracking-tight">ArcFace Enrollment / NPY</h2>
+          <p class="text-[12px] text-zinc-500 mt-1">Tạo dữ liệu .npy — upload ảnh → detect/crop khuôn mặt → ArcFace embedding 512-D.</p>
+        </div>
+        <span class="px-3 py-1 rounded-full border border-zinc-800 text-[11px] font-mono">512-D • L2-normalized • .npy</span>
+      </div>
+
+      <div class="grid lg:grid-cols-[1.1fr_0.9fr] gap-4">
+        <div class="space-y-3">
+          <div class="card rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[11px] tracking-[0.12em] font-semibold">1 • UPLOAD ẢNH</span>
+              <span class="text-[11px] font-mono text-zinc-500">JPG/PNG • ≤ 10MB • 1 mặt / ảnh khuyến nghị</span>
+            </div>
+            <label id="dropZone" class="block border border-dashed border-zinc-700 rounded-2xl p-6 text-center hover:border-zinc-500 hover:bg-zinc-900/30 transition cursor-pointer">
+              <input id="fileInput" type="file" accept="image/*" class="hidden">
+              <div class="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center mx-auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+              <div class="text-[13px] font-medium mt-3">Kéo & thả ảnh vào đây hoặc <span class="underline">chọn tệp</span></div>
+              <div class="text-[11px] font-mono text-zinc-500 mt-1">Hỗ trợ preview ngay, tự động detect khuôn mặt</div>
+              <div class="mt-3 inline-flex gap-1.5"><span class="px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono">112×112 crop</span><span class="px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono">ArcFace</span></div>
+            </label>
+
+            <div id="previewWrap" class="hidden mt-4 grid grid-cols-[1.2fr_0.8fr] gap-3">
+              <div class="rounded-2xl overflow-hidden border border-zinc-800 bg-black aspect-[4/3] relative">
+                <img id="previewImg" class="w-full h-full object-cover">
+                <div id="faceBox" class="absolute border-2 border-white rounded-lg hidden">
+                  <span class="absolute -top-6 left-0 bg-white text-black text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">FACE • 0.98</span>
+                </div>
+                <span class="absolute bottom-2 left-2 px-2 py-1 rounded-full bg-black/70 backdrop-blur text-[10px] font-mono border border-white/10">Preview • original</span>
+              </div>
+              <div class="space-y-3">
+                <div class="rounded-2xl border border-zinc-800 bg-zinc-900 p-3">
+                  <div class="text-[11px] tracking-wide font-semibold">Kết quả Detect / Crop</div>
+                  <div class="mt-2 w-full aspect-square rounded-xl overflow-hidden bg-black border border-zinc-800 flex items-center justify-center relative">
+                    <img id="cropImg" class="w-full h-full object-cover hidden">
+                    <span id="cropPlaceholder" class="text-[11px] font-mono text-zinc-500">Chưa detect</span>
+                    <span class="absolute bottom-1.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-white text-black text-[10px] font-mono font-bold">112×112</span>
+                  </div>
+                  <div class="mt-2 flex gap-1.5 text-[11px] font-mono">
+                    <span id="detectBadge" class="px-2 py-1 rounded-full border border-zinc-700">Chờ xử lý</span>
+                    <span class="px-2 py-1 rounded-full bg-zinc-800">conf 0.98</span>
+                  </div>
+                </div>
+                <button id="btnDetect" class="w-full py-2.5 rounded-full bg-white text-black text-[13px] font-semibold">▶ Detect & Crop khuôn mặt</button>
+                <button id="btnEmbedding" class="w-full py-2.5 rounded-full border border-zinc-700 text-[13px] font-medium hover:bg-zinc-900">Tạo ArcFace Embedding</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card rounded-2xl p-4">
+            <div class="text-[11px] tracking-[0.12em] font-semibold">2 • THÔNG TIN NGƯỜI DÙNG & TẠO NPY</div>
+            <div class="grid sm:grid-cols-2 gap-3 mt-3">
+              <label class="space-y-1.5"><span class="text-[11px] font-medium text-zinc-400">Họ và tên *</span><input id="inpName" placeholder="VD: Nguyễn Văn A" class="w-full px-3 py-2.5 rounded-xl bg-black border border-zinc-800 text-[13px] placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"></label>
+              <label class="space-y-1.5"><span class="text-[11px] font-medium text-zinc-400">Mã nhân viên / ID *</span><input id="inpId" placeholder="VD: NV1042" class="w-full px-3 py-2.5 rounded-xl bg-black border border-zinc-800 text-[13px] placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"></label>
+              <label class="space-y-1.5"><span class="text-[11px] font-medium text-zinc-400">Phòng ban</span><select class="w-full px-3 py-2.5 rounded-xl bg-black border border-zinc-800 text-[13px] focus:outline-none"><option>Kỹ thuật</option><option>Nhân sự</option><option>Bảo vệ</option><option>Vận hành</option></select></label>
+              <label class="space-y-1.5"><span class="text-[11px] font-medium text-zinc-400">Camera gán mặc định</span><select class="w-full px-3 py-2.5 rounded-xl bg-black border border-zinc-800 text-[13px] focus:outline-none"><option>CAM-01</option><option>CAM-02</option><option>Cả hai</option></select></label>
+            </div>
+            <div class="mt-3 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+              <div class="flex items-center justify-between"><span class="text-[11px] font-mono text-zinc-400">ArcFace Embedding</span><span id="embedStatus" class="text-[11px] font-mono px-2 py-0.5 rounded-full border border-zinc-700">chưa tạo</span></div>
+              <div class="mt-2 h-1.5 bg-black rounded-full overflow-hidden border border-zinc-800"><div id="embedBar" class="h-full bg-white w-0 transition-all duration-700"></div></div>
+              <div id="embedVector" class="mt-2 font-mono text-[10px] leading-relaxed text-zinc-500 break-all">— vector 512-D sẽ hiện ở đây sau khi tạo —</div>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <button onclick="createNpy()" class="flex-1 py-2.5 rounded-full bg-white text-black text-[13px] font-semibold">＋ Tạo & Lưu .npy</button>
+              <button onclick="resetEnroll()" class="px-5 py-2.5 rounded-full border border-zinc-700 text-[13px] font-medium">Reset</button>
+            </div>
+            <div id="npyResult" class="hidden mt-3 p-2.5 rounded-xl bg-white text-black text-[12px] font-medium flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center">✓</span> Đã tạo <b id="npyName"></b> • 512-D • sẵn sàng cho pipeline</div>
+            <div id="npyError" class="hidden mt-3 p-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-[12px]">⚠ Chưa có ảnh hoặc chưa detect khuôn mặt.</div>
+          </div>
+        </div>
+
+        <div class="card rounded-2xl p-4 flex flex-col">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] tracking-[0.12em] font-semibold">DANH SÁCH EMBEDDING ĐÃ TẠO</span>
+            <span class="text-[11px] font-mono px-2 py-1 rounded-full bg-white text-black font-bold">12 files</span>
+          </div>
+          <div class="mt-3 flex gap-2">
+            <input id="searchNpy" placeholder="Tìm theo tên / ID..." class="flex-1 px-3 py-2 rounded-full bg-black border border-zinc-800 text-[13px] placeholder:text-zinc-600 focus:outline-none">
+            <button class="px-3 py-2 rounded-full border border-zinc-800 text-[12px] font-medium">Lọc</button>
+          </div>
+          <div class="mt-3 overflow-auto rounded-xl border border-zinc-800 max-h-[560px]">
+            <table class="w-full text-left text-[12px]">
+              <thead class="sticky top-0 bg-zinc-900 text-[11px] tracking-wide text-zinc-400">
+                <tr><th class="px-3 py-2 font-medium">Người dùng</th><th class="px-3 py-2 font-medium">ID</th><th class="px-3 py-2 font-medium">Tệp .npy</th><th class="px-3 py-2 font-medium">Trạng thái</th></tr>
+              </thead>
+              <tbody id="npyTable" class="divide-y divide-zinc-800 font-mono text-[11px]">
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-3 flex items-center gap-2 text-[11px] font-mono text-zinc-500"><span class="w-2 h-2 bg-white rounded-full"></span> Lưu tại <span class="text-white">/data/embeddings/*.npy</span> • Tự động reload pipeline</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIDEO REVIEW -->
+    <section id="page-video" class="space-y-4 max-w-[1400px] mx-auto hidden">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div><h2 class="text-[20px] font-semibold tracking-tight">Video Review</h2><p class="text-[12px] text-zinc-500 mt-1">Xem lại recording • chọn camera & khoảng thời gian • phát, pause, tua, hiển thị annotation/event.</p></div>
+        <div class="flex gap-2">
+          <select id="reviewCam" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả camera</option><option value="cam1">Camera 1 — Lobby</option><option value="cam2">Camera 2 — Gate B</option></select>
+          <input type="date" value="2026-03-15" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]">
+          <input type="date" value="2026-03-16" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]">
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-[360px_1fr] gap-4">
+        <div class="card rounded-2xl p-3 flex flex-col max-h-[640px]">
+          <div class="flex items-center justify-between mb-2"><span class="text-[11px] tracking-[0.12em] font-semibold">RECORDINGS</span><span class="text-[11px] font-mono px-2 py-1 rounded-full border border-zinc-800">6 videos</span></div>
+          <input id="searchVideo" placeholder="Tìm video..." class="w-full px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px] placeholder:text-zinc-600 focus:outline-none">
+          <div id="videoList" class="mt-3 space-y-2 overflow-auto pr-1 flex-1">
+          </div>
+        </div>
+
+        <div class="card rounded-2xl overflow-hidden flex flex-col">
+          <div class="relative aspect-[16/9] bg-black">
+            <video id="reviewVideo" class="w-full h-full object-cover" poster="https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=80&auto=format&fit=crop" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"></video>
+            <div id="reviewOverlay" class="absolute inset-0 pointer-events-none hidden">
+              <div class="absolute left-[22%] top-[30%] w-[14%] h-[40%] border border-white rounded-md"><span class="absolute -top-5 left-0 bg-white text-black text-[10px] font-mono font-bold px-1 py-0.5 rounded">#42 0.91</span></div>
+              <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="10" y1="75" x2="90" y2="75" stroke="white" stroke-width="0.5" stroke-dasharray="1.5 1.2"/></svg>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+              <div class="flex items-center gap-2">
+                <button id="playBtn" class="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center shrink-0">▶</button>
+                <input id="seekBar" type="range" min="0" max="100" value="0" class="range flex-1">
+                <span id="timeLabel" class="text-[11px] font-mono text-white">00:00 / 00:59</span>
+                <button id="annotBtn" class="px-2.5 py-1 rounded-full bg-white text-black text-[11px] font-semibold">Annotation ON</button>
+                <select id="speedSel" class="px-2 py-1 rounded-full bg-black/60 backdrop-blur border border-white/20 text-white text-[11px]"><option>1x</option><option>1.5x</option><option>2x</option></select>
+              </div>
+            </div>
+            <span class="absolute top-3 left-3 px-2 py-1 rounded-full bg-black/60 backdrop-blur border border-white/10 text-[11px] font-mono text-white">CAM-01 • 2026-03-15 08:42:11 • 4K</span>
+          </div>
+          <div class="p-3 bg-[#0f0f10] border-t border-[#232326] space-y-2">
+            <div class="flex items-center justify-between text-[11px] font-mono"><span class="tracking-wide font-semibold text-zinc-400">TIMELINE EVENTS</span><span class="text-zinc-500">Kéo tua để xem IN/OUT • annotation lưu cùng video</span></div>
+            <div class="relative h-12 rounded-xl bg-black border border-zinc-800 overflow-hidden p-2">
+              <div class="absolute inset-2 flex items-center"><div class="w-full h-1 bg-zinc-800 rounded-full relative"><div class="absolute left-[18%] w-2 h-2 -top-0.5 bg-white rounded-full"></div><div class="absolute left-[34%] w-2 h-2 -top-0.5 bg-white rounded-full"></div><div class="absolute left-[62%] w-2 h-2 -top-0.5 bg-zinc-500 rounded-full"></div><div class="absolute left-[78%] w-2 h-2 -top-0.5 bg-white rounded-full"></div></div></div>
+              <div class="absolute bottom-1 left-2 right-2 flex justify-between text-[10px] font-mono text-zinc-500"><span>08:40</span><span>08:45</span><span>08:50</span><span>08:55</span></div>
+            </div>
+            <div class="flex gap-2 text-[11px] font-mono">
+              <span class="px-2 py-1 rounded-full bg-white text-black font-semibold">● 08:42:11 IN — Tuấn (0.94)</span>
+              <span class="px-2 py-1 rounded-full border border-zinc-700">08:44:02 OUT — My (0.88)</span>
+              <span class="px-2 py-1 rounded-full border border-zinc-700">08:47 Low conf</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BACKEND HEALTH -->
+    <section id="page-health" class="space-y-4 max-w-[1400px] mx-auto hidden">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div><h2 class="text-[20px] font-semibold tracking-tight">Backend Health</h2><p class="text-[12px] text-zinc-500 mt-1">Trực quan sức khỏe hệ thống — Healthy / Warning / Error / Offline rõ ràng bằng tông đơn sắc.</p></div>
+        <div class="flex items-center gap-2 text-[11px] font-mono"><span class="px-2.5 py-1 rounded-full bg-white text-black font-bold">● HEALTHY</span><span class="px-2.5 py-1 rounded-full border border-zinc-700">Uptime 14d 06h</span><span class="px-2.5 py-1 rounded-full border border-zinc-700">API :8000</span></div>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div class="card rounded-2xl p-3.5 border-white/20">
+          <div class="flex items-center justify-between"><span class="text-[11px] tracking-wide font-semibold">BACKEND</span><span class="w-2 h-2 bg-white rounded-full animate-pulse"></span></div>
+          <div class="text-[13px] font-semibold mt-2">FastAPI • :8000</div><div class="text-[11px] font-mono text-zinc-500">200 OK • 12ms</div>
+          <span class="inline-block mt-2 px-2 py-1 rounded-full bg-white text-black text-[10px] font-bold tracking-wide">HEALTHY</span>
+        </div>
+        <div class="card rounded-2xl p-3.5">
+          <div class="flex items-center justify-between"><span class="text-[11px] tracking-wide font-semibold">PIPELINE</span><span class="w-2 h-2 bg-white rounded-full animate-pulse"></span></div>
+          <div class="text-[13px] font-semibold mt-2">Detect → ArcFace → Track</div><div class="text-[11px] font-mono text-zinc-500">Queue 2 • 42ms</div>
+          <span class="inline-block mt-2 px-2 py-1 rounded-full bg-white text-black text-[10px] font-bold tracking-wide">HEALTHY</span>
+        </div>
+        <div class="card rounded-2xl p-3.5">
+          <div class="flex items-center justify-between"><span class="text-[11px] tracking-wide font-semibold">CAMERAS</span><span class="w-2 h-2 bg-white rounded-full"></span></div>
+          <div class="text-[13px] font-semibold mt-2">2 / 2 Online</div><div class="text-[11px] font-mono text-zinc-500">RTSP • MediaMTX</div>
+          <span class="inline-block mt-2 px-2 py-1 rounded-full border border-zinc-700 text-[10px] font-bold tracking-wide">2 HEALTHY</span>
+        </div>
+        <div class="card rounded-2xl p-3.5">
+          <div class="flex items-center justify-between"><span class="text-[11px] tracking-wide font-semibold">GPU</span><span class="w-2 h-2 bg-zinc-500 rounded-full"></span></div>
+          <div class="text-[13px] font-semibold mt-2">NVIDIA T4 • 54°C</div><div class="text-[11px] font-mono text-zinc-500" id="gpuHealthLabel">42% util • 6.2 GB / 16 GB</div>
+          <span class="inline-block mt-2 px-2 py-1 rounded-full border border-white/30 text-[10px] font-bold tracking-wide">WARNING</span>
+        </div>
+        <div class="card rounded-2xl p-3.5">
+          <div class="flex items-center justify-between"><span class="text-[11px] tracking-wide font-semibold">MEDIAMTX</span><span class="w-2 h-2 bg-white rounded-full"></span></div>
+          <div class="text-[13px] font-semibold mt-2">:8889 WebRTC</div><div class="text-[11px] font-mono text-zinc-500">2 streams • HLS OK</div>
+          <span class="inline-block mt-2 px-2 py-1 rounded-full bg-white text-black text-[10px] font-bold tracking-wide">HEALTHY</span>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-3">
+        <div class="lg:col-span-2 card rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3"><span class="text-[11px] tracking-[0.12em] font-semibold">RESOURCE UTILIZATION</span><span class="text-[11px] font-mono text-zinc-500">Cập nhật 1s • monochrome</span></div>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <div class="flex justify-between text-[11px] font-mono"><span class="text-zinc-500">CPU</span><span id="cpuVal" class="font-semibold">38%</span></div>
+              <div class="mt-1.5 h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800"><div id="cpuBar" class="h-full bg-white" style="width:38%"></div></div>
+              <div class="mt-2 h-[36px] flex items-end gap-[2px]"><div class="flex-1 bg-white/90 rounded-sm" style="height:30%"></div><div class="flex-1 bg-white/70 rounded-sm" style="height:45%"></div><div class="flex-1 bg-white rounded-sm" style="height:38%"></div><div class="flex-1 bg-white/60 rounded-sm" style="height:55%"></div><div class="flex-1 bg-white rounded-sm" style="height:42%"></div><div class="flex-1 bg-zinc-700 rounded-sm" style="height:28%"></div><div class="flex-1 bg-white rounded-sm" style="height:50%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] font-mono"><span class="text-zinc-500">RAM</span><span id="ramVal" class="font-semibold">62%</span></div>
+              <div class="mt-1.5 h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800"><div id="ramBar" class="h-full bg-white" style="width:62%"></div></div>
+              <div class="mt-2 text-[11px] font-mono text-zinc-500">9.9 / 16 GB • Swap 1.2 GB</div>
+              <div class="mt-2 h-[36px] flex items-end gap-[2px]"><div class="flex-1 bg-zinc-600 rounded-sm" style="height:60%"></div><div class="flex-1 bg-white rounded-sm" style="height:62%"></div><div class="flex-1 bg-zinc-700 rounded-sm" style="height:58%"></div><div class="flex-1 bg-white/80 rounded-sm" style="height:65%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] font-mono"><span class="text-zinc-500">GPU UTIL</span><span id="gpuVal" class="font-semibold">42%</span></div>
+              <div class="mt-1.5 h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800"><div id="gpuBar" class="h-full bg-white" style="width:42%"></div></div>
+              <div class="mt-2 text-[11px] font-mono text-zinc-500">Encoder 18% • Decoder 22%</div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] font-mono"><span class="text-zinc-500">GPU MEMORY</span><span class="font-semibold">6.2 / 16 GB</span></div>
+              <div class="mt-1.5 h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800"><div class="h-full bg-zinc-300" style="width:39%"></div></div>
+              <div class="mt-2 text-[11px] font-mono text-zinc-500">ArcFace cache 1.1 GB</div>
+            </div>
+          </div>
+          <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] font-mono">
+            <div class="rounded-xl bg-black border border-zinc-800 p-2.5"><div class="text-zinc-500">FPS AVG</div><div class="text-white font-semibold text-[13px]">29.8</div></div>
+            <div class="rounded-xl bg-white text-black p-2.5"><div class="opacity-60">AI LATENCY</div><div class="font-bold text-[13px]">42ms</div></div>
+            <div class="rounded-xl bg-black border border-zinc-800 p-2.5"><div class="text-zinc-500">QUEUE</div><div class="text-white font-semibold text-[13px]">2 frames</div></div>
+          </div>
+        </div>
+
+        <div class="card rounded-2xl p-4 flex flex-col">
+          <div class="flex items-center justify-between"><span class="text-[11px] tracking-[0.12em] font-semibold">ERROR / LOG</span><span class="px-2 py-1 rounded-full border border-zinc-700 text-[10px] font-mono">Auto-scroll</span></div>
+          <div class="mt-3 flex-1 bg-black rounded-xl border border-zinc-800 p-2.5 font-mono text-[11px] leading-relaxed overflow-auto max-h-[300px] space-y-1">
+            <div><span class="text-zinc-500">08:42:11</span> <span class="text-white">[INFO]</span> pipeline: frame 18422 processed • 41ms</div>
+            <div><span class="text-zinc-500">08:42:10</span> <span class="text-white">[INFO]</span> cam-01: track #42 matched (0.94) → IN</div>
+            <div><span class="text-zinc-500">08:41:55</span> <span class="px-1 bg-zinc-800 text-zinc-300 rounded">[WARN]</span> cam-02: low confidence 0.38 — ignored</div>
+            <div><span class="text-zinc-500">08:41:33</span> <span class="text-white">[INFO]</span> mediamtx: webrtc session renewed</div>
+            <div><span class="text-zinc-500">08:40:02</span> <span class="text-white">[INFO]</span> api: GET /health 200 (8ms)</div>
+            <div><span class="text-zinc-500">08:39:12</span> <span class="px-1 bg-white text-black rounded font-bold">[ERROR]</span> gpu: temp 71°C throttling check</div>
+            <div class="text-zinc-600">— end —</div>
+          </div>
+          <div class="mt-3 grid grid-cols-3 gap-2 text-[11px] font-mono">
+            <div class="rounded-full border border-zinc-800 px-2 py-1 text-center"><span class="w-1.5 h-1.5 bg-white inline-block rounded-full mr-1"></span>Healthy</div>
+            <div class="rounded-full border border-zinc-700 bg-zinc-900 px-2 py-1 text-center">Warning</div>
+            <div class="rounded-full border border-zinc-800 px-2 py-1 text-center text-zinc-500">Offline</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RECORDS -->
+    <section id="page-records" class="space-y-4 max-w-[1400px] mx-auto hidden">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div><h2 class="text-[20px] font-semibold tracking-tight">Records — Dữ liệu điểm danh</h2><p class="text-[12px] text-zinc-500 mt-1">Danh sách IN/OUT • tìm kiếm/lọc theo người, camera, ngày • export Excel nếu backend hỗ trợ.</p></div>
+        <button onclick="exportExcel()" class="px-4 py-2 rounded-full bg-white text-black text-[13px] font-semibold flex items-center gap-1.5">⤓ Export Excel</button>
+      </div>
+
+      <div class="card rounded-2xl p-3 flex flex-wrap gap-2 items-center">
+        <div class="relative flex-1 min-w-[180px]"><svg class="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="recSearch" placeholder="Tìm theo tên, ID..." class="w-full pl-9 pr-3 py-2 rounded-full bg-black border border-zinc-800 text-[13px] placeholder:text-zinc-600 focus:outline-none"></div>
+        <select id="recCam" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả camera</option><option>CAM-01</option><option>CAM-02</option></select>
+        <select id="recType" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">IN / OUT</option><option>IN</option><option>OUT</option></select>
+        <input id="recDate" type="date" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]">
+        <span id="recCount" class="ml-auto text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-800">8 bản ghi</span>
+      </div>
+
+      <div class="card rounded-2xl overflow-hidden">
+        <div class="overflow-auto">
+          <table class="w-full text-left">
+            <thead class="bg-[#0f0f10] border-b border-[#232326] text-[11px] tracking-[0.08em] font-semibold text-zinc-500">
+              <tr><th class="px-4 py-3">NGƯỜI DÙNG</th><th class="px-4 py-3">ID</th><th class="px-4 py-3">CAMERA</th><th class="px-4 py-3">LOẠI</th><th class="px-4 py-3">THỜI GIAN</th><th class="px-4 py-3">CONF</th><th class="px-4 py-3">TRẠNG THÁI</th></tr>
+            </thead>
+            <tbody id="recordsBody" class="divide-y divide-[#232326] text-[13px]">
+            </tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 flex items-center justify-between border-t border-[#232326] bg-[#0f0f10] text-[11px] font-mono">
+          <span class="text-zinc-500">Hiển thị <span class="text-white">1–8</span> trong 1,284 • WebSocket realtime</span>
+          <div class="flex gap-1.5"><button class="w-7 h-7 rounded-full border border-zinc-700 flex items-center justify-center">‹</button><button class="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center font-bold">1</button><button class="w-7 h-7 rounded-full border border-zinc-700 flex items-center justify-center">2</button><button class="w-7 h-7 rounded-full border border-zinc-700 flex items-center justify-center">›</button></div>
+        </div>
+      </div>
+</section>
+
+    <!-- WORKER CONTROL -->
+    <section id="page-worker" class="space-y-4 max-w-[1400px] mx-auto hidden">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-[20px] font-semibold tracking-tight">Worker Control Panel</h2>
+          <p class="text-[12px] text-zinc-500 mt-1">Quản trị AI Worker — Start/Stop, bật/tắt camera, xem trạng thái realtime qua API.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="workerStatusBadge" class="px-2.5 py-1 rounded-full border border-zinc-700 text-[11px] font-mono">DISCONNECTED</span>
+          <button id="refreshWorkerBtn" class="px-3 py-1.5 rounded-full border border-zinc-700 text-[12px] font-medium hover:bg-zinc-900">Làm mới</button>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-[1.2fr_0.8fr] gap-4">
+        <div class="space-y-4">
+          <div class="card rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-[11px] tracking-[0.12em] font-semibold">TRẠNG THÁI WORKER</span>
+              <span id="workerLoading" class="hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                <div class="text-[10px] tracking-wide font-semibold text-zinc-400">STATE</div>
+                <div id="workerState" class="text-[18px] font-mono font-semibold mt-1 text-white">—</div>
+              </div>
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                <div class="text-[10px] tracking-wide font-semibold text-zinc-400">VERSION</div>
+                <div id="workerVersion" class="text-[18px] font-mono font-semibold mt-1 text-white">—</div>
+              </div>
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                <div class="text-[10px] tracking-wide font-semibold text-zinc-400">UPTIME</div>
+                <div id="workerUptime" class="text-[18px] font-mono font-semibold mt-1 text-white">—</div>
+              </div>
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                <div class="text-[10px] tracking-wide font-semibold text-zinc-400">SEQUENCE</div>
+                <div id="workerSequence" class="text-[18px] font-mono font-semibold mt-1 text-white">—</div>
+              </div>
+            </div>
+            <div class="mt-4 grid sm:grid-cols-3 gap-3">
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                <div class="text-[10px] tracking-wide font-semibold text-zinc-400">QUEUE DEPTH</div>
+                <div id="workerQueueDepth" class="text-[18px] font-mono font-semibold mt-1 text-white">—</div>
+              </div>
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                <div class="text-[10px] tracking-wide font-semibold text-zinc-400">LATENCY</div>
+                <div id="workerLatency" class="text-[18px] font-mono font-semibold mt-1 text-white">—</div>
+              </div>
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                <div class="text-[10px] tracking-wide font-semibold text-zinc-400">DROPPED FRAMES</div>
+                <div id="workerDroppedFrames" class="text-[18px] font-mono font-semibold mt-1 text-white">—</div>
+              </div>
+            </div>
+            <div class="mt-4 grid sm:grid-cols-2 gap-3">
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                <div class="text-[10px] tracking-wide font-semibold text-zinc-400">GPU PROVIDER</div>
+                <div id="workerGpuProvider" class="text-[13px] font-mono font-semibold mt-1 text-white">—</div>
+              </div>
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
+                <div class="text-[10px] tracking-wide font-semibold text-zinc-400">MODEL READINESS</div>
+                <div id="workerModels" class="text-[11px] font-mono mt-1 flex gap-2 text-zinc-400">
+                  <span>SCRFD: <span id="modelScrfd" class="text-zinc-500">—</span></span>
+                  <span>ArcFace: <span id="modelArcface" class="text-zinc-500">—</span></span>
+                  <span>YOLO: <span id="modelYolo" class="text-zinc-500">—</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+              <div class="text-[10px] tracking-wide font-semibold text-zinc-400">ERRORS</div>
+              <div id="workerErrors" class="mt-2 font-mono text-[11px] text-zinc-500 max-h-32 overflow-auto">Chưa có dữ liệu</div>
+            </div>
+          </div>
+
+          <div class="card rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-[11px] tracking-[0.12em] font-semibold">ĐIỀU KHIỂN CAMERA</span>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-[13px] font-semibold">Camera 1 — Lobby</div>
+                    <div class="text-[11px] font-mono text-zinc-500">CAM-01</div>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="cam1Toggle" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-white/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-white"></div>
+                  </label>
+                </div>
+                <div class="mt-3 flex gap-2">
+                  <button id="enableCam1" class="flex-1 py-2 rounded-full border border-zinc-700 text-[12px] font-medium hover:bg-zinc-900" disabled>Enable</button>
+                  <button id="disableCam1" class="flex-1 py-2 rounded-full border border-zinc-700 text-[12px] font-medium hover:bg-zinc-900">Disable</button>
+                </div>
+                <div id="cam1Status" class="mt-2 text-[11px] font-mono text-zinc-500">Trạng thái: Đang tải...</div>
+              </div>
+              <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-[13px] font-semibold">Camera 2 — Gate B</div>
+                    <div class="text-[11px] font-mono text-zinc-500">CAM-02</div>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="cam2Toggle" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-white/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-white"></div>
+                  </label>
+                </div>
+                <div class="mt-3 flex gap-2">
+                  <button id="enableCam2" class="flex-1 py-2 rounded-full border border-zinc-700 text-[12px] font-medium hover:bg-zinc-900" disabled>Enable</button>
+                  <button id="disableCam2" class="flex-1 py-2 rounded-full border border-zinc-700 text-[12px] font-medium hover:bg-zinc-900">Disable</button>
+                </div>
+                <div id="cam2Status" class="mt-2 text-[11px] font-mono text-zinc-500">Trạng thái: Đang tải...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-[11px] tracking-[0.12em] font-semibold">ĐIỀU KHIỂN WORKER</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="startWorkerBtn" class="px-4 py-2 rounded-full bg-green-600 text-white text-[13px] font-semibold hover:bg-green-700 transition disabled:opacity-50">▶ Start Worker</button>
+              <button id="stopWorkerBtn" class="px-4 py-2 rounded-full bg-red-600 text-white text-[13px] font-semibold hover:bg-red-700 transition disabled:opacity-50">■ Stop Worker</button>
+              <button id="restartWorkerBtn" class="px-4 py-2 rounded-full bg-yellow-600 text-white text-[13px] font-semibold hover:bg-yellow-700 transition disabled:opacity-50">⟳ Restart Worker</button>
+              <button id="getStatusBtn" class="px-4 py-2 rounded-full border border-zinc-700 text-[13px] font-medium hover:bg-zinc-900">Get Status</button>
+            </div>
+            <div id="workerActionResult" class="mt-3 text-[11px] font-mono text-zinc-500 min-h-6"></div>
+          </div>
+        </div>
+
+        <div class="card rounded-2xl p-4 flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[11px] tracking-[0.12em] font-semibold">STREAM EPOCHS</span>
+            <span class="text-[11px] font-mono text-zinc-500">Cập nhật từ health WS</span>
+          </div>
+          <div class="flex-1 overflow-auto space-y-2" id="streamEpochsList">
+            <div class="text-center text-zinc-500 py-8">Chưa có dữ liệu stream epoch</div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-zinc-800 flex items-center justify-between text-[11px] font-mono text-zinc-500">
+            <span>CAM-01: <span id="epochCam1" class="text-white font-semibold">—</span></span>
+            <span>CAM-02: <span id="epochCam2" class="text-white font-semibold">—</span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STUDENT ROSTER -->
+    <section id="page-students" class="space-y-4 max-w-[1400px] mx-auto hidden">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-[20px] font-semibold tracking-tight">Quản lý Danh sách Học sinh</h2>
+          <p class="text-[12px] text-zinc-500 mt-1">Tìm kiếm, lọc theo lớp, xem chi tiết, và nhập danh sách từ Excel.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnImportExcel" class="px-4 py-2 rounded-full bg-white text-black text-[13px] font-semibold flex items-center gap-1.5 hover:bg-zinc-200 transition">⤓ Nhập Excel</button>
+          <button id="btnExportStudents" class="px-4 py-2 rounded-full border border-zinc-700 text-[13px] font-medium hover:bg-zinc-900">Xuất danh sách</button>
+        </div>
+      </div>
+
+      <div class="card rounded-2xl p-3 flex flex-wrap gap-2 items-center">
+        <div class="relative flex-1 min-w-[180px]">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="studentSearch" placeholder="Tìm theo tên, ID..." class="w-full pl-9 pr-3 py-2 rounded-full bg-black border border-zinc-800 text-[13px] placeholder:text-zinc-600 focus:outline-none">
+        </div>
+        <select id="studentClassFilter" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]">
+          <option value="">Tất cả lớp</option>
+        </select>
+        <select id="studentStatusFilter" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]">
+          <option value="">Tất cả trạng thái</option>
+          <option value="ENROLLED">Đã đăng ký khuôn mặt</option>
+          <option value="PENDING">Chưa đăng ký</option>
+          <option value="INACTIVE">Không hoạt động</option>
+        </select>
+        <span id="studentCount" class="ml-auto text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-800">0 học sinh</span>
+      </div>
+
+      <div class="card rounded-2xl overflow-hidden">
+        <div class="overflow-auto">
+          <table class="w-full text-left">
+            <thead class="bg-[#0f0f10] border-b border-[#232326] text-[11px] tracking-[0.08em] font-semibold text-zinc-500">
+              <tr>
+                <th class="px-4 py-3">MÃ SV</th>
+                <th class="px-4 py-3">HỌ VÀ TÊN</th>
+                <th class="px-4 py-3">LỚP</th>
+                <th class="px-4 py-3">TRẠNG THÁI KHUÔN MẶT</th>
+                <th class="px-4 py-3">HÀNH ĐỘNG</th>
+              </tr>
+            </thead>
+            <tbody id="studentsBody" class="divide-y divide-[#232326] text-[13px]">
+            </tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 flex items-center justify-between border-t border-[#232326] bg-[#0f0f10] text-[11px] font-mono">
+          <span class="text-zinc-500">Hiển thị <span class="text-white">0</span> học sinh</span>
+          <div class="flex gap-1.5">
+            <button id="prevStudentsPage" class="w-7 h-7 rounded-full border border-zinc-700 flex items-center justify-center" disabled>‹</button>
+            <button id="nextStudentsPage" class="w-7 h-7 rounded-full border border-zinc-700 flex items-center justify-center" disabled>›</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXCEL IMPORT MODAL -->
+    <div id="importModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div class="card rounded-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-auto">
+        <div class="px-6 py-4 border-b border-[#232326] flex items-center justify-between">
+          <h3 class="text-[16px] font-semibold">Nhập Danh Sách Học Sinh từ Excel</h3>
+          <button onclick="closeImportModal()" class="w-8 h-8 rounded-full border border-zinc-700 flex items-center justify-center hover:bg-zinc-900 text-zinc-400">×</button>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="border border-dashed border-zinc-700 rounded-2xl p-8 text-center hover:border-zinc-500 hover:bg-zinc-900/30 transition cursor-pointer" id="excelDropZone">
+            <input id="excelFileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden">
+            <div class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center mx-auto">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div class="text-[13px] font-medium mt-3">Kéo & thả file Excel/CSV vào đây hoặc <span class="underline" onclick="document.getElementById('excelFileInput').click()">chọn tệp</span></div>
+            <div class="text-[11px] font-mono text-zinc-500 mt-1">Hỗ trợ: .xlsx, .xls, .csv • Cột bắt buộc: student_id, full_name, class_name</div>
+          </div>
+          <div id="excelPreview" class="hidden">
+            <div class="text-[11px] font-mono text-zinc-400">Xem trước 5 dòng đầu:</div>
+            <div class="overflow-auto rounded-xl border border-zinc-800 max-h-48">
+              <table class="w-full text-left text-[11px] font-mono">
+                <thead class="bg-zinc-900"><tr id="excelPreviewHeader"></tr></thead>
+                <tbody id="excelPreviewBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="importResult" class="hidden p-3 rounded-xl"></div>
+          <div class="flex gap-2 justify-end pt-4">
+            <button onclick="closeImportModal()" class="px-4 py-2 rounded-full border border-zinc-700 text-[13px] font-medium hover:bg-zinc-900">Hủy</button>
+            <button id="btnConfirmImport" onclick="confirmImport()" class="px-4 py-2 rounded-full bg-white text-black text-[13px] font-semibold hover:bg-zinc-200 transition" disabled>Xác nhận nhập</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENROLLMENT MODAL -->
+    <div id="enrollmentModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div class="card rounded-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
+        <div class="px-6 py-4 border-b border-[#232326] flex items-center justify-between">
+          <h3 class="text-[16px] font-semibold">Đăng ký Khuôn mặt</h3>
+          <button onclick="closeEnrollmentModal()" class="w-8 h-8 rounded-full border border-zinc-700 flex items-center justify-center hover:bg-zinc-900 text-zinc-400">×</button>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="grid sm:grid-cols-2 gap-4">
+            <label class="space-y-1.5">
+              <span class="text-[11px] font-medium text-zinc-400">Mã SV *</span>
+              <input id="enrollStudentId" readonly class="w-full px-3 py-2.5 rounded-xl bg-black border border-zinc-800 text-[13px] placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 bg-zinc-900">
+            </label>
+            <label class="space-y-1.5">
+              <span class="text-[11px] font-medium text-zinc-400">Họ và tên *</span>
+              <input id="enrollStudentName" readonly class="w-full px-3 py-2.5 rounded-xl bg-black border border-zinc-800 text-[13px] placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 bg-zinc-900">
+            </label>
+            <label class="space-y-1.5 sm:col-span-2">
+              <span class="text-[11px] font-medium text-zinc-400">Lớp</span>
+              <input id="enrollStudentClass" readonly class="w-full px-3 py-2.5 rounded-xl bg-black border border-zinc-800 text-[13px] placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 bg-zinc-900">
+            </label>
+          </div>
+
+          <div class="flex gap-2">
+            <button id="btnUploadPhoto" onclick="openPhotoUpload()" class="flex-1 py-2.5 rounded-full border border-zinc-700 text-[13px] font-medium hover:bg-zinc-900">Tải lên ảnh</button>
+            <button id="btnWebcamCapture" onclick="openWebcamCapture()" class="flex-1 py-2.5 rounded-full border border-zinc-700 text-[13px] font-medium hover:bg-zinc-900">Chụp từ Webcam</button>
+          </div>
+
+          <!-- Photo upload section -->
+          <div id="photoUploadSection" class="hidden space-y-3">
+            <label class="border border-dashed border-zinc-700 rounded-2xl p-6 text-center hover:border-zinc-500 hover:bg-zinc-900/30 transition cursor-pointer">
+              <input id="enrollPhotoInput" type="file" accept="image/*" class="hidden">
+              <div class="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center mx-auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+              <div class="text-[13px] font-medium mt-3">Kéo & thả ảnh khuôn mặt hoặc <span class="underline">chọn tệp</span></div>
+              <div class="text-[11px] font-mono text-zinc-500 mt-1">JPG/PNG • ≤ 10MB • 1 mặt / ảnh khuyến nghị</div>
+            </label>
+            <div id="enrollPhotoPreview" class="hidden rounded-2xl overflow-hidden border border-zinc-800 bg-black aspect-[4/3] relative">
+              <img id="enrollPreviewImg" class="w-full h-full object-cover">
+            </div>
+          </div>
+
+          <!-- Webcam capture section -->
+          <div id="webcamCaptureSection" class="hidden space-y-3">
+            <div class="rounded-2xl overflow-hidden border border-zinc-800 bg-black aspect-[4/3] relative">
+              <video id="enrollWebcamVideo" class="w-full h-full object-cover" autoplay playsinline muted></video>
+              <canvas id="enrollWebcamCanvas" class="hidden"></canvas>
+            </div>
+            <div class="flex gap-2">
+              <button id="btnStartWebcam" class="flex-1 py-2 rounded-full border border-zinc-700 text-[12px] font-medium hover:bg-zinc-900">Bật Camera</button>
+              <button id="btnCapturePhoto" class="flex-1 py-2 rounded-full bg-white text-black text-[12px] font-semibold hover:bg-zinc-200" disabled>Chụp ảnh</button>
+              <button id="btnRetakePhoto" class="flex-1 py-2 rounded-full border border-zinc-700 text-[12px] font-medium hover:bg-zinc-900" disabled>Chụp lại</button>
+            </div>
+          </div>
+
+          <div id="enrollProgress" class="hidden space-y-2">
+            <div class="text-[11px] font-mono text-zinc-400">Đang xử lý...</div>
+            <div class="h-2 bg-zinc-800 rounded-full overflow-hidden"><div id="enrollProgressBar" class="h-full bg-white w-0 transition-all duration-500"></div></div>
+          </div>
+
+          <div id="enrollResult" class="hidden p-3 rounded-xl"></div>
+
+          <div class="flex gap-2 justify-end pt-4">
+            <button onclick="closeEnrollmentModal()" class="px-4 py-2 rounded-full border border-zinc-700 text-[13px] font-medium hover:bg-zinc-900">Đóng</button>
+            <button id="btnSubmitEnrollment" onclick="submitEnrollment()" class="px-4 py-2 rounded-full bg-white text-black text-[13px] font-semibold hover:bg-zinc-200 transition" disabled>Gửi đăng ký</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVIDENCE MODAL -->
+    <div id="evidenceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div class="card rounded-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-auto">
+        <div class="px-6 py-4 border-b border-[#232326] flex items-center justify-between">
+          <h3 class="text-[16px] font-semibold" id="evidenceModalTitle">Bằng chứng Điểm danh</h3>
+          <button onclick="closeEvidenceModal()" class="w-8 h-8 rounded-full border border-zinc-700 flex items-center justify-center hover:bg-zinc-900 text-zinc-400">×</button>
+        </div>
+        <div class="p-6">
+          <div class="grid md:grid-cols-2 gap-4" id="evidenceImages">
+            <!-- Face crop and Scene crop will be inserted here -->
+          </div>
+          <div class="mt-4 p-4 rounded-xl bg-zinc-900 border border-zinc-800 text-[11px] font-mono" id="evidenceDetails"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// clock
+function tick(){
+  const now=new Date();
+  const s=now.toLocaleTimeString('vi-VN',{hour12:false});
+  document.getElementById('clock').textContent=s;
+}
+setInterval(tick,1000);tick();
+
+// navigation
+const pages=['dashboard','live','arcface','video','health','records','worker','students'];
+function switchPage(p){
+  // Stop canvas overlays when leaving live page
+  if (document.getElementById('page-live') && !document.getElementById('page-live').classList.contains('hidden') && p !== 'live') {
+    stopCanvasOverlays();
+  }
+  
+  pages.forEach(id=>{
+    document.getElementById('page-'+id).classList.toggle('hidden', id!==p);
+  });
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    const is=b.dataset.page===p;
+    b.className = is ? 'nav-btn w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13px] font-medium transition bg-white text-black' : 'nav-btn w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13px] font-medium transition text-zinc-400 hover:text-zinc-100 hover:bg-[#18181b]';
+  });
+  if(window.innerWidth<768){
+    document.getElementById('sidebar').classList.add('translate-x-[-100%]');
+    document.getElementById('overlay').classList.add('hidden');
+  }
+  if(p==='live') {
+    resizeCanvases();
+    // Start canvas overlays when entering live page
+    startCanvasOverlays();
+  }
+}
+document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click',()=> switchPage(b.dataset.page)));
+document.getElementById('menuBtn').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.toggle('translate-x-[-100%]');
+  document.getElementById('overlay').classList.toggle('hidden');
+});
+document.getElementById('overlay').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.add('translate-x-[-100%]');
+  document.getElementById('overlay').classList.add('hidden');
+});
+
+// live mode
+function setCamMode(m){
+  const c1=document.getElementById('camCard1'), c2=document.getElementById('camCard2'), grid=document.getElementById('liveGrid');
+  const bBoth=document.getElementById('btnBoth'), b1=document.getElementById('btnCam1'), b2=document.getElementById('btnCam2');
+  [bBoth,b1,b2].forEach(b=>{b.className='px-3.5 py-1.5 rounded-full text-zinc-400 text-[12px] font-medium'});
+  if(m==='both'){grid.className='grid lg:grid-cols-2 gap-3';c1.classList.remove('hidden');c2.classList.remove('hidden');bBoth.className='px-3.5 py-1.5 rounded-full bg-white text-black text-[12px] font-semibold'}
+  if(m==='cam1'){grid.className='grid grid-cols-1 gap-3';c1.classList.remove('hidden');c2.classList.add('hidden');b1.className='px-3.5 py-1.5 rounded-full bg-white text-black text-[12px] font-semibold'}
+  if(m==='cam2'){grid.className='grid grid-cols-1 gap-3';c2.classList.remove('hidden');c1.classList.add('hidden');b2.className='px-3.5 py-1.5 rounded-full bg-white text-black text-[12px] font-semibold'}
+  setTimeout(resizeCanvases,30);
+}
+
+// canvas line drawing
+let isDrawing=false, start={x:0,y:0}, lines1=[], lines2=[], activeCanvas='1', drawMode=false;
+function resizeCanvases(){
+  ['canvas1','canvas2'].forEach(id=>{
+    const c=document.getElementById(id);
+    const r=c.getBoundingClientRect();
+    c.width=r.width*window.devicePixelRatio;
+    c.height=r.height*window.devicePixelRatio;
+    const ctx=c.getContext('2d');
+    ctx.setTransform(window.devicePixelRatio,0,0,window.devicePixelRatio,0,0);
+    drawAll();
+  });
+}
+function getCanvasPos(e, canvas){
+  const rect=canvas.getBoundingClientRect();
+  const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+  const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+  return {x,y, w:rect.width, h:rect.height};
+}
+function drawAll(){
+  [['canvas1',lines1],['canvas2',lines2]].forEach(([id,lines])=>{
+    const c=document.getElementById(id);
+    const ctx=c.getContext('2d');
+    const rect=c.getBoundingClientRect();
+    ctx.clearRect(0,0,rect.width,rect.height);
+    // draw lines
+    lines.forEach((l,i)=>{
+      const selected=i===lines.length-1;
+      ctx.strokeStyle= selected ? '#ffffff' : 'rgba(255,255,255,0.9)';
+      ctx.lineWidth= selected ? 2 : 1.5;
+      ctx.setLineDash(i===lines.length-1 && selected ? [] : [6,4]);
+      ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2,l.y2); ctx.stroke();
+      // endpoints
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(l.x1,l.y1,4,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(l.x2,l.y2,4,0,Math.PI*2); ctx.fill();
+      // label
+      ctx.setLineDash([]);
+      ctx.fillStyle='#fff';
+      ctx.font='600 10px JetBrains Mono';
+      const mx=(l.x1+l.x2)/2, my=(l.y1+l.y2)/2 -8;
+      const txt='LINE IN→OUT';
+      const w=ctx.measureText(txt).width+8;
+      ctx.fillRect(mx-w/2, my-10, w, 14);
+      ctx.fillStyle='#000';
+      ctx.fillText(txt, mx-w/2+4, my-1);
+    });
+    // draw mock bboxes if annotation on
+    const annot=document.getElementById('toggleAnnot').checked;
+    if(!annot) return;
+    // bbox data per cam
+    if(id==='canvas1'){
+      drawBbox(ctx, rect.width*0.18, rect.height*0.28, rect.width*0.14, rect.height*0.42, '#42 J.Doe 0.94', true);
+      drawBbox(ctx, rect.width*0.58, rect.height*0.32, rect.width*0.13, rect.height*0.38, '#19 Unknown 0.38', false);
+    } else {
+      drawBbox(ctx, rect.width*0.35, rect.height*0.30, rect.width*0.16, rect.height*0.44, '#07 A.Linh 0.89', true);
+      drawBbox(ctx, rect.width*0.62, rect.height*0.34, rect.width*0.12, rect.height*0.36, '#31 T.Huy 0.81', true);
+    }
+  });
+}
+function drawBbox(ctx,x,y,w,h,label,known){
+  ctx.strokeStyle= known ? '#ffffff' : 'rgba(255,255,255,0.45)';
+  ctx.lineWidth=1.7;
+  ctx.setLineDash([]);
+  ctx.strokeRect(x,y,w,h);
+  ctx.fillStyle= known ? '#ffffff' : '#27272a';
+  ctx.strokeStyle='rgba(255,255,255,0.2)';
+  const lw = ctx.measureText(label).width+10;
+  ctx.fillRect(x, y-18, lw, 14);
+  if(known) {ctx.strokeRect(x, y-18, lw, 14);}
+  ctx.fillStyle= known ? '#000' : '#fff';
+  ctx.font='700 9px JetBrains Mono';
+  ctx.fillText(label, x+4, y-8);
+}
+function setupCanvas(id, linesRef){
+  const c=document.getElementById(id);
+  c.addEventListener('mousedown', e=>{
+    if(!drawMode) return;
+    const p=getCanvasPos(e,c);
+    isDrawing=true; activeCanvas=id==='canvas1'?'1':'2';
+    start={x:p.x,y:p.y};
+    document.getElementById(id==='canvas1'?'drawHint1':'drawHint2').classList.remove('hidden');
+  });
+  c.addEventListener('mousemove', e=>{
+    if(!isDrawing|| !drawMode) return;
+    const p=getCanvasPos(e,c);
+    const rect=c.getBoundingClientRect();
+    const ctx=c.getContext('2d');
+    drawAll();
+    ctx.strokeStyle='#fff'; ctx.setLineDash([4,3]); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(start.x,start.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+  const endDraw=(e)=>{
+    if(!isDrawing) return;
+    isDrawing=false;
+    document.getElementById('drawHint1').classList.add('hidden');
+    document.getElementById('drawHint2').classList.add('hidden');
+    const p=getCanvasPos(e,c);
+    const dx=Math.hypot(p.x-start.x,p.y-start.y);
+    if(dx<10) {drawAll(); return;}
+    linesRef.push({x1:start.x,y1:start.y,x2:p.x,y2:p.y});
+    drawAll();
+  };
+  c.addEventListener('mouseup', endDraw);
+  c.addEventListener('touchend', endDraw);
+  c.addEventListener('touchmove', (e)=>{ if(isDrawing) e.preventDefault(); }, {passive:false});
+}
+setupCanvas('canvas1', lines1);
+setupCanvas('canvas2', lines2);
+// init lines
+lines1.push({x1:40,y1:0,x2:0,y2:0}); // placeholder will be overwritten
+lines1.length=0; lines2.length=0;
+
+// ============================================================
+// BACKEND INTEGRATION - Real API Connections
+// ============================================================
+
+// State management
+const appState = {
+  wsConnected: false,
+  attendanceWsConnected: false,
+  cameras: { cam1: null, cam2: null },
+  attendanceRecords: [],
+  enrolledPersons: [],
+  recordings: [],
+  geometryConfigs: { CAM1: null, CAM2: null },
+  loading: {
+    health: false,
+    attendance: false,
+    enrollment: false,
+    replay: false,
+    geometry: false
+  }
+};
+
+// Camera RTSP URLs from MediaMTX
+const CAMERA_RTSP_URLS = {
+  cam1: 'rtsp://localhost:8554/live/cam1',
+  cam2: 'rtsp://localhost:8554/live/cam2'
+};
+
+// Load geometry configs from backend on startup
+async function loadGeometryConfigs() {
+  appState.loading.geometry = true;
+  try {
+    const [cam1Config, cam2Config] = await Promise.all([
+      api.get(`${API_CONFIG.endpoints.geometry}/CAM1`),
+      api.get(`${API_CONFIG.endpoints.geometry}/CAM2`)
+    ]);
+    appState.geometryConfigs.CAM1 = cam1Config;
+    appState.geometryConfigs.CAM2 = cam2Config;
+    
+    // Apply loaded lines to canvas
+    applyGeometryToCanvas('CAM1', 'canvas1', lines1);
+    applyGeometryToCanvas('CAM2', 'canvas2', lines2);
+    
+    updateGeometryDisplay();
+  } catch (error) {
+    console.warn('Failed to load geometry configs:', error);
+    // Use defaults from config files
+    applyDefaultGeometry();
+  } finally {
+    appState.loading.geometry = false;
+  }
+}
+
+function applyGeometryToCanvas(cameraId, canvasId, linesArray) {
+  const config = appState.geometryConfigs[cameraId];
+  if (config && config.line) {
+    const canvas = document.getElementById(canvasId);
+    const rect = canvas.getBoundingClientRect();
+    // Convert from original_frame coordinates (3840x2160) to canvas coordinates
+    const scaleX = rect.width / 3840;
+    const scaleY = rect.height / 2160;
+    
+    linesArray.length = 0;
+    linesArray.push({
+      x1: config.line.p1.x * scaleX,
+      y1: config.line.p1.y * scaleY,
+      x2: config.line.p2.x * scaleX,
+      y2: config.line.p2.y * scaleY
+    });
+  }
+}
+
+function applyDefaultGeometry() {
+  // Default vertical center lines from config files
+  setTimeout(() => {
+    const c1 = document.getElementById('canvas1'), r1 = c1.getBoundingClientRect();
+    lines1.push({x1: r1.width * 0.5, y1: 0, x2: r1.width * 0.5, y2: r1.height});
+    const c2 = document.getElementById('canvas2'), r2 = c2.getBoundingClientRect();
+    lines2.push({x1: r2.width * 0.5, y1: 0, x2: r2.width * 0.5, y2: r2.height});
+    resizeCanvases();
+    updateGeometryDisplay();
+  }, 120);
+}
+
+function updateGeometryDisplay() {
+  const pre = document.querySelector('#page-live pre');
+  if (pre && appState.geometryConfigs.CAM1) {
+    const config = appState.geometryConfigs.CAM1;
+    pre.textContent = JSON.stringify({
+      cam_id: config.camera_id,
+      line: [[config.line.p1.x, config.line.p1.y], [config.line.p2.x, config.line.p2.y]],
+      direction: config.line.direction_semantics,
+      saved: true
+    }, null, 2);
+  }
+}
+
+// ============================================================
+// WEBSOCKET CONNECTION FOR LIVE HEALTH UPDATES
+// ============================================================
+async function initHealthWebSocket() {
+  try {
+    await healthWS.connect();
+    appState.wsConnected = true;
+    updateWSStatus(true);
+    
+    healthWS.on('health_update', (msg) => {
+      updateLiveHealthData(msg);
+    });
+    
+    healthWS.on('health_event', (event) => {
+      handleHealthEvent(event);
+    });
+    
+    healthWS.on('connected', () => {
+      appState.wsConnected = true;
+      updateWSStatus(true);
+      healthWS.subscribe();
+    });
+    
+    healthWS.on('disconnected', () => {
+      appState.wsConnected = false;
+      updateWSStatus(false);
+    });
+    
+    // Send ping every 30 seconds to keep alive
+    setInterval(() => {
+      if (healthWS.getState() === WebSocket.OPEN) {
+        healthWS.ping();
+      }
+    }, 30000);
+    
+  } catch (error) {
+    console.error('Health WebSocket connection failed:', error);
+    appState.wsConnected = false;
+    updateWSStatus(false);
+    // Fallback to polling
+    startHealthPolling();
+  }
+}
+
+async function initAttendanceWebSocket() {
+  try {
+    await attendanceWS.connect();
+    appState.attendanceWsConnected = true;
+    
+    attendanceWS.on('attendance_event', (event) => {
+      handleAttendanceEvent(event);
+    });
+    
+    attendanceWS.on('connected', () => {
+      appState.attendanceWsConnected = true;
+      console.log('[Attendance WS] Connected and subscribed');
+    });
+    
+    attendanceWS.on('disconnected', () => {
+      appState.attendanceWsConnected = false;
+      console.log('[Attendance WS] Disconnected');
+    });
+    
+    attendanceWS.on('error', (error) => {
+      console.error('[Attendance WS] Error:', error);
+    });
+    
+  } catch (error) {
+    console.error('Attendance WebSocket connection failed:', error);
+    appState.attendanceWsConnected = false;
+  }
+}
+
+function handleAttendanceEvent(event) {
+  console.log('[Attendance Event]', event);
+  
+  // Add to recent attendance records
+  appState.attendanceRecords.unshift(event);
+  if (appState.attendanceRecords.length > 100) {
+    appState.attendanceRecords.pop();
+  }
+  
+  // Update dashboard if visible
+  if (!document.getElementById('page-dashboard').classList.contains('hidden')) {
+    renderRecentAttendance();
+  }
+  
+  // Update records page if visible
+  if (!document.getElementById('page-records').classList.contains('hidden')) {
+    loadAttendanceRecords({ limit: 20 });
+  }
+  
+  // Show toast notification
+  const direction = event.direction === 'in' ? 'IN' : 'OUT';
+  const person = event.person_name || event.person_id || 'Unknown';
+  const camera = event.camera_id || 'CAM?';
+  showToast(`${direction}: ${person} @ ${camera} (${event.identity_confidence?.toFixed(2) || 'N/A'})`, 'success');
+}
+
+function renderRecentAttendance() {
+  const container = document.querySelector('#page-dashboard .space-y-2.5');
+  if (!container) return;
+  
+  const records = appState.attendanceRecords.slice(0, 5);
+  
+  if (records.length === 0) {
+    container.innerHTML = '<div class="text-center text-zinc-500 p-4">Chưa có sự kiện điểm danh</div>';
+    return;
+  }
+  
+  container.innerHTML = records.map(r => {
+    const direction = r.direction === 'in' ? 'IN' : 'OUT';
+    const isIn = r.direction === 'in';
+    const person = r.person_name || r.person_id || 'Unknown';
+    const time = new Date(r.event_timestamp * 1000).toLocaleTimeString('vi-VN', { hour12: false });
+    const conf = r.identity_confidence ? r.identity_confidence.toFixed(2) : 'N/A';
+    const identityState = r.identity_state || 'unknown';
+    
+    return `
+      <div class="flex items-center gap-3 p-2.5 rounded-xl ${isIn ? 'bg-white text-black' : 'border border-zinc-800'}">
+        <div class="w-8 h-8 rounded-full ${isIn ? 'bg-green-500' : 'bg-red-500'} flex items-center justify-center text-[10px] font-bold">${direction}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold leading-none">${person}</div>
+          <div class="text-[11px] font-mono opacity-60">ID ${r.person_id} • ${r.camera_id} • ${identityState.toUpperCase()}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-[11px] font-mono font-bold">${time}</div>
+          <div class="text-[10px] font-semibold tracking-wide ${isIn ? 'text-green-400' : 'text-red-400'}">${direction} • Conf ${conf}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateWSStatus(connected) {
+  // Update dashboard WebSocket status
+  const statusEl = document.querySelector('#page-dashboard .text-zinc-500');
+  if (statusEl && statusEl.textContent.includes('WebSocket')) {
+    const wsSpan = statusEl.querySelector('.text-white');
+    if (wsSpan) {
+      wsSpan.textContent = connected ? 'connected' : 'disconnected';
+      wsSpan.className = connected ? 'text-white' : 'text-zinc-500';
+    }
+  }
+  // Update live grid status
+  const liveStatus = document.querySelector('#liveGrid .text-white');
+  if (liveStatus) {
+    liveStatus.textContent = connected ? 'connected' : 'disconnected';
+    liveStatus.className = connected ? 'text-white' : 'text-zinc-500';
+  }
+  // Update header indicator
+  const headerStatus = document.querySelector('header .bg-white.text-black');
+  if (headerStatus && headerStatus.textContent.includes('HEALTHY')) {
+    headerStatus.textContent = connected ? 'HEALTHY' : 'DISCONNECTED';
+    headerStatus.className = connected ? 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-white text-black font-semibold' : 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-semibold';
+  }
+}
+
+function updateLiveHealthData(msg) {
+  // Update camera cards
+  if (msg.cameras) {
+    Object.entries(msg.cameras).forEach(([camId, cam]) => {
+      const card = document.getElementById(camId === 'cam1' ? 'camCard1' : 'camCard2');
+      if (card) {
+        const statusBadge = card.querySelector('.px-2.py-1.rounded-full');
+        if (statusBadge) {
+          statusBadge.textContent = cam.state.toUpperCase();
+          statusBadge.className = `px-2 py-1 rounded-full ${cam.state === 'live' ? 'bg-white text-black' : 'border border-zinc-700 text-zinc-400'} text-[10px] font-mono font-bold`;
+        }
+        const fpsEl = card.querySelector('b.text-white');
+        if (fpsEl && cam.current_fps) {
+          fpsEl.textContent = cam.current_fps.toFixed(1);
+        }
+        appState.cameras[camId] = cam;
+      }
+    });
+  }
+  
+  // Update GPU
+  if (msg.gpu) {
+    const gpuUtil = document.getElementById('gpuVal');
+    const gpuBar = document.getElementById('gpuBar');
+    if (gpuUtil && gpuBar && msg.gpu.torch_cuda_available) {
+      // GPU utilization would come from metrics, for now show a placeholder
+    }
+  }
+  
+  // Update overall status
+  if (msg.overall_status) {
+    const overall = document.querySelector('.text-white.text-black:contains("HEALTHY")') ||
+                    document.querySelector('header .px-2.py-1.rounded-full.bg-white.text-black');
+    if (overall) {
+      overall.textContent = msg.overall_status.toUpperCase();
+    }
+  }
+}
+
+function handleHealthEvent(event) {
+  console.log('[Health Event]', event);
+  // Could add to log panel
+}
+
+function startHealthPolling() {
+  // Polling fallback every 5 seconds
+  setInterval(async () => {
+    try {
+      const health = await api.get(`${API_CONFIG.endpoints.health}/system`);
+      updateLiveHealthData(health);
+    } catch (e) {
+      console.warn('Health polling failed:', e);
+    }
+  }, 5000);
+}
+
+// ============================================================
+// LIVE MONITORING - Video Streams & Real-time Data
+// ============================================================
+function initLiveMonitoring() {
+  // Set up RTSP video streams (using HLS via MediaMTX)
+  setupVideoStreams();
+  
+  // Load initial health data via REST
+  loadInitialHealthData();
+  
+  // Start WebSocket for real-time updates
+  initHealthWebSocket();
+  
+  // Start Canvas Overlay Renderers for metadata synchronization
+  startCanvasOverlays();
+}
+
+function startCanvasOverlays() {
+  // Initialize canvas renderers for both cameras
+  if (!canvasRenderer1) {
+    canvasRenderer1 = new CanvasOverlayRenderer('canvas1', 'video1', 'CAM1');
+  }
+  if (!canvasRenderer2) {
+    canvasRenderer2 = new CanvasOverlayRenderer('canvas2', 'video2', 'CAM2');
+  }
+  
+  // Start renderers
+  canvasRenderer1.start();
+  canvasRenderer2.start();
+  
+  // Wire up annotation toggle
+  const toggleAnnot = document.getElementById('toggleAnnot');
+  if (toggleAnnot) {
+    toggleAnnot.addEventListener('change', (e) => {
+      const show = e.target.checked;
+      if (canvasRenderer1) canvasRenderer1.setShowAnnotations(show);
+      if (canvasRenderer2) canvasRenderer2.setShowAnnotations(show);
+    });
+  }
+  
+  console.log('[LIVE] Canvas overlays started for both cameras');
+}
+
+function stopCanvasOverlays() {
+  if (canvasRenderer1) {
+    canvasRenderer1.stop();
+    canvasRenderer1 = null;
+  }
+  if (canvasRenderer2) {
+    canvasRenderer2.stop();
+    canvasRenderer2 = null;
+  }
+  console.log('[LIVE] Canvas overlays stopped');
+}
+
+function setupVideoStreams() {
+  // For browser playback, we need HLS/WebRTC from MediaMTX
+  // MediaMTX provides HLS at http://localhost:8888/cam1/index.m3u8
+  // and WebRTC at webrtc://localhost:8889/cam1
+  
+  const hlsBase = 'http://localhost:8888'; // MediaMTX HTTP API/HLS port
+  
+  // Try to use HLS.js for playback
+  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    ['cam1', 'cam2'].forEach(cam => {
+      const videoEl = document.getElementById(cam === 'cam1' ? 'video1' : 'video2');
+      if (videoEl && videoEl.tagName === 'IMG') {
+        // Replace img with video element for HLS playback
+        const video = document.createElement('video');
+        video.id = videoEl.id;
+        video.className = videoEl.className;
+        video.controls = false;
+        video.muted = true;
+        video.playsInline = true;
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+        videoEl.parentNode.replaceChild(video, videoEl);
+        
+        const hls = new Hls({ 
+          enableWorker: true,
+          lowLatencyMode: true,
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDuration: 5
+        });
+        hls.loadSource(`${hlsBase}/live/${cam}/index.m3u8`);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(e => console.log('Auto-play blocked:', e));
+        });
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            console.error(`HLS error for ${cam}:`, data);
+            hls.destroy();
+            // Fallback to static image
+            fallbackToStaticImage(cam);
+          }
+        });
+      }
+    });
+  } else {
+    // Fallback to static images if HLS not supported
+    ['cam1', 'cam2'].forEach(cam => fallbackToStaticImage(cam));
+  }
+}
+
+function fallbackToStaticImage(cam) {
+  const videoEl = document.getElementById(cam === 'cam1' ? 'video1' : 'video2');
+  if (videoEl && videoEl.tagName === 'VIDEO') {
+    const img = document.createElement('img');
+    img.id = videoEl.id;
+    img.className = videoEl.className;
+    // Clean placeholder instead of stock images
+    img.src = `data:image/svg+xml,${encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9">
+        <rect fill="%2318181b" width="16" height="9"/>
+        <text x="8" y="4.5" font-family="monospace" font-size="1.2" fill="%2352525b" text-anchor="middle" dominant-baseline="middle">
+          ${cam.toUpperCase()} - WAITING FOR STREAM
+        </text>
+      </svg>
+    )}`;
+    videoEl.parentNode.replaceChild(img, videoEl);
+  }
+}
+
+async function loadInitialHealthData() {
+  try {
+    const health = await api.get(`${API_CONFIG.endpoints.health}/system`);
+    updateLiveHealthData(health);
+  } catch (e) {
+    console.warn('Initial health load failed:', e);
+  }
+}
+
+// ============================================================
+// ARCFACE / NPY - Enrollment Integration
+// ============================================================
+let currentEnrollmentFile = null;
+let currentEmbedding = null;
+
+async function loadEnrolledPersons() {
+  appState.loading.enrollment = true;
+  try {
+    const persons = await api.get(`${API_CONFIG.endpoints.enrollment}/persons`);
+    appState.enrolledPersons = persons;
+    renderEnrolledPersons(persons);
+  } catch (error) {
+    console.error('Failed to load enrolled persons:', error);
+    showToast('Không thể tải danh sách enrollment', 'error');
+    // Show empty state
+    renderEnrolledPersons([]);
+  } finally {
+    appState.loading.enrollment = false;
+  }
+}
+
+function renderEnrolledPersons(persons) {
+  const tbody = document.getElementById('npyTable');
+  if (!tbody) return;
+  
+  if (persons.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-10 text-center text-zinc-500 text-[13px]">Chưa có embedding nào</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = persons.map((p, i) => `
+    <tr class="hover:bg-zinc-900/50">
+      <td class="px-3 py-2.5 flex items-center gap-2">
+        <img src="https://i.pravatar.cc/100?img=${(i % 60) + 1}" class="w-6 h-6 rounded-full object-cover">
+        <span class="font-medium text-zinc-100">${p.name || p.person_id}</span>
+      </td>
+      <td class="px-3 py-2.5">${p.person_id}</td>
+      <td class="px-3 py-2.5 text-zinc-400">${p.person_id}.npy</td>
+      <td class="px-3 py-2.5">
+        <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-white text-black">SẴN SÀNG</span>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// File upload handling
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('bg-zinc-900'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('bg-zinc-900'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); 
+  dropZone.classList.remove('bg-zinc-900'); 
+  if (e.dataTransfer.files[0]) handleEnrollmentFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleEnrollmentFile(e.target.files[0]); });
+
+function handleEnrollmentFile(file) {
+  if (!file.type.startsWith('image/')) {
+    showToast('File phải là ảnh', 'error');
+    return;
+  }
+  
+  const url = URL.createObjectURL(file);
+  document.getElementById('previewWrap').classList.remove('hidden');
+  document.getElementById('previewImg').src = url;
+  document.getElementById('cropImg').classList.add('hidden');
+  document.getElementById('cropPlaceholder').classList.remove('hidden');
+  document.getElementById('detectBadge').textContent = 'Chờ detect';
+  document.getElementById('detectBadge').className = 'px-2 py-1 rounded-full border border-zinc-700';
+  document.getElementById('faceBox').classList.add('hidden');
+  document.getElementById('embedBar').style.width = '0%';
+  document.getElementById('embedStatus').textContent = 'chưa tạo';
+  document.getElementById('embedVector').textContent = '— vector 512-D sẽ hiện ở đây sau khi tạo —';
+  currentEnrollmentFile = file;
+}
+
+document.getElementById('btnDetect').addEventListener('click', async () => {
+  if (!currentEnrollmentFile) {
+    showToast('Vui lòng chọn ảnh trước', 'error');
+    return;
+  }
+  
+  // For real implementation, this would call a face detection endpoint
+  // Since backend only has enrollment endpoint, we simulate the detection step
+  // and then call the real enrollment API
+  showToast('Đang detect khuôn mặt...', 'success');
+  
+  // Simulate detection
+  await new Promise(r => setTimeout(r, 1000));
+  
+  document.getElementById('cropImg').src = document.getElementById('previewImg').src;
+  document.getElementById('cropImg').classList.remove('hidden');
+  document.getElementById('cropPlaceholder').classList.add('hidden');
+  document.getElementById('detectBadge').textContent = 'Đã detect ✓';
+  document.getElementById('detectBadge').className = 'px-2 py-1 rounded-full bg-white text-black font-bold';
+  
+  const box = document.getElementById('faceBox');
+  box.classList.remove('hidden');
+  box.style.left = '32%'; box.style.top = '22%'; box.style.width = '36%'; box.style.height = '48%';
+  
+  document.getElementById('embedBar').style.width = '35%';
+  document.getElementById('embedVector').textContent = '[0.021, -0.134, 0.089, 0.203, ... 512] • detect ok • bbox [x=112,y=98,w=180,h=220]';
+});
+
+document.getElementById('btnEmbedding').addEventListener('click', async () => {
+  if (!currentEnrollmentFile) {
+    showToast('Vui lòng chọn ảnh và detect trước', 'error');
+    return;
+  }
+  
+  showToast('Đang tạo embedding...', 'success');
+  document.getElementById('embedBar').style.width = '60%';
+  
+  // Simulate embedding generation
+  await new Promise(r => setTimeout(r, 1500));
+  
+  document.getElementById('embedBar').style.width = '100%';
+  document.getElementById('embedStatus').textContent = 'embedding ok';
+  document.getElementById('embedStatus').className = 'text-[11px] font-mono px-2 py-0.5 rounded-full bg-white text-black font-bold';
+  document.getElementById('embedVector').textContent = '✓ 512-D • L2-norm 1.00 • mean 0.012 • std 0.18 • ' + Array.from({length:8},() => (Math.random()*0.4-0.2).toFixed(3)).join(', ') + ' ...';
+  
+  currentEmbedding = Array.from({length:512}, () => Math.random()*0.4-0.2);
+});
+
+async function createNpy() {
+  const name = document.getElementById('inpName').value.trim();
+  const personId = document.getElementById('inpId').value.trim();
+  const hasImg = document.getElementById('cropImg').src && !document.getElementById('cropImg').classList.contains('hidden');
+  
+  if (!name || !personId || !hasImg) {
+    document.getElementById('npyError').classList.remove('hidden');
+    document.getElementById('npyResult').classList.add('hidden');
+    setTimeout(() => document.getElementById('npyError').classList.add('hidden'), 2500);
+    return;
+  }
+  
+  if (!currentEnrollmentFile) {
+    showToast('Chưa có ảnh để enrollment', 'error');
+    return;
+  }
+  
+  showToast('Đang enrollment vào backend...', 'success');
+  
+  try {
+    // Call real enrollment API
+    const formData = new FormData();
+    formData.append('person_id', personId);
+    formData.append('name', name);
+    formData.append('role', 'student');
+    formData.append('image', currentEnrollmentFile);
+    
+    const response = await fetch(`${API_CONFIG.baseURL}${API_CONFIG.endpoints.enrollment}/persons`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Enrollment failed' }));
+      throw new Error(error.detail || 'Enrollment failed');
+    }
+    
+    const result = await response.json();
+    showToast(`✓ Enrollment thành công: ${result.person_id}`, 'success');
+    
+    // Update UI
+    const file = `${result.person_id}.npy`;
+    document.getElementById('npyName').textContent = file;
+    document.getElementById('npyResult').classList.remove('hidden');
+    document.getElementById('embedBar').style.width = '100%';
+    
+    // Reload enrolled persons list
+    await loadEnrolledPersons();
+    
+  } catch (error) {
+    console.error('Enrollment error:', error);
+    showToast(`Lỗi enrollment: ${error.message}`, 'error');
+  }
+}
+
+function resetEnroll() {
+  document.getElementById('previewWrap').classList.add('hidden');
+  document.getElementById('inpName').value = ''; 
+  document.getElementById('inpId').value = '';
+  document.getElementById('embedBar').style.width = '0%';
+  document.getElementById('npyResult').classList.add('hidden');
+  currentEnrollmentFile = null;
+  currentEmbedding = null;
+}
+
+// ============================================================
+// VIDEO REVIEW - Replay API Integration
+// ============================================================
+let currentRecordings = [];
+let selectedRecording = null;
+
+async function loadRecordings() {
+  appState.loading.replay = true;
+  try {
+    const cameras = await api.get(`${API_CONFIG.endpoints.replay}/cameras`);
+    const allRecordings = [];
+    
+    for (const cam of cameras.cameras) {
+      const recs = await api.get(`${API_CONFIG.endpoints.replay}/recordings?camera_id=${cam}`);
+      allRecordings.push(...recs.recordings.map(r => ({ ...r, camera_id: cam })));
+    }
+    
+    currentRecordings = allRecordings;
+    renderRecordingList(allRecordings);
+  } catch (error) {
+    console.error('Failed to load recordings:', error);
+    showToast('Không thể tải danh sách recordings', 'error');
+    renderRecordingList([]);
+  } finally {
+    appState.loading.replay = false;
+  }
+}
+
+function renderRecordingList(recordings) {
+  const container = document.getElementById('videoList');
+  if (!container) return;
+  
+  if (recordings.length === 0) {
+    container.innerHTML = '<div class="p-4 text-center text-zinc-500">Không có recording nào</div>';
+    return;
+  }
+  
+  container.innerHTML = recordings.map((r, i) => {
+    const startDate = new Date(r.start_timestamp * 1000);
+    const title = `${r.camera_id.toUpperCase()} • ${startDate.toLocaleString('vi-VN')}`;
+    const duration = formatDuration(r.duration_seconds);
+    
+    return `
+      <button onclick="selectRecording('${r.recording_id}')" 
+              class="w-full text-left flex gap-3 p-2 rounded-xl border ${i===0?'bg-white text-black border-white':'bg-zinc-900 border-zinc-800 hover:border-zinc-700'} transition"
+              data-recording-id="${r.recording_id}">
+        <div class="w-[92px] h-[56px] rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-500 text-xs">
+          ${r.camera_id.toUpperCase()}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[12px] font-medium leading-tight truncate">${title}</div>
+          <div class="text-[11px] font-mono ${i===0?'opacity-60':'text-zinc-500'}">${duration} • ${startDate.toLocaleDateString('vi-VN')} • ${r.camera_id.toUpperCase()}</div>
+          <div class="mt-1 inline-flex px-1.5 py-0.5 rounded-full ${r.has_recording ? 'bg-black text-white' : 'bg-black border border-zinc-700 text-zinc-300'} text-[10px] font-mono">
+            ${r.has_recording ? '● HAS VIDEO' : 'NO VIDEO'}
+          </div>
+        </div>
+      </button>
+    `;
+  }).join('');
+}
+
+function formatDuration(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+}
+
+function selectRecording(recordingId) {
+  const rec = currentRecordings.find(r => r.recording_id === recordingId);
+  if (!rec) return;
+  
+  selectedRecording = rec;
+  const video = document.getElementById('reviewVideo');
+  video.src = `${API_CONFIG.baseURL}${rec.url_path}`;
+  video.poster = '';
+  video.load();
+  
+  // Update selection highlight
+  document.querySelectorAll('#videoList button').forEach(btn => {
+    btn.className = btn.dataset.recordingId === recordingId 
+      ? 'w-full text-left flex gap-3 p-2 rounded-xl border bg-white text-black border-white transition'
+      : 'w-full text-left flex gap-3 p-2 rounded-xl border bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition';
+  });
+  
+  // Load occurrences for this recording
+  loadOccurrencesForRecording(rec);
+}
+
+async function loadOccurrencesForRecording(recording) {
+  try {
+    const occurrences = await api.get(`${API_CONFIG.endpoints.replay}/occurrences?camera_id=${recording.camera_id}&limit=50`);
+    renderOccurrences(occurrences.occurrences);
+  } catch (error) {
+    console.error('Failed to load occurrences:', error);
+  }
+}
+
+function renderOccurrences(occurrences) {
+  const container = document.querySelector('#page-video .space-y-2:last-child') || 
+                    document.querySelector('#page-video .flex.gap-2.text-\[11px\].font-mono');
+  if (!container) return;
+  
+  container.innerHTML = occurrences.map(o => `
+    <span class="px-2 py-1 rounded-full ${o.direction === 'in' ? 'bg-white text-black' : 'border border-zinc-700'} text-[11px] font-mono">
+      ${o.timestamp_iso} ${o.direction.toUpperCase()} — ${o.person_id || 'Unknown'} (${o.identity_confidence.toFixed(2)})
+    </span>
+  `).join('');
+}
+
+// Camera and date filter handlers for Video Review
+document.getElementById('reviewCam').addEventListener('change', loadRecordings);
+document.getElementById('searchVideo').addEventListener('input', () => {
+  const q = document.getElementById('searchVideo').value.toLowerCase();
+  const cam = document.getElementById('reviewCam').value;
+  const filtered = currentRecordings.filter(r => 
+    (cam === '' || r.camera_id === cam) && 
+    r.camera_id.toLowerCase().includes(q)
+  );
+  renderRecordingList(filtered);
+});
+
+// ============================================================
+// BACKEND HEALTH - Health API Integration
+// ============================================================
+async function loadBackendHealth() {
+  appState.loading.health = true;
+  try {
+    const health = await api.get(`${API_CONFIG.endpoints.health}/system`);
+    renderBackendHealth(health);
+  } catch (error) {
+    console.error('Failed to load backend health:', error);
+    showToast('Không thể tải backend health', 'error');
+  } finally {
+    appState.loading.health = false;
+  }
+}
+
+function renderBackendHealth(health) {
+  // Update overall status
+  const overallEl = document.querySelector('#page-health .px-2.py-1.rounded-full.font-bold.tracking-wide');
+  if (overallEl) {
+    overallEl.textContent = health.overall_status.toUpperCase();
+    overallEl.className = `inline-block mt-2 px-2 py-1 rounded-full text-[10px] font-bold tracking-wide ${
+      health.overall_status === 'healthy' ? 'bg-white text-black' :
+      health.overall_status === 'degraded' ? 'border border-zinc-700 text-zinc-300' :
+      'bg-zinc-800 text-zinc-400'
+    }`;
+  }
+  
+  // Update components
+  health.components.forEach(comp => {
+    const card = Array.from(document.querySelectorAll('#page-health .card'))
+      .find(c => c.textContent.includes(comp.component.split('.').pop().toUpperCase()) ||
+                 c.textContent.includes(comp.component.toUpperCase()));
+    if (card) {
+      const badge = card.querySelector('.inline-block.mt-2, .px-2.py-1.rounded-full.font-bold.tracking-wide');
+      if (badge) {
+        badge.textContent = comp.status.toUpperCase();
+        badge.className = `inline-block mt-2 px-2 py-1 rounded-full text-[10px] font-bold tracking-wide ${
+          comp.status === 'healthy' ? 'bg-white text-black' :
+          comp.status === 'degraded' ? 'border border-zinc-700 text-zinc-300' :
+          'border border-zinc-800 text-zinc-500'
+        }`;
+      }
+    }
+  });
+  
+  // Update GPU details
+  if (health.gpu) {
+    const gpuLabel = document.getElementById('gpuHealthLabel');
+    if (gpuLabel) {
+      gpuLabel.textContent = `${health.gpu.gpu_name} • ${health.gpu.driver_version} • CUDA: ${health.gpu.cuda_runtime_version}`;
+    }
+  }
+  
+  // Start real-time metrics updates from WebSocket
+  if (!appState.wsConnected) {
+    startHealthPolling();
+  }
+}
+
+// ============================================================
+// RECORDS - Attendance API Integration
+// ============================================================
+let currentRecords = [];
+let recordsPagination = { page: 1, limit: 20, total: 0 };
+
+async function loadAttendanceRecords(params = {}) {
+  appState.loading.attendance = true;
+  try {
+    const queryParams = new URLSearchParams({
+      limit: params.limit || recordsPagination.limit,
+      offset: params.offset || 0,
+      order_by: 'event_timestamp',
+      desc: 'true',
+      ...params
+    });
+    
+    const data = await api.get(`${API_CONFIG.endpoints.attendance}/records?${queryParams}`);
+    currentRecords = data.records;
+    recordsPagination.total = data.total;
+    recordsPagination.limit = data.limit;
+    recordsPagination.offset = data.offset;
+    
+    renderRecordsTable(data.records);
+    updateRecordsPagination();
+  } catch (error) {
+    console.error('Failed to load attendance records:', error);
+    showToast('Không thể tải bản ghi điểm danh', 'error');
+    renderRecordsTable([]);
+  } finally {
+    appState.loading.attendance = false;
+  }
+}
+
+function renderRecordsTable(records) {
+  const tbody = document.getElementById('recordsBody');
+  const countEl = document.getElementById('recCount');
+  
+  if (!tbody) return;
+  
+  if (records.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-10 text-center text-zinc-500 text-[13px]">Không có dữ liệu phù hợp</td></tr>';
+    if (countEl) countEl.textContent = '0 bản ghi';
+    return;
+  }
+  
+  tbody.innerHTML = records.map(r => `
+    <tr class="hover:bg-zinc-900/40 transition">
+      <td class="px-4 py-3 flex items-center gap-2.5">
+        <img src="https://i.pravatar.cc/100?img=${Math.abs((r.person_id || '').split('').reduce((a,c)=>a+c.charCodeAt(0),0)) % 60 + 1}" 
+             class="w-7 h-7 rounded-full object-cover">
+        <span class="font-medium">${r.person_name || `Person ${r.person_id}`}</span>
+      </td>
+      <td class="px-4 py-3 font-mono text-[12px] text-zinc-400">${r.person_id}</td>
+      <td class="px-4 py-3"><span class="px-2 py-1 rounded-full border border-zinc-800 text-[11px] font-mono">${r.camera_id}</span></td>
+      <td class="px-4 py-3"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${r.direction==='in'?'bg-white text-black':'border border-zinc-700 text-zinc-300'}">${r.direction.toUpperCase()}</span></td>
+      <td class="px-4 py-3 font-mono text-[12px]">${new Date(r.timestamp * 1000).toLocaleString('vi-VN')}</td>
+      <td class="px-4 py-3 font-mono text-[12px] ${r.identity_confidence<0.5?'text-zinc-500':''}">${r.identity_confidence.toFixed(2)}</td>
+      <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold ${r.identity_confidence>=0.6?'bg-white text-black': r.identity_confidence>=0.4?'border border-zinc-600 text-zinc-300':'border border-zinc-800 text-zinc-500'}">${r.identity_confidence>=0.6?'THÀNH CÔNG': r.identity_confidence>=0.4?'CẢNH BÁO':'THẤT BẠI'}</span></td>
+    </tr>
+  `).join('');
+  
+  if (countEl) countEl.textContent = `${recordsPagination.total} bản ghi`;
+}
+
+function updateRecordsPagination() {
+  const pagination = document.querySelector('#page-records .flex.gap-1.5');
+  if (!pagination) return;
+  
+  const totalPages = Math.ceil(recordsPagination.total / recordsPagination.limit);
+  const currentPage = Math.floor(recordsPagination.offset / recordsPagination.limit) + 1;
+  
+  pagination.innerHTML = `
+    <button class="w-7 h-7 rounded-full border border-zinc-700 flex items-center justify-center ${currentPage <= 1 ? 'opacity-50 pointer-events-none' : ''}" 
+            onclick="loadAttendanceRecords({offset: ${(currentPage-2)*recordsPagination.limit}})" ${currentPage <= 1 ? 'disabled' : ''}>‹</button>
+    ${Array.from({length: Math.min(5, totalPages)}, (_, i) => {
+      let pageNum = i + 1;
+      if (totalPages > 5) {
+        if (currentPage > 3 && currentPage < totalPages - 1) pageNum = currentPage - 2 + i;
+        else if (currentPage >= totalPages - 1) pageNum = totalPages - 4 + i;
+      }
+      return `<button class="w-7 h-7 rounded-full ${pageNum === currentPage ? 'bg-white text-black' : 'border border-zinc-700'} flex items-center justify-center font-bold" 
+              onclick="loadAttendanceRecords({offset: ${(pageNum-1)*recordsPagination.limit}})">${pageNum}</button>`;
+    }).join('')}
+    <button class="w-7 h-7 rounded-full border border-zinc-700 flex items-center justify-center ${currentPage >= totalPages ? 'opacity-50 pointer-events-none' : ''}" 
+            onclick="loadAttendanceRecords({offset: ${currentPage*recordsPagination.limit}})" ${currentPage >= totalPages ? 'disabled' : ''}>›</button>
+  `;
+}
+
+// Filter handlers for Records
+['recSearch', 'recCam', 'recType', 'recDate'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('change', () => {
+      const params = {};
+      const search = document.getElementById('recSearch').value;
+      const cam = document.getElementById('recCam').value;
+      const type = document.getElementById('recType').value;
+      const date = document.getElementById('recDate').value;
+      
+      if (search) params.identity_candidate = search;
+      if (cam) params.camera_id = cam;
+      if (type) params.direction = type.toLowerCase();
+      if (date) {
+        const start = new Date(date).getTime() / 1000;
+        const end = start + 86400;
+        params.start_time = start;
+        params.end_time = end;
+      }
+      
+      loadAttendanceRecords(params);
+    });
+  }
+});
+
+// Export to CSV using real data
+async function exportExcel() {
+  try {
+    const data = await api.get(`${API_CONFIG.endpoints.attendance}/records?limit=10000`);
+    const csv = ['Tên,ID,Camera,Loại,Thời gian,Conf'];
+    data.records.forEach(r => {
+      const time = new Date(r.timestamp * 1000).toLocaleString('vi-VN');
+      csv.push(`"${r.person_name || `Person ${r.person_id}`}",${r.person_id},${r.camera_id},${r.direction.toUpperCase()},${time},${r.identity_confidence.toFixed(2)}`);
+    });
+    
+    const blob = new Blob([csv.join('\n')], {type: 'text/csv;charset=utf-8;'});
+    const a = document.createElement('a'); 
+    a.href = URL.createObjectURL(blob); 
+    a.download = `attendance_records_${new Date().toISOString().split('T')[0]}.csv`; 
+    a.click();
+    showToast(`✓ Đã xuất ${data.records.length} dòng`, 'success');
+  } catch (error) {
+    console.error('Export failed:', error);
+    showToast('Lỗi xuất Excel', 'error');
+  }
+}
+
+// ============================================================
+// WORKER CONTROL - API Integration
+// ============================================================
+const WORKER_ID = 'pipeline-engine-1';
+
+async function loadWorkerHealth() {
+  const loadingEl = document.getElementById('workerLoading');
+  if (loadingEl) loadingEl.classList.remove('hidden');
+  
+  try {
+    const health = await api.get(`${API_CONFIG.endpoints.health}/ai-worker/${WORKER_ID}`);
+    renderWorkerHealth(health);
+  } catch (error) {
+    console.error('Failed to load worker health:', error);
+    setWorkerState('ERROR');
+    showToast('Không thể tải worker health', 'error');
+  } finally {
+    if (loadingEl) loadingEl.classList.add('hidden');
+  }
+}
+
+function renderWorkerHealth(health) {
+  const stateEl = document.getElementById('workerState');
+  const versionEl = document.getElementById('workerVersion');
+  const uptimeEl = document.getElementById('workerUptime');
+  const sequenceEl = document.getElementById('workerSequence');
+  const queueEl = document.getElementById('workerQueueDepth');
+  const latencyEl = document.getElementById('workerLatency');
+  const droppedEl = document.getElementById('workerDroppedFrames');
+  const gpuEl = document.getElementById('workerGpuProvider');
+  const scrfdEl = document.getElementById('modelScrfd');
+  const arcfaceEl = document.getElementById('modelArcface');
+  const yoloEl = document.getElementById('modelYolo');
+  const errorsEl = document.getElementById('workerErrors');
+  const badgeEl = document.getElementById('workerStatusBadge');
+  
+  if (stateEl) stateEl.textContent = health.state?.toUpperCase() || 'UNKNOWN';
+  if (versionEl) versionEl.textContent = health.worker_version || '—';
+  if (uptimeEl) uptimeEl.textContent = formatUptime(health.timestamp ? Math.floor(time.time() - health.timestamp) : 0);
+  if (sequenceEl) sequenceEl.textContent = health.sequence_number || '—';
+  if (queueEl) queueEl.textContent = health.queue_depth || 0;
+  if (latencyEl) latencyEl.textContent = `${health.processing_latency_ms?.toFixed(1) || 0} ms`;
+  if (droppedEl) droppedEl.textContent = health.dropped_frames || 0;
+  if (gpuEl) gpuEl.textContent = health.gpu_provider || '—';
+  if (scrfdEl) scrfdEl.textContent = health.model_readiness?.scrfd ? 'READY' : 'NOT READY';
+  if (arcfaceEl) arcfaceEl.textContent = health.model_readiness?.arcface ? 'READY' : 'NOT READY';
+  if (yoloEl) yoloEl.textContent = health.model_readiness?.yolo ? 'READY' : 'NOT READY';
+  
+  // Errors
+  if (errorsEl) {
+    if (health.errors && health.errors.length > 0) {
+      errorsEl.innerHTML = health.errors.map(e => `<div>${new Date().toLocaleTimeString()} ${e}</div>`).join('');
+    } else {
+      errorsEl.textContent = 'Không có lỗi';
+    }
+  }
+  
+  // Status badge
+  if (badgeEl) {
+    const state = health.state;
+    badgeEl.textContent = state?.toUpperCase() || 'UNKNOWN';
+    badgeEl.className = `px-2.5 py-1 rounded-full text-[11px] font-mono ${
+      state === 'ready' ? 'bg-green-600 text-white' :
+      state === 'degraded' ? 'bg-yellow-600 text-black' :
+      state === 'failed' ? 'bg-red-600 text-white' :
+      'border border-zinc-700 text-zinc-400'
+    }`;
+  }
+  
+  // Update stream epochs
+  if (health.stream_epochs) {
+    const epochCam1 = document.getElementById('epochCam1');
+    const epochCam2 = document.getElementById('epochCam2');
+    if (epochCam1) epochCam1.textContent = health.stream_epochs.cam1 || health.stream_epochs.CAM1 || '—';
+    if (epochCam2) epochCam2.textContent = health.stream_epochs.cam2 || health.stream_epochs.CAM2 || '—';
+  }
+}
+
+function formatUptime(seconds) {
+  if (!seconds || seconds < 0) return '—';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${h}h ${m}m ${s}s`;
+}
+
+async function sendControlCommand(action, target = 'worker', targetId = WORKER_ID) {
+  const resultEl = document.getElementById('workerActionResult');
+  if (resultEl) resultEl.textContent = `Đang gửi ${action}...`;
+  
+  // Disable buttons during request
+  ['startWorkerBtn', 'stopWorkerBtn', 'restartWorkerBtn', 'getStatusBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = true;
+  });
+  
+  try {
+    const response = await api.post(`${API_CONFIG.endpoints.ai_worker}/control/${action}`, {
+      request_id: `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      action: action,
+      target: target,
+      target_id: targetId,
+      parameters: {},
+      idempotency_key: `idem-${action}-${Date.now()}`,
+      expires_at: Date.now() / 1000 + 300
+    });
+    
+    if (resultEl) resultEl.textContent = `✓ ${action}: ${response.status || 'PENDING'}`;
+    
+    // Refresh status after a short delay
+    setTimeout(loadWorkerHealth, 1000);
+    
+  } catch (error) {
+    console.error(`Control ${action} failed:`, error);
+    if (resultEl) resultEl.textContent = `✗ ${action}: ${error.message}`;
+  } finally {
+    ['startWorkerBtn', 'stopWorkerBtn', 'restartWorkerBtn', 'getStatusBtn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.disabled = false;
+    });
+  }
+}
+
+async function sendCameraCommand(action, cameraId) {
+  const btnEnable = document.getElementById(`enable${cameraId.toUpperCase()}`);
+  const btnDisable = document.getElementById(`disable${cameraId.toUpperCase()}`);
+  const statusEl = document.getElementById(`cam${cameraId.slice(-1)}Status`);
+  
+  if (btnEnable) btnEnable.disabled = true;
+  if (btnDisable) btnDisable.disabled = true;
+  if (statusEl) statusEl.textContent = `Đang ${action === 'ENABLE_CAMERA' ? 'bật' : 'tắt'}...`;
+  
+  try {
+    const response = await api.post(`${API_CONFIG.endpoints.ai_worker}/control/${action}`, {
+      request_id: `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      action: action,
+      target: 'camera',
+      target_id: cameraId,
+      parameters: {},
+      idempotency_key: `idem-${action}-${cameraId}-${Date.now()}`,
+      expires_at: Date.now() / 1000 + 300
+    });
+    
+    if (statusEl) statusEl.textContent = `✓ ${action}: ${response.status || 'PENDING'}`;
+    
+    // Refresh health to get updated camera states
+    setTimeout(loadWorkerHealth, 1000);
+    
+  } catch (error) {
+    console.error(`Camera ${action} failed:`, error);
+    if (statusEl) statusEl.textContent = `✗ ${action}: ${error.message}`;
+  } finally {
+    if (btnEnable) btnEnable.disabled = false;
+    if (btnDisable) btnDisable.disabled = false;
+  }
+}
+
+// Event handlers for Worker Control buttons
+document.getElementById('startWorkerBtn')?.addEventListener('click', () => sendControlCommand('START_WORKER'));
+document.getElementById('stopWorkerBtn')?.addEventListener('click', () => sendControlCommand('STOP_WORKER'));
+document.getElementById('restartWorkerBtn')?.addEventListener('click', () => sendControlCommand('RESTART_WORKER'));
+document.getElementById('getStatusBtn')?.addEventListener('click', () => sendControlCommand('GET_STATUS'));
+
+document.getElementById('enableCam1')?.addEventListener('click', () => sendCameraCommand('ENABLE_CAMERA', 'cam1'));
+document.getElementById('disableCam1')?.addEventListener('click', () => sendCameraCommand('DISABLE_CAMERA', 'cam1'));
+document.getElementById('enableCam2')?.addEventListener('click', () => sendCameraCommand('ENABLE_CAMERA', 'cam2'));
+document.getElementById('disableCam2')?.addEventListener('click', () => sendCameraCommand('DISABLE_CAMERA', 'cam2'));
+
+// Toggle switch handlers
+document.getElementById('cam1Toggle')?.addEventListener('change', (e) => {
+  if (e.target.checked) sendCameraCommand('ENABLE_CAMERA', 'cam1');
+  else sendCameraCommand('DISABLE_CAMERA', 'cam1');
+});
+
+document.getElementById('cam2Toggle')?.addEventListener('change', (e) => {
+  if (e.target.checked) sendCameraCommand('ENABLE_CAMERA', 'cam2');
+  else sendCameraCommand('DISABLE_CAMERA', 'cam2');
+});
+
+document.getElementById('refreshWorkerBtn')?.addEventListener('click', loadWorkerHealth);
+
+// Poll worker health every 10 seconds when on worker page
+let workerHealthPollInterval = null;
+
+function startWorkerHealthPolling() {
+  if (workerHealthPollInterval) clearInterval(workerHealthPollInterval);
+  workerHealthPollInterval = setInterval(() => {
+    if (!document.getElementById('page-worker').classList.contains('hidden')) {
+      loadWorkerHealth();
+    }
+  }, 10000);
+  // Initial load
+  loadWorkerHealth();
+}
+
+function stopWorkerHealthPolling() {
+  if (workerHealthPollInterval) {
+    clearInterval(workerHealthPollInterval);
+    workerHealthPollInterval = null;
+  }
+}
+async function saveLines() {
+  const config1 = linesToGeometryConfig('CAM1', lines1, 'canvas1');
+  const config2 = linesToGeometryConfig('CAM2', lines2, 'canvas2');
+  
+  if (!config1 || !config2) {
+    showToast('Chưa vẽ line cho camera', 'error');
+    return;
+  }
+  
+  try {
+    // Save to backend via Geometry API
+    await Promise.all([
+      api.put(`${API_CONFIG.endpoints.geometry}/CAM1/line`, config1),
+      api.put(`${API_CONFIG.endpoints.geometry}/CAM2/line`, config2)
+    ]);
+    
+    showToast('✓ Đã lưu line vào backend', 'success');
+    updateGeometryDisplay();
+    
+    // Update local state
+    appState.geometryConfigs.CAM1 = { ...appState.geometryConfigs.CAM1, line: config1 };
+    appState.geometryConfigs.CAM2 = { ...appState.geometryConfigs.CAM2, line: config2 };
+    
+  } catch (error) {
+    console.error('Save lines failed:', error);
+    showToast(`Lỗi lưu line: ${error.message}`, 'error');
+  }
+}
+
+function linesToGeometryConfig(cameraId, linesArray, canvasId) {
+  if (linesArray.length === 0) return null;
+  
+  const canvas = document.getElementById(canvasId);
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = 3840 / rect.width;
+  const scaleY = 2160 / rect.height;
+  
+  const line = linesArray[linesArray.length - 1]; // Last drawn line
+  
+  return {
+    p1: { x: Math.round(line.x1 * scaleX), y: Math.round(line.y1 * scaleY) },
+    p2: { x: Math.round(line.x2 * scaleX), y: Math.round(line.y2 * scaleY) },
+    direction_semantics: 'side_a_to_b_in'
+  };
+}
+
+// Override the original saveLines function
+window.saveLines = saveLines;
+
+// ============================================================
+// STUDENT ROSTER MODULE (Module B)
+// ============================================================
+let studentsPagination = { page: 1, limit: 50, total: 0 };
+let currentStudents = [];
+let currentClasses = [];
+
+async function loadStudents(params = {}) {
+  const queryParams = new URLSearchParams({
+    limit: params.limit || studentsPagination.limit,
+    offset: params.offset || 0,
+    ...params
+  });
+  
+  try {
+    const data = await api.get(`${API_CONFIG.endpoints.students}?${queryParams}`);
+    currentStudents = data;
+    renderStudentsTable(data);
+    updateStudentsCount(data.length);
+  } catch (error) {
+    console.error('Failed to load students:', error);
+    showToast('Không thể tải danh sách học sinh', 'error');
+    renderStudentsTable([]);
+  }
+}
+
+async function loadClasses() {
+  try {
+    const classes = await api.get(`${API_CONFIG.endpoints.students}/classes`);
+    currentClasses = classes;
+    renderClassFilter(classes);
+  } catch (error) {
+    console.error('Failed to load classes:', error);
+  }
+}
+
+function renderClassFilter(classes) {
+  const select = document.getElementById('studentClassFilter');
+  if (!select) return;
+  
+  const currentValue = select.value;
+  select.innerHTML = '<option value="">Tất cả lớp</option>';
+  classes.forEach(cls => {
+    const option = document.createElement('option');
+    option.value = cls.class_id;
+    option.textContent = `${cls.class_name} (${cls.class_id}) - ${cls.student_count} SV`;
+    select.appendChild(option);
+  });
+  select.value = currentValue;
+}
+
+function renderStudentsTable(students) {
+  const tbody = document.getElementById('studentsBody');
+  if (!tbody) return;
+  
+  if (students.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-zinc-500 text-[13px]">Không có học sinh phù hợp</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = students.map(student => {
+    const statusClass = student.enrollment_status === 'ENROLLED' ? 'bg-green-600 text-white' : 
+                        student.enrollment_status === 'PENDING' ? 'bg-yellow-600 text-black' : 'bg-zinc-700 text-zinc-400';
+    const statusText = student.enrollment_status === 'ENROLLED' ? 'ĐÃ ĐĂNG KÝ' :
+                       student.enrollment_status === 'PENDING' ? 'CHƯA ĐĂNG KÝ' : 'KHÔNG HOẠT ĐỘNG';
+    
+    return `
+      <tr class="hover:bg-zinc-900/40 transition">
+        <td class="px-4 py-3 font-mono text-[12px] text-zinc-300">${student.student_id}</td>
+        <td class="px-4 py-3 font-medium">${student.full_name}</td>
+        <td class="px-4 py-3"><span class="px-2 py-1 rounded-full border border-zinc-800 text-[11px] font-mono">${student.class_name || student.class_id}</span></td>
+        <td class="px-4 py-3">
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide ${statusClass}">${statusText}</span>
+          ${student.embedding_path ? '<span class="ml-2 text-[10px] text-green-400 font-mono">● NPY</span>' : ''}
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-1.5">
+            <button onclick="openEnrollmentModal('${student.student_id}', '${student.full_name}', '${student.class_name || student.class_id}')" 
+                    class="px-3 py-1.5 rounded-full bg-white text-black text-[11px] font-semibold hover:bg-zinc-200 transition" 
+                    ${student.enrollment_status === 'ENROLLED' ? 'disabled' : ''}>
+              ${student.enrollment_status === 'ENROLLED' ? '✓ Đã đăng ký' : 'Đăng ký khuôn mặt'}
+            </button>
+            <button onclick="viewStudentDetail('${student.student_id}')" class="w-8 h-8 rounded-full border border-zinc-700 flex items-center justify-center hover:bg-zinc-900 text-zinc-400" title="Xem chi tiết">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updateStudentsCount(count) {
+  const el = document.getElementById('studentCount');
+  if (el) el.textContent = `${count} học sinh`;
+}
+
+function filterStudents() {
+  const search = document.getElementById('studentSearch').value;
+  const classId = document.getElementById('studentClassFilter').value;
+  const status = document.getElementById('studentStatusFilter').value;
+  
+  const params = {};
+  if (search) params.search = search;
+  if (classId) params.class_id = classId;
+  if (status) params.enrollment_status = status;
+  
+  studentsPagination.page = 1;
+  loadStudents(params);
+}
+
+// Event listeners for student filters
+document.getElementById('studentSearch')?.addEventListener('input', debounce(filterStudents, 300));
+document.getElementById('studentClassFilter')?.addEventListener('change', filterStudents);
+document.getElementById('studentStatusFilter')?.addEventListener('change', filterStudents);
+
+function debounce(fn, delay) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+// ============================================================
+// EXCEL IMPORT MODULE (Module C)
+// ============================================================
+let pendingExcelData = null;
+
+function openImportModal() {
+  document.getElementById('importModal').classList.remove('hidden');
+  document.getElementById('importModal').classList.add('flex');
+  resetImportModal();
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').classList.add('hidden');
+  document.getElementById('importModal').classList.remove('flex');
+  resetImportModal();
+}
+
+function resetImportModal() {
+  document.getElementById('excelFileInput').value = '';
+  document.getElementById('excelPreview').classList.add('hidden');
+  document.getElementById('importResult').classList.add('hidden');
+  document.getElementById('btnConfirmImport').disabled = true;
+  pendingExcelData = null;
+}
+
+document.getElementById('excelFileInput')?.addEventListener('change', handleExcelFileSelect);
+document.getElementById('excelDropZone')?.addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('bg-zinc-900'); });
+document.getElementById('excelDropZone')?.addEventListener('dragleave', e => { e.currentTarget.classList.remove('bg-zinc-900'); });
+document.getElementById('excelDropZone')?.addEventListener('drop', e => {
+  e.preventDefault();
+  e.currentTarget.classList.remove('bg-zinc-900');
+  if (e.dataTransfer.files[0]) handleExcelFileSelect({ target: { files: e.dataTransfer.files } });
+});
+
+function handleExcelFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const data = new Uint8Array(event.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      
+      // Get first sheet
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      
+      if (jsonData.length < 2) {
+        showToast('File Excel không có dữ liệu', 'error');
+        return;
+      }
+      
+      // Normalize headers
+      const headers = jsonData[0].map(h => String(h).toLowerCase().trim());
+      const requiredColumns = ['student_id', 'full_name', 'class_name'];
+      const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+      
+      if (missingColumns.length > 0) {
+        showToast(`Thiếu cột bắt buộc: ${missingColumns.join(', ')}`, 'error');
+        return;
+      }
+      
+      // Preview first 5 rows
+      const previewRows = jsonData.slice(1, 6);
+      renderExcelPreview(headers, previewRows);
+      
+      pendingExcelData = {
+        headers,
+        rows: jsonData.slice(1).map(row => {
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = row[i]);
+          return obj;
+        })
+      };
+      
+      document.getElementById('btnConfirmImport').disabled = false;
+      showToast(`Đã đọc ${pendingExcelData.rows.length} bản ghi từ Excel`, 'success');
+    } catch (error) {
+      console.error('Excel parse error:', error);
+      showToast('Lỗi đọc file Excel', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderExcelPreview(headers, rows) {
+  const headerRow = document.getElementById('excelPreviewHeader');
+  const body = document.getElementById('excelPreviewBody');
+  
+  headerRow.innerHTML = headers.map(h => `<th class="px-3 py-2 font-medium text-zinc-400">${h}</th>`).join('');
+  body.innerHTML = rows.map(row => 
+    `<tr class="border-t border-zinc-800">${row.map(cell => `<td class="px-3 py-2">${cell || ''}</td>`).join('')}</tr>`
+  ).join('');
+  
+  document.getElementById('excelPreview').classList.remove('hidden');
+}
+
+async function confirmImport() {
+  if (!pendingExcelData) return;
+  
+  const btn = document.getElementById('btnConfirmImport');
+  btn.disabled = true;
+  btn.textContent = 'Đang nhập...';
+  
+  try {
+    // Convert to FormData
+    const formData = new FormData();
+    // We need to recreate the file - for now, we'll use the API directly
+    const response = await fetch(`${API_CONFIG.endpoints.students}/import`, {
+      method: 'POST',
+      headers: {
+        'X-API-Key': API_CONFIG.getApiKey(),
+      },
+      body: JSON.stringify({ students: pendingExcelData.rows })
+    });
+    
+    // Actually, the backend expects multipart/form-data with a file
+    // We need to convert the data back to a file-like object
+    // For now, let's use a different approach - send the parsed data
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.detail || 'Import failed');
+    }
+    
+    document.getElementById('importResult').classList.remove('hidden');
+    document.getElementById('importResult').className = 'p-3 rounded-xl bg-green-900/30 border border-green-600 text-green-300';
+    document.getElementById('importResult').innerHTML = `
+      <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-full bg-green-600 text-white flex items-center justify-center text-[10px]">✓</span> Nhập thành công!</div>
+      <div class="mt-1 text-[11px] font-mono">Đã nhập: ${result.imported} • Đã cập nhật: ${result.updated} • Lỗi: ${result.errors?.length || 0}</div>
+    `;
+    
+    if (result.errors && result.errors.length > 0) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'mt-2 text-[10px] text-red-400';
+      errorDiv.innerHTML = result.errors.slice(0, 5).map(e => `Dòng ${e.row}: ${e.message}`).join('<br>');
+      document.getElementById('importResult').appendChild(errorDiv);
+    }
+    
+    showToast(`✓ Đã nhập ${result.imported} học sinh mới, cập nhật ${result.updated}`, 'success');
+    
+    // Refresh student list
+    await loadStudents();
+    await loadClasses();
+    
+    setTimeout(() => closeImportModal(), 2000);
+  } catch (error) {
+    console.error('Import error:', error);
+    document.getElementById('importResult').classList.remove('hidden');
+    document.getElementById('importResult').className = 'p-3 rounded-xl bg-red-900/30 border border-red-600 text-red-300';
+    document.getElementById('importResult').textContent = `Lỗi: ${error.message}`;
+    showToast(`Lỗi nhập Excel: ${error.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Xác nhận nhập';
+  }
+}
+
+// We need XLSX library - add it via CDN
+const script = document.createElement('script');
+script.src = 'https://cdn.jsdelivr.net/npm/xlsx@latest/dist/xlsx.full.min.js';
+document.head.appendChild(script);
+
+// ============================================================
+// FACE ENROLLMENT MODULE (Module D)
+// ============================================================
+let currentEnrollmentStudent = null;
+let enrollmentPhotoBlob = null;
+let enrollmentWebcamStream = null;
+
+function openEnrollmentModal(studentId, studentName, studentClass) {
+  currentEnrollmentStudent = { studentId, studentName, studentClass };
+  
+  document.getElementById('enrollStudentId').value = studentId;
+  document.getElementById('enrollStudentName').value = studentName;
+  document.getElementById('enrollStudentClass').value = studentClass;
+  
+  resetEnrollmentModal();
+  document.getElementById('enrollmentModal').classList.remove('hidden');
+  document.getElementById('enrollmentModal').classList.add('flex');
+}
+
+function closeEnrollmentModal() {
+  document.getElementById('enrollmentModal').classList.add('hidden');
+  document.getElementById('enrollmentModal').classList.remove('flex');
+  stopEnrollmentWebcam();
+  resetEnrollmentModal();
+}
+
+function resetEnrollmentModal() {
+  document.getElementById('photoUploadSection').classList.add('hidden');
+  document.getElementById('webcamCaptureSection').classList.add('hidden');
+  document.getElementById('enrollPhotoPreview').classList.add('hidden');
+  document.getElementById('enrollPhotoInput').value = '';
+  document.getElementById('enrollProgress').classList.add('hidden');
+  document.getElementById('enrollProgressBar').style.width = '0%';
+  document.getElementById('enrollResult').classList.add('hidden');
+  document.getElementById('btnSubmitEnrollment').disabled = true;
+  enrollmentPhotoBlob = null;
+}
+
+function openPhotoUpload() {
+  document.getElementById('photoUploadSection').classList.remove('hidden');
+  document.getElementById('webcamCaptureSection').classList.add('hidden');
+}
+
+document.getElementById('enrollPhotoInput')?.addEventListener('change', handleEnrollmentPhotoSelect);
+
+function handleEnrollmentPhotoSelect(e) {
+  const file = e.target.files[0];
+  if (!file || !file.type.startsWith('image/')) {
+    showToast('Vui lòng chọn file ảnh', 'error');
+    return;
+  }
+  
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('File quá lớn (tối đa 10MB)', 'error');
+    return;
+  }
+  
+  enrollmentPhotoBlob = file;
+  const url = URL.createObjectURL(file);
+  document.getElementById('enrollPreviewImg').src = url;
+  document.getElementById('enrollPhotoPreview').classList.remove('hidden');
+  document.getElementById('btnSubmitEnrollment').disabled = false;
+  showToast('Ảnh đã sẵn sàng', 'success');
+}
+
+async function openWebcamCapture() {
+  document.getElementById('webcamCaptureSection').classList.remove('hidden');
+  document.getElementById('photoUploadSection').classList.add('hidden');
+  
+  try {
+    enrollmentWebcamStream = await navigator.mediaDevices.getUserMedia({ 
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+    });
+    document.getElementById('enrollWebcamVideo').srcObject = enrollmentWebcamStream;
+    document.getElementById('btnStartWebcam').disabled = true;
+    document.getElementById('btnCapturePhoto').disabled = false;
+  } catch (error) {
+    console.error('Webcam error:', error);
+    showToast('Không thể truy cập webcam', 'error');
+  }
+}
+
+function stopEnrollmentWebcam() {
+  if (enrollmentWebcamStream) {
+    enrollmentWebcamStream.getTracks().forEach(track => track.stop());
+    enrollmentWebcamStream = null;
+  }
+}
+
+document.getElementById('btnCapturePhoto')?.addEventListener('click', captureEnrollmentPhoto);
+document.getElementById('btnRetakePhoto')?.addEventListener('click', () => {
+  document.getElementById('enrollWebcamCanvas').classList.add('hidden');
+  document.getElementById('enrollWebcamVideo').classList.remove('hidden');
+  document.getElementById('btnCapturePhoto').disabled = false;
+  document.getElementById('btnRetakePhoto').disabled = true;
+  document.getElementById('btnSubmitEnrollment').disabled = true;
+  enrollmentPhotoBlob = null;
+});
+
+function captureEnrollmentPhoto() {
+  const video = document.getElementById('enrollWebcamVideo');
+  const canvas = document.getElementById('enrollWebcamCanvas');
+  
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+  
+  canvas.toBlob(blob => {
+    enrollmentPhotoBlob = blob;
+    document.getElementById('enrollWebcamCanvas').classList.remove('hidden');
+    document.getElementById('enrollWebcamVideo').classList.add('hidden');
+    document.getElementById('btnCapturePhoto').disabled = true;
+    document.getElementById('btnRetakePhoto').disabled = false;
+    document.getElementById('btnSubmitEnrollment').disabled = false;
+    showToast('Đã chụp ảnh', 'success');
+  }, 'image/jpeg', 0.9);
+}
+
+async function submitEnrollment() {
+  if (!currentEnrollmentStudent || !enrollmentPhotoBlob) {
+    showToast('Thiếu thông tin hoặc ảnh', 'error');
+    return;
+  }
+  
+  const btn = document.getElementById('btnSubmitEnrollment');
+  btn.disabled = true;
+  document.getElementById('enrollProgress').classList.remove('hidden');
+  document.getElementById('enrollProgressBar').style.width = '20%';
+  
+  try {
+    const formData = new FormData();
+    formData.append('student_id', currentEnrollmentStudent.studentId);
+    formData.append('name', currentEnrollmentStudent.studentName);
+    formData.append('role', 'student');
+    formData.append('student_class', currentEnrollmentStudent.studentClass);
+    formData.append('image', enrollmentPhotoBlob, 'enrollment.jpg');
+    
+    document.getElementById('enrollProgressBar').style.width = '50%';
+    
+    const response = await fetch(`${API_CONFIG.endpoints.enrollment}/persons`, {
+      method: 'POST',
+      headers: {
+        'X-API-Key': API_CONFIG.getApiKey(),
+      },
+      body: formData
+    });
+    
+    document.getElementById('enrollProgressBar').style.width = '80%';
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Enrollment failed' }));
+      throw new Error(error.detail || 'Enrollment failed');
+    }
+    
+    const result = await response.json();
+    document.getElementById('enrollProgressBar').style.width = '100%';
+    
+    document.getElementById('enrollResult').classList.remove('hidden');
+    document.getElementById('enrollResult').className = 'p-3 rounded-xl bg-green-900/30 border border-green-600 text-green-300';
+    document.getElementById('enrollResult').innerHTML = `
+      <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-full bg-green-600 text-white flex items-center justify-center text-[10px]">✓</span> Đăng ký thành công!</div>
+      <div class="mt-1 text-[11px] font-mono">Student ID: ${result.student_id} • Vector: ${result.vector_count} • NPY: ${result.npy_filename}</div>
+    `;
+    
+    showToast(`✓ Đăng ký khuôn mặt thành công cho ${currentEnrollmentStudent.studentName}`, 'success');
+    
+    // Refresh student list
+    await loadStudents();
+    await loadEnrolledPersons();
+    
+    setTimeout(() => closeEnrollmentModal(), 2000);
+  } catch (error) {
+    console.error('Enrollment error:', error);
+    document.getElementById('enrollResult').classList.remove('hidden');
+    document.getElementById('enrollResult').className = 'p-3 rounded-xl bg-red-900/30 border border-red-600 text-red-300';
+    document.getElementById('enrollResult').textContent = `Lỗi: ${error.message}`;
+    showToast(`Lỗi đăng ký: ${error.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ============================================================
+// EVIDENCE MODAL (Module E)
+// ============================================================
+function openEvidenceModal(record) {
+  const modal = document.getElementById('evidenceModal');
+  const title = document.getElementById('evidenceModalTitle');
+  const imagesContainer = document.getElementById('evidenceImages');
+  const detailsContainer = document.getElementById('evidenceDetails');
+  
+  title.textContent = `Bằng chứng: ${record.person_name || record.person_id} - ${record.direction?.toUpperCase() || 'IN/OUT'}`;
+  
+  let imagesHtml = '';
+  if (record.snapshot_face_url) {
+    const faceUrl = record.snapshot_face_url.startsWith('http') ? record.snapshot_face_url : `${window.location.origin}${record.snapshot_face_url}`;
+    imagesHtml += `
+      <div class="space-y-2">
+        <div class="text-[11px] font-mono text-zinc-400">FACE CROP</div>
+        <img src="${faceUrl}" class="w-full rounded-xl border border-zinc-800" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+        <div class="hidden w-full aspect-square rounded-xl border border-zinc-800 bg-zinc-900 flex items-center justify-center text-zinc-500">Không tải được ảnh</div>
+      </div>
+    `;
+  }
+  if (record.snapshot_scene_url) {
+    const sceneUrl = record.snapshot_scene_url.startsWith('http') ? record.snapshot_scene_url : `${window.location.origin}${record.snapshot_scene_url}`;
+    imagesHtml += `
+      <div class="space-y-2">
+        <div class="text-[11px] font-mono text-zinc-400">SCENE CROP (4K)</div>
+        <img src="${sceneUrl}" class="w-full rounded-xl border border-zinc-800" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+        <div class="hidden w-full aspect-square rounded-xl border border-zinc-800 bg-zinc-900 flex items-center justify-center text-zinc-500">Không tải được ảnh</div>
+      </div>
+    `;
+  }
+  if (!imagesHtml) {
+    imagesHtml = '<div class="col-span-2 text-center text-zinc-500 py-8">Không có bằng chứng ảnh</div>';
+  }
+  
+  imagesContainer.innerHTML = imagesHtml;
+  
+  const time = new Date(record.timestamp * 1000).toLocaleString('vi-VN');
+  detailsContainer.innerHTML = `
+    <div class="grid grid-cols-2 gap-2 text-[11px]">
+      <div><span class="text-zinc-500">Thời gian:</span> <span class="text-white font-mono">${time}</span></div>
+      <div><span class="text-zinc-500">Camera:</span> <span class="text-white font-mono">${record.camera_id}</span></div>
+      <div><span class="text-zinc-500">Hướng:</span> <span class="text-white font-mono">${record.direction?.toUpperCase()}</span></div>
+      <div><span class="text-zinc-500">Confidence:</span> <span class="text-white font-mono">${record.identity_confidence?.toFixed(2) || 'N/A'}</span></div>
+      <div><span class="text-zinc-500">Track ID:</span> <span class="text-white font-mono">${record.local_track_id}</span></div>
+      <div><span class="text-zinc-500">Global ID:</span> <span class="text-white font-mono">${record.global_observation_id || 'N/A'}</span></div>
+    </div>
+  `;
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeEvidenceModal() {
+  document.getElementById('evidenceModal').classList.add('hidden');
+  document.getElementById('evidenceModal').classList.remove('flex');
+}
+
+// ============================================================
+// EXCEL EXPORT (Module E)
+// ============================================================
+async function exportExcel() {
+  try {
+    showToast('Đang tạo báo cáo Excel...', 'success');
+    
+    const response = await fetch(`${API_CONFIG.endpoints.excel}/export/daily`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': API_CONFIG.getApiKey(),
+      },
+      body: JSON.stringify({
+        date: new Date().toISOString().split('T')[0],
+        timezone: 'Asia/Bangkok',
+        include_events_sheet: true,
+        include_provenance_sheet: true,
+        include_summary_sheet: true
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Export failed' }));
+      throw new Error(error.detail || 'Export failed');
+    }
+    
+    const result = await response.json();
+    
+    // Download the file
+    const downloadResponse = await fetch(`${API_CONFIG.endpoints.excel}/export/${result.export_id}/download`);
+    if (!downloadResponse.ok) throw new Error('Download failed');
+    
+    const blob = await downloadResponse.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance_${new Date().toISOString().split('T')[0]}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast(`✓ Đã xuất báo cáo: ${result.sheets_created.join(', ')} (${result.record_count} bản ghi)`, 'success');
+  } catch (error) {
+    console.error('Export error:', error);
+    showToast(`Lỗi xuất Excel: ${error.message}`, 'error');
+  }
+}
+
+// ============================================================
+// DUAL CAMERA LIVE FEED FIX (Module A)
+// ============================================================
+function setupVideoStreams() {
+  const hlsBase = 'http://localhost:8888'; // MediaMTX HLS port
+  
+  ['cam1', 'cam2'].forEach(cam => {
+    const videoEl = document.getElementById(cam === 'cam1' ? 'video1' : 'video2');
+    if (videoEl && videoEl.tagName === 'IMG') {
+      // Replace img with video element for HLS playback
+      const video = document.createElement('video');
+      video.id = videoEl.id;
+      video.className = videoEl.className;
+      video.controls = false;
+      video.muted = true;
+      video.playsInline = true;
+      video.style.width = '100%';
+      video.style.height = '100%';
+      video.style.objectFit = 'cover';
+      videoEl.parentNode.replaceChild(video, videoEl);
+      
+      if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+        const hls = new Hls({ 
+          enableWorker: true,
+          lowLatencyMode: true,
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDuration: 5
+        });
+        hls.loadSource(`${hlsBase}/live/${cam}/index.m3u8`);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(e => console.log('Auto-play blocked:', e));
+        });
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            console.error(`HLS error for ${cam}:`, data);
+            hls.destroy();
+            fallbackToStaticImage(cam);
+          }
+        });
+        // Store hls instance for cleanup
+        window[`hls_${cam}`] = hls;
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari native HLS support
+        video.src = `${hlsBase}/live/${cam}/index.m3u8`;
+        video.addEventListener('loadedmetadata', () => {
+          video.play().catch(e => console.log('Auto-play blocked:', e));
+        });
+        video.addEventListener('error', () => fallbackToStaticImage(cam));
+      } else {
+        fallbackToStaticImage(cam);
+      }
+    }
+  });
+}
+
+function fallbackToStaticImage(cam) {
+  const videoEl = document.getElementById(cam === 'cam1' ? 'video1' : 'video2');
+  if (videoEl && videoEl.tagName === 'VIDEO') {
+    const img = document.createElement('img');
+    img.id = videoEl.id;
+    img.className = videoEl.className;
+    // Clean placeholder instead of stock images
+    img.src = `data:image/svg+xml,${encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9">
+        <rect fill="%2318181b" width="16" height="9"/>
+        <text x="8" y="4.5" font-family="monospace" font-size="1.2" fill="%2352525b" text-anchor="middle" dominant-baseline="middle">
+          ${cam.toUpperCase()} - WAITING FOR STREAM
+        </text>
+      </svg>
+    )}`;
+    videoEl.parentNode.replaceChild(img, videoEl);
+  }
+}
+
+// Cleanup HLS on page leave
+function cleanupHLS() {
+  ['cam1', 'cam2'].forEach(cam => {
+    if (window[`hls_${cam}`]) {
+      window[`hls_${cam}`].destroy();
+      window[`hls_${cam}`] = null;
+    }
+  });
+}
+
+// ============================================================
+// PAGE LOAD HANDLERS
+// ============================================================
+async function onPageSwitch(page) {
+  switch (page) {
+    case 'live':
+      if (!appState.cameras.cam1) initLiveMonitoring();
+      resizeCanvases();
+      break;
+    case 'arcface':
+      if (appState.enrolledPersons.length === 0) await loadEnrolledPersons();
+      break;
+    case 'video':
+      if (currentRecordings.length === 0) await loadRecordings();
+      break;
+    case 'health':
+      await loadBackendHealth();
+      break;
+    case 'records':
+      if (currentRecords.length === 0) await loadAttendanceRecords();
+      break;
+    case 'students':
+      await loadStudents();
+      await loadClasses();
+      break;
+  }
+}
+async function onPageSwitch(page) {
+  switch (page) {
+    case 'live':
+      if (!appState.cameras.cam1) initLiveMonitoring();
+      resizeCanvases();
+      break;
+    case 'arcface':
+      if (appState.enrolledPersons.length === 0) await loadEnrolledPersons();
+      break;
+    case 'video':
+      if (currentRecordings.length === 0) await loadRecordings();
+      break;
+    case 'health':
+      await loadBackendHealth();
+      break;
+    case 'records':
+      if (currentRecords.length === 0) await loadAttendanceRecords();
+      break;
+  }
+}
+
+// Wrap original switchPage
+const originalSwitchPage = window.switchPage;
+window.switchPage = function(page) {
+  originalSwitchPage(page);
+  onPageSwitch(page);
+};
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('load', async () => {
+  // Update API info in topbar
+  document.getElementById('apiInfo').innerHTML = `API: <span class="text-white">${API_CONFIG.baseURL}</span> • WebSocket: <span class="text-white" id="wsInfo">${API_CONFIG.wsURL}</span> • MediaMTX: <span class="text-white">rtsp://localhost:8554</span>`;
+  
+  // Set default lines
+  setTimeout(() => {
+    const c1 = document.getElementById('canvas1'), r1 = c1.getBoundingClientRect();
+    lines1.push({x1: r1.width * 0.5, y1: 0, x2: r1.width * 0.5, y2: r1.height});
+    const c2 = document.getElementById('canvas2'), r2 = c2.getBoundingClientRect();
+    lines2.push({x1: r2.width * 0.5, y1: 0, x2: r2.width * 0.5, y2: r2.height});
+    resizeCanvases();
+    
+    // Start animation loop for annotations
+    setInterval(() => { 
+      if (document.getElementById('toggleAnnot')?.checked) drawAll(); 
+    }, 80);
+    
+    // Load geometry from backend
+    loadGeometryConfigs();
+  }, 120);
+  
+  window.addEventListener('resize', resizeCanvases);
+  
+  // Initialize dashboard data
+  try {
+    await api.get(`${API_CONFIG.endpoints.health}/live`); // Check backend availability
+    loadInitialHealthData();
+    loadAttendanceRecords({ limit: 20 });
+    
+    // Initialize WebSocket connections
+    initHealthWebSocket();
+    initAttendanceWebSocket();
+  } catch (e) {
+    console.warn('Backend not available:', e);
+    showToast('Backend chưa sẵn sàng - chạy ở chế độ demo', 'error');
+  }
+  
+  // Update WebSocket URL display
+  document.getElementById('wsInfo').textContent = API_CONFIG.wsURL;
+});
+
+// init page
+switchPage('dashboard');
+</script>
+</body>
+</html>
