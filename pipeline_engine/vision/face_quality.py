@@ -254,10 +254,17 @@ class QualityAssessor:
         return compute_body_quality(bgr, person_bbox, (bgr.shape[0], bgr.shape[1]))
     
     def _nv12_to_bgr(self, y_tensor: torch.Tensor, uv_tensor: torch.Tensor) -> torch.Tensor:
-        """Convert NV12 to BGR on GPU."""
-        # Simple conversion - in practice use the pipeline's nv12_to_bgr_cuda
+        """Convert NV12 to BGR on GPU.
+        
+        Returns contiguous tensor in (H, W, 3) uint8 format suitable for quality assessment.
+        """
+        # NV12 format: Y plane (H, W), UV plane (H/2, W/2, 2) - interleaved U and V
         H, W = y_tensor.shape
-        uv = F.interpolate(uv_tensor.unsqueeze(0).unsqueeze(0), size=(H, W), mode='bilinear', align_corners=False).squeeze(0).squeeze(0)
+        
+        # UV tensor has shape (H/2, W/2, 2) - need to separate U and V channels
+        # First, permute to (2, H/2, W/2) for interpolation
+        uv = uv_tensor.permute(2, 0, 1).unsqueeze(0).float()  # (1, 2, H/2, W/2)
+        uv = F.interpolate(uv, size=(H, W), mode='bilinear', align_corners=False).squeeze(0)  # (2, H, W)
         U = uv[0]
         V = uv[1]
         
@@ -267,7 +274,7 @@ class QualityAssessor:
         B = Y + 1.772 * (U - 128)
         
         bgr = torch.stack([B, G, R], dim=2).clamp(0, 255).byte()
-        return bgr
+        return bgr.contiguous()  # Ensure contiguous memory layout
 
 
 if __name__ == "__main__":

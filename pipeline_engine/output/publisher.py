@@ -107,7 +107,7 @@ class MediaMTXPublisher:
             self._state = state
             self._metrics.state = state
             if old_state != state:
-                logger.info(f"MediaMTXPublisher({self.camera_id}): {old_state.value} → {state.value}")
+                logger.info(f"MediaMTXPublisher({self.camera_id}): {old_state.value} -> {state.value}")
     
     def _detect_media_server(self) -> bool:
         """Detect if MediaMTX is running on the configured host/port."""

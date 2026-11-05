@@ -1,86 +1,59 @@
-# Pipeline Engine Configuration
-# Single source of truth for the complete AI Attendance video pipeline
-
 runtime:
-  mode: "production"           # production, development, test
-  log_level: "INFO"            # DEBUG, INFO, WARNING, ERROR
+  mode: production
+  log_level: INFO
   debug: false
-  
-  # Startup behavior
   auto_start_cameras: true
   auto_start_pipeline: true
   startup_timeout_seconds: 60
-  
-  # Shutdown behavior
   graceful_shutdown_timeout: 30
   force_kill_after_seconds: 60
-
-# GPU Configuration
 gpu:
   device_id: 0
   required: true
   allow_cpu_mode: false
-  
-  # Memory management
-  vram_budget_mb: 4096         # Reserve 4GB of 6GB for pipeline
-  frame_pool_size: 32          # Decoder surfaces
+  vram_budget_mb: 5120
+  frame_pool_size: 32
   encoder_buffer_mb: 256
   inference_workspace_mb: 512
-  
-  # Synchronization
   cuda_stream_per_camera: true
   synchronize_on_decode: true
   synchronize_on_encode: true
-
-# Camera Configuration
 cameras:
   cam1:
     enabled: true
-    name: "Camera 1"
-    
-    # Input (from camera via RTMP to MediaMTX)
+    name: Camera 1
     input:
-      protocol: "rtsp"
-      url: "rtsp://localhost:8554/live/cam1"
-      transport: "tcp"
+      protocol: rtsp
+      url: rtsp://localhost:8554/live/cam1
+      transport: tcp
       timeout_seconds: 10
-      
-    # Output (AI annotated stream to MediaMTX)
     output:
-      protocol: "rtsp"
-      path: "live/cam1-ai"
-      transport: "tcp"
-      
-    # Stream properties (validated at startup)
+      protocol: rtsp
+      path: live/cam1-ai
+      transport: tcp
     expected:
-      codec: "h264"
+      codec: h264
       width: 3840
       height: 2160
       fps: 30
-      
-    # Decoder settings
     decode:
-      backend: "pyav_nvdec"
+      backend: pyav_nvdec
       gpu_device: 0
       surfaces: 32
       allow_software_fallback: false
-      
-    # Encoder settings
     encode:
       enabled: false
-      backend: "pyav_nvenc"
-      codec: "h264_nvenc"
+      backend: pyav_nvenc
+      codec: h264_nvenc
       gpu_device: 0
       width: 3840
       height: 2160
       fps: 30
       bitrate_kbps: 8000
       gop_size: 30
-      preset: "p4"
-      tune: "ll"
-      rc: "cbr"
-      
-    # Reconnection
+      preset: p4
+      tune: ll
+      rc: cbr
     reconnect:
       enabled: true
       max_retries: 5
@@ -88,74 +61,63 @@ cameras:
       max_interval_seconds: 60.0
       backoff_multiplier: 2.0
       jitter: 0.1
-      
-    # Health monitoring
     health:
       stale_threshold_seconds: 5.0
       degraded_threshold_seconds: 2.0
-      
-    # Readiness gate
     readiness:
       enabled: true
       timeout_seconds: 30.0
       poll_interval_seconds: 1.0
       min_bytes_progress_interval: 5.0
       consecutive_increases_required: 3
-      
-    # Line crossing geometry
     geometry:
-      line_start: [0, 1080]
-      line_end: [3840, 1080]
-      direction_semantics: "side_a_to_b_in"  # side_a_to_b_in or side_b_to_a_in
-      
-    # Crossing policy
+      line_start:
+      - 576
+      - 1620
+      line_end:
+      - 3264
+      - 1620
+      direction_semantics: side_a_to_b_in
     crossing_policy:
       min_crossing_distance: 50.0
       temporal_debounce_seconds: 2.0
       side_confirmation_frames: 3
       max_trajectory_gap_frames: 5
-
   cam2:
     enabled: true
-    name: "Camera 2"
-    
+    name: Camera 2
     input:
-      protocol: "rtsp"
-      url: "rtsp://localhost:8554/live/cam2"
-      transport: "tcp"
+      protocol: rtsp
+      url: rtsp://localhost:8554/live/cam2
+      transport: tcp
       timeout_seconds: 10
-      
     output:
-      protocol: "rtsp"
-      path: "live/cam2-ai"
-      transport: "tcp"
-      
+      protocol: rtsp
+      path: live/cam2-ai
+      transport: tcp
     expected:
-      codec: "h264"
+      codec: h264
       width: 3840
       height: 2160
       fps: 30
-      
     decode:
-      backend: "pyav_nvdec"
+      backend: pyav_nvdec
       gpu_device: 0
       surfaces: 32
       allow_software_fallback: false
-      
     encode:
       enabled: false
-      backend: "pyav_nvenc"
-      codec: "h264_nvenc"
+      backend: pyav_nvenc
+      codec: h264_nvenc
       gpu_device: 0
       width: 3840
       height: 2160
       fps: 30
       bitrate_kbps: 8000
       gop_size: 30
-      preset: "p4"
-      tune: "ll"
-      rc: "cbr"
-      
+      preset: p4
+      tune: ll
+      rc: cbr
     reconnect:
       enabled: true
       max_retries: 5
@@ -163,138 +125,123 @@ cameras:
       max_interval_seconds: 60.0
       backoff_multiplier: 2.0
       jitter: 0.1
-      
     health:
       stale_threshold_seconds: 5.0
       degraded_threshold_seconds: 2.0
-      
     readiness:
       enabled: true
       timeout_seconds: 30.0
       poll_interval_seconds: 1.0
       min_bytes_progress_interval: 5.0
       consecutive_increases_required: 3
-      
     geometry:
-      line_start: [0, 1080]
-      line_end: [3840, 1080]
-      direction_semantics: "side_a_to_b_in"
-      
+      line_start:
+      - 0
+      - 0
+      line_end:
+      - 0
+      - 0
+      direction_semantics: side_a_to_b_in
     crossing_policy:
       min_crossing_distance: 50.0
       temporal_debounce_seconds: 2.0
       side_confirmation_frames: 3
       max_trajectory_gap_frames: 5
-
-# Decode Configuration
 decode:
-  backend: "pyav_nvdec"        # pyav_nvdec, pynvcodec
-  default_codec: "h264"
-  supported_codecs: ["h264", "h265"]
-  
-  # Global decoder settings (per-camera overrides in cameras section)
+  backend: pyav_nvdec
+  default_codec: h264
+  supported_codecs:
+  - h264
+  - h265
   default_surfaces: 32
   default_timeout: 10.0
-
-# Inference Configuration
 inference:
-  backend: "tensorrt"       # onnxruntime, tensorrt
-  default_device: "cuda"
-  default_providers: ["CUDAExecutionProvider", "CPUExecutionProvider"]
-  
-  # Model-specific settings (overridden by models.yaml)
+  backend: tensorrt
+  default_device: cuda
+  default_providers:
+  - CUDAExecutionProvider
+  - CPUExecutionProvider
   batch_size: 1
   use_io_binding: true
   validate_inputs: true
   validate_outputs: true
-  
-  # Warmup
   warmup_enabled: true
   warmup_iterations: 3
-
-# Models Configuration (referenced by inference)
 models:
   scrfd:
-    path: "models/scrfd/scrfd_10g_bnkps_fp16.engine"
-    input_size: [640, 640]
+    path: models/scrfd/scrfd_10g_bnkps_fp16.engine
+    input_size:
+    - 640
+    - 640
     confidence_threshold: 0.5
     nms_threshold: 0.4
-    strides: [8, 16, 32]
+    strides:
+    - 8
+    - 16
+    - 32
     anchor_scales:
-      8: [16, 32]
-      16: [64, 128]
-      32: [256, 512]
-      
+      8:
+      - 16
+      - 32
+      16:
+      - 64
+      - 128
+      32:
+      - 256
+      - 512
   arcface:
-    path: "models/arcface/glintr100_fp16.engine"
-    input_size: [112, 112]
+    path: models/arcface/glintr100_fp16.engine
+    input_size:
+    - 112
+    - 112
     embedding_dim: 512
     normalization:
       mean: 127.5
       std: 128.0
     similarity_threshold: 0.6
-    
   yolo:
-    path: "models/yolo/yolo11n_fp16.engine"
-    input_size: [640, 640]
+    path: models/yolo/yolo11n_fp16.engine
+    input_size:
+    - 640
+    - 640
     person_class_id: 0
-    confidence_threshold: 0.5
+    confidence_threshold: 0.35
     nms_threshold: 0.45
     max_detections: 100
-    
   reid:
-    path: "models/reid/resnet50_reid_fp16.engine"
-    input_size: [256, 128]
+    path: models/reid/resnet50_reid_fp16.engine
+    input_size:
+    - 256
+    - 128
     embedding_dim: 2048
     enabled: true
-    
   pose:
-    path: "models/yolo/yolo11n-pose.pt"
-    input_size: [640, 640]
-    enabled: false             # Enable when validated
-
-# Tracking Configuration
+    path: models/yolo/yolo11n-pose.pt
+    input_size:
+    - 640
+    - 640
+    enabled: false
 tracking:
-  # Association
   min_iou_threshold: 0.3
   max_age: 30
   max_lost_frames: 10
-  
-  # Memory limits
   max_active_tracks: 50
   max_lost_tracks: 30
   max_new_tracks: 10
-  
-  # Face association
   use_face_association: true
   face_center_weight: 0.5
-  
-  # ReID fallback
   use_reid_fallback: false
   reid_similarity_threshold: 0.7
-
-# Attendance Configuration
 attendance:
-  # Event storage
   store_events: true
-  event_db_path: "data/attendance_events.db"
-  
-  # Daily records
+  event_db_path: data/attendance_events.db
   daily_records_enabled: true
-  daily_db_path: "data/attendance_daily.db"
-  
-  # Export
+  daily_db_path: data/attendance_daily.db
   excel_export_enabled: true
-  excel_export_path: "data/exports"
-  
-  # Debouncing (per-camera crossing_policy overrides)
+  excel_export_path: data/exports
   default_debounce_seconds: 2.0
-
-# Annotation Configuration
 annotation:
   enabled: true
-  
-  # Overlay elements
   show:
     person_boxes: true
     face_boxes: true
@@ -305,132 +252,121 @@ annotation:
     fps: true
     latency: true
     gpu_memory: true
-    
-  # Style
   box_thickness: 2
   font_scale: 0.6
   font_thickness: 1
   colors:
-    person_box: [0, 255, 0]       # Green
-    face_box: [255, 0, 0]         # Blue (BGR)
-    track_id: [255, 255, 255]     # White
-    name_known: [0, 255, 0]       # Green
-    name_unknown: [0, 0, 255]     # Red
-    line: [255, 255, 0]           # Cyan
-    in_indicator: [0, 255, 0]     # Green
-    out_indicator: [0, 0, 255]    # Red
-
-# Encode Configuration
+    person_box:
+    - 0
+    - 255
+    - 0
+    face_box:
+    - 255
+    - 0
+    - 0
+    track_id:
+    - 255
+    - 255
+    - 255
+    name_known:
+    - 0
+    - 255
+    - 0
+    name_unknown:
+    - 0
+    - 0
+    - 255
+    line:
+    - 255
+    - 255
+    - 0
+    in_indicator:
+    - 0
+    - 255
+    - 0
+    out_indicator:
+    - 0
+    - 0
+    - 255
 encode:
-  backend: "pyav_nvenc"          # pyav_nvenc
-  default_codec: "h264_nvenc"
-  supported_codecs: ["h264_nvenc", "hevc_nvenc"]
-  
-  # Default settings (per-camera overrides in cameras section)
+  backend: pyav_nvenc
+  default_codec: h264_nvenc
+  supported_codecs:
+  - h264_nvenc
+  - hevc_nvenc
   default_width: 3840
   default_height: 2160
   default_fps: 30
   default_bitrate_kbps: 8000
   default_gop_size: 30
-  default_preset: "p4"
-  default_tune: "ll"
-  default_rc: "cbr"
-
-# Output Configuration
+  default_preset: p4
+  default_tune: ll
+  default_rc: cbr
 output:
-  protocol: "rtsp"
+  protocol: rtsp
   mediamtx:
-    host: "localhost"
+    host: localhost
     rtsp_port: 8554
     api_port: 9997
-    
-  # Publisher settings
   publisher:
     reconnect_interval: 5.0
     max_reconnect_attempts: 10
     max_packet_buffer: 50
-    
-  # Health monitoring
   health:
     check_interval_seconds: 10.0
     min_fps_threshold: 15.0
     max_latency_ms: 5000
-
-# Backend API Configuration
 backend:
-  host: "0.0.0.0"
-  port: 8000                       # Fixed port for bootstrap health checks
+  host: 0.0.0.0
+  port: 8000
   cors:
-    allow_origins: ["*"]
+    allow_origins:
+    - '*'
     allow_credentials: true
-    allow_methods: ["*"]
-    allow_headers: ["*"]
-    
-  # API versioning
-  api_prefix: "/api/v1"
-  pipeline_prefix: "/api/v1/pipeline"
-  
-  # WebSocket
+    allow_methods:
+    - '*'
+    allow_headers:
+    - '*'
+  api_prefix: /api/v1
+  pipeline_prefix: /api/v1/pipeline
   websocket:
     enabled: true
-    path: "/ws"
+    path: /ws
     heartbeat_interval: 30
-    
-  # Static files
   static_mounts:
-    recordings: "/recordings"
-
-# Frontend Configuration
+    recordings: /recordings
 frontend:
   enabled: true
   dev_mode: false
-  dev_server_url: "http://localhost:5173"
-  build_path: "frontend"
-  
-  # Integration
-  api_base_url: ""               # Empty = same origin
-  ws_base_url: ""                # Empty = same origin
-
-# Monitoring Configuration
+  dev_server_url: http://localhost:5173
+  build_path: frontend
+  api_base_url: ''
+  ws_base_url: ''
 monitoring:
-  # Health checks
   health_check_interval: 10
-  
-  # Metrics
   metrics_enabled: true
   metrics_port: 9090
-  
-  # Alerts
   alerts:
-    gpu_memory_threshold_mb: 5500
+    gpu_memory_threshold_mb: 5800
     decode_fps_threshold: 10.0
     inference_fps_threshold: 5.0
     encode_fps_threshold: 10.0
     publish_fps_threshold: 15.0
     latency_threshold_ms: 5000
-    
-  # Logging
   structured_logging: true
   log_secrets: false
-  
-  # Telemetry
   telemetry:
     enabled: true
     sample_rate: 1.0
-
-# Integration Configuration
 integration:
-  # Legacy system adapters
   legacy:
     attendance_adapter_enabled: true
     model_adapter_enabled: true
     frontend_adapter_enabled: true
-    
-  # Database paths
   databases:
-    attendance: "data/attendance.db"
-    exit_sessions: "data/exit_sessions.db"
-    notification_queue: "data/notification_queue.db"
-    parent_registry: "data/parent_registry.db"
-    embeddings: "data/embeddings.npy"
-    embeddings_metadata: "data/embeddings.npy.metadata.json"
+    attendance: data/attendance.db
+    exit_sessions: data/exit_sessions.db
+    notification_queue: data/notification_queue.db
+    parent_registry: data/parent_registry.db
+    embeddings: data/embeddings.npy
+    embeddings_metadata: data/embeddings.npy.metadata.json

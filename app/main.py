@@ -13,6 +13,8 @@ import time
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Callable
 
+import app.runtime.cuda  # Early registration of CUDA and TensorRT DLLs on Windows
+
 from fastapi import FastAPI, Request, Response, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -35,6 +37,8 @@ from app.api.replay import router as replay_router
 from app.api.provenance import router as provenance_router
 from app.api.metadata_stream import router as metadata_stream_router
 from app.api.routes_students import router as students_router
+from app.api.cameras import router as cameras_router
+from app.api.pipeline import router as pipeline_router
 from app.bootstrap.port_discovery import find_backend_port
 from app.config.settings import load_settings
 from fastapi.staticfiles import StaticFiles
@@ -117,8 +121,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if not self.settings.security.rate_limit_enabled:
             return await call_next(request)
         
-        # Skip for health liveness/readiness (infrastructure endpoints)
-        if request.url.path in ("/api/v1/health/live", "/api/v1/health/ready"):
+        # Skip for health monitoring (infrastructure endpoints)
+        if request.url.path.startswith("/api/v1/health"):
             return await call_next(request)
         
         client_key = self._get_client_key(request)
@@ -128,7 +132,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if not bucket.consume():
             # Rate limited - log structured failure
             from app.logging.logger import get_logger, log_failure
-            from app.middleware.correlation_id import _get_correlation_id
+            from app.middleware.correlation_id import get_correlation_id as _get_correlation_id
             rl_logger = get_logger("app.security.rate_limit")
             log_failure(
                 rl_logger, "Rate limit exceeded", "rate_limit", "check_limit",
@@ -287,6 +291,9 @@ from app.security.api_key_cache import get_api_key_cache, init_api_key_cache
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager."""
+    import asyncio
+    from app.streaming.metadata_broadcaster import set_main_event_loop
+    
     logger.info("Starting AI Attendance System API...")
 
     # Load settings to validate configuration
@@ -297,6 +304,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Data directory: {settings.paths.data_dir}")
     logger.info(f"Models directory: {settings.paths.models_dir}")
     logger.info(f"Logs directory: {settings.paths.logs_dir}")
+
+    # Register main event loop for thread-safe broadcasting
+    loop = asyncio.get_running_loop()
+    set_main_event_loop(loop)
+    logger.info("[APP] Main event loop registered for thread-safe metadata broadcasting")
 
     yield
 
@@ -350,7 +362,7 @@ def create_app() -> FastAPI:
         health_router, websocket_router, attendance_router, attendance_ws_router,
         persons_router, timetable_router, excel_router, parent_telegram_router,
         geometry_router, enrollment_router, ai_worker_router, replay_router, provenance_router,
-        metadata_stream_router, students_router
+        metadata_stream_router, students_router, cameras_router, pipeline_router
     ]:
         for route in router.routes:
             app.router.routes.append(route)
@@ -372,9 +384,22 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     async def root():
-        """Serve the frontend HTML."""
-        from fastapi.responses import FileResponse
-        return FileResponse(frontend_path / "index.html")
+        """Serve the frontend HTML with injected ADMIN_API_KEY."""
+        from fastapi.responses import HTMLResponse
+        from app.security.api_key_cache import get_api_key_cache
+        
+        admin_key = get_api_key_cache().get("ADMIN_API_KEY") or "dev_admin_key_2026"
+        
+        with open(frontend_path / "index.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        
+        # Inject the ADMIN_API_KEY into the HTML
+        injected_html = html_content.replace(
+            '// Add getApiKey method to API_CONFIG',
+            f'// Injected ADMIN_API_KEY from backend\nwindow.__ADMIN_API_KEY__ = "{admin_key}";\n// Add getApiKey method to API_CONFIG'
+        )
+        
+        return HTMLResponse(content=injected_html)
 
     @app.get("/api/v1/health/live")
     async def liveness():

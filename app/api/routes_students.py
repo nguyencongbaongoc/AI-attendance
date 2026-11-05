@@ -224,6 +224,66 @@ async def list_students(
     ]
 
 
+@router.get("/classes", response_model=List[ClassResponse])
+async def list_classes(
+    session: AsyncSession = Depends(get_session),
+):
+    """List all classes with student counts."""
+    query = select(Class).order_by(Class.class_id)
+    result = await session.execute(query)
+    classes = result.scalars().all()
+    
+    # Get student counts per class
+    count_query = select(Student.class_id, func.count(Student.student_id)).group_by(Student.class_id)
+    count_result = await session.execute(count_query)
+    counts = {class_id: count for class_id, count in count_result.all()}
+    
+    return [
+        ClassResponse(
+            class_id=c.class_id,
+            class_name=c.class_name,
+            grade_level=c.grade_level,
+            shift_start_time=c.shift_start_time,
+            late_threshold_time=c.late_threshold_time,
+            student_count=counts.get(c.class_id, 0),
+        )
+        for c in classes
+    ]
+
+
+@router.post("/classes", response_model=ClassResponse, status_code=status.HTTP_201_CREATED)
+async def create_class(
+    class_id: str,
+    class_name: str,
+    grade_level: int = 10,
+    session: AsyncSession = Depends(get_session),
+):
+    """Create a new class."""
+    class_obj = await get_or_create_class(session, class_id, class_name, grade_level)
+    await session.flush()
+    
+    return ClassResponse(
+        class_id=class_obj.class_id,
+        class_name=class_obj.class_name,
+        grade_level=class_obj.grade_level,
+        shift_start_time=class_obj.shift_start_time,
+        late_threshold_time=class_obj.late_threshold_time,
+        student_count=0,
+    )
+@router.get("/count")
+async def get_students_count(
+    class_id: Optional[str] = None,
+    session: AsyncSession = Depends(get_session),
+):
+    """Get total count of active students."""
+    query = select(func.count(Student.student_id)).where(Student.is_active == True)
+    if class_id:
+        query = query.where(Student.class_id == class_id)
+    result = await session.execute(query)
+    count = result.scalar() or 0
+    return {"count": count, "total": count}
+
+
 @router.get("/{student_id}", response_model=StudentResponse)
 async def get_student(
     student_id: str,
@@ -379,49 +439,67 @@ async def delete_student(
     await session.flush()
 
 
-@router.get("/classes", response_model=List[ClassResponse])
-async def list_classes(
+
+
+@router.post("/enroll", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
+async def enroll_student(
+    payload: StudentCreateRequest,
     session: AsyncSession = Depends(get_session),
 ):
-    """List all classes with student counts."""
-    query = select(Class).order_by(Class.class_id)
-    result = await session.execute(query)
-    classes = result.scalars().all()
+    """
+    Enroll a new student with optional face embedding.
     
-    # Get student counts per class
-    count_query = select(Student.class_id, func.count(Student.student_id)).group_by(Student.class_id)
-    count_result = await session.execute(count_query)
-    counts = {class_id: count for class_id, count in count_result.all()}
+    Creates the student record in the database.
+    If a face photo is provided (base64 or uploaded), it would be processed by ArcFace
+    to generate and store the embedding vector.
+    """
+    # Validate class exists
+    class_obj = await get_or_create_class(session, payload.class_id, payload.class_id, 10)
     
-    return [
-        ClassResponse(
-            class_id=c.class_id,
-            class_name=c.class_name,
-            grade_level=c.grade_level,
-            shift_start_time=c.shift_start_time,
-            late_threshold_time=c.late_threshold_time,
-            student_count=counts.get(c.class_id, 0),
+    # Check if student already exists
+    existing = await session.execute(
+        select(Student).where(Student.student_id == payload.student_id)
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Student {payload.student_id} already exists"
         )
-        for c in classes
-    ]
-
-
-@router.post("/classes", response_model=ClassResponse, status_code=status.HTTP_201_CREATED)
-async def create_class(
-    class_id: str,
-    class_name: str,
-    grade_level: int = 10,
-    session: AsyncSession = Depends(get_session),
-):
-    """Create a new class."""
-    class_obj = await get_or_create_class(session, class_id, class_name, grade_level)
+    
+    # Create student record
+    student = Student(
+        student_id=payload.student_id,
+        full_name=payload.full_name,
+        class_id=payload.class_id,
+        date_of_birth=payload.date_of_birth,
+        gender=payload.gender,
+        parent_phone=payload.parent_phone,
+        enrollment_status=EnrollmentStatusEnum.ENROLLED,
+        is_active=True,
+    )
+    
+    session.add(student)
     await session.flush()
     
-    return ClassResponse(
-        class_id=class_obj.class_id,
+    # Trigger ArcFace hot-reload if available
+    if get_arcface_recognizer:
+        recognizer = get_arcface_recognizer()
+        if recognizer:
+            reload_result = recognizer.reload_gallery(get_session_factory())
+            logger.info(f"ArcFace hot-reload after student enroll: {reload_result}")
+    
+    # Return student response with class name
+    return StudentResponse(
+        student_id=student.student_id,
+        full_name=student.full_name,
+        class_id=student.class_id,
         class_name=class_obj.class_name,
-        grade_level=class_obj.grade_level,
-        shift_start_time=class_obj.shift_start_time,
-        late_threshold_time=class_obj.late_threshold_time,
-        student_count=0,
+        date_of_birth=student.date_of_birth.isoformat() if student.date_of_birth else None,
+        gender=student.gender,
+        parent_phone=student.parent_phone,
+        embedding_path=student.embedding_path,
+        enrollment_status=student.enrollment_status.value,
+        is_active=student.is_active,
+        created_at=student.created_at.isoformat(),
+        updated_at=student.updated_at.isoformat(),
     )

@@ -457,6 +457,8 @@ class ServiceManager:
         
         try:
             logger.info(f"Starting Backend API on {host}:{port}...")
+            os.makedirs("logs", exist_ok=True)
+            self._backend_log_file = open("logs/backend_api.log", "a", encoding="utf-8")
             self.backend_process = subprocess.Popen(
                 [
                     sys.executable, "-m", "uvicorn", "app.main:app",
@@ -464,8 +466,8 @@ class ServiceManager:
                     "--port", str(port),
                     "--log-level", "info"
                 ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=self._backend_log_file,
+                stderr=self._backend_log_file,
                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0,
             )
             self._backend_started_by_us = True
@@ -488,6 +490,13 @@ class ServiceManager:
     
     def stop_backend_api(self) -> None:
         """Stop Backend API if we started it."""
+        if hasattr(self, '_backend_log_file') and self._backend_log_file:
+            try:
+                self._backend_log_file.close()
+            except Exception:
+                pass
+            self._backend_log_file = None
+
         if self.backend_process and self._backend_started_by_us:
             logger.info("Stopping Backend API...")
             try:
@@ -536,7 +545,9 @@ class ServiceManager:
         # Check if frontend build exists
         build_path = Path(frontend_config.get("build_path", "frontend/dist"))
         if not build_path.exists():
-            logger.warning(f"Frontend build not found at {build_path}, skipping")
+            build_path = Path("frontend")
+        if not build_path.exists():
+            logger.warning(f"Frontend directory not found, skipping")
             return True
         
         # Check if already running
@@ -547,13 +558,15 @@ class ServiceManager:
         
         try:
             logger.info(f"Starting Frontend Web Server on port {port}...")
+            os.makedirs("logs", exist_ok=True)
+            self._frontend_log_file = open("logs/frontend.log", "a", encoding="utf-8")
             self.frontend_process = subprocess.Popen(
                 [
                     sys.executable, "-m", "http.server", str(port),
                     "--directory", str(build_path)
                 ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=self._frontend_log_file,
+                stderr=self._frontend_log_file,
                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0,
             )
             self._frontend_started_by_us = True
@@ -575,6 +588,13 @@ class ServiceManager:
     
     def stop_frontend(self) -> None:
         """Stop Frontend Web Server if we started it."""
+        if hasattr(self, '_frontend_log_file') and self._frontend_log_file:
+            try:
+                self._frontend_log_file.close()
+            except Exception:
+                pass
+            self._frontend_log_file = None
+
         if self.frontend_process and self._frontend_started_by_us:
             logger.info("Stopping Frontend Web Server...")
             try:
@@ -707,9 +727,11 @@ class Bootstrap:
             logger.error("Environment validation FAILED")
             return 1
         
-        # Step 2: Start MediaMTX if needed
-        if not self.no_mediamtx:
+        # Step 2: Initialize ServiceManager & Start MediaMTX if needed
+        if self.service_manager is None:
             self.service_manager = ServiceManager(self.validator.config)
+
+        if not self.no_mediamtx:
             if not self.service_manager.start_mediamtx():
                 logger.error("Failed to start MediaMTX")
                 return 1
@@ -922,12 +944,18 @@ class Bootstrap:
         # Stop storage lifecycle services (Phase 17)
         try:
             loop = asyncio.get_running_loop()
+            if loop.is_running():
+                # Loop is already running, schedule cleanup as a task
+                asyncio.create_task(stop_storage_services())
+            else:
+                loop.run_until_complete(stop_storage_services())
         except RuntimeError:
+            # No running loop, create a new one
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
-        logger.info("Stopping storage lifecycle services...")
-        loop.run_until_complete(stop_storage_services())
+            loop.run_until_complete(stop_storage_services())
+        except Exception as e:
+            logger.warning(f"Storage services cleanup skipped or non-fatal error: {e}")
         
         logger.info("Shutdown complete")
 

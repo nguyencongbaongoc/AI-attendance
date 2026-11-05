@@ -77,10 +77,14 @@ class ArcFaceRecognizer:
         model_path: str,
         config: Optional[ArcFaceConfig] = None,
         device_id: int = 0,
+        cuda_stream: Optional[torch.cuda.Stream] = None,
     ):
         self.arcface_config = config or ArcFaceConfig()
         self.device_id = device_id
         self.device = f'cuda:{device_id}'
+        
+        # Store CUDA stream for parallel execution
+        self.cuda_stream = cuda_stream
         
         # Backend selection based on model extension
         self._model_path = model_path
@@ -110,8 +114,8 @@ class ArcFaceRecognizer:
         self._enrollment_embeddings: Dict[str, torch.Tensor] = {}  # person_id -> embedding
         self._enrollment_metadata: Dict[str, Dict] = {}
         
-        # Thread-safe hot-reload
-        self._lock = threading.Lock()
+        # Thread-safe hot-reload (RLock for re-entrant safety)
+        self._lock = threading.RLock()
         
         # Stats
         self._inference_count = 0
@@ -164,7 +168,7 @@ class ArcFaceRecognizer:
             pass  # Not needed for TensorRT
         
         try:
-            self._trt_executor = create_tensorrt_executor(self._model_path, self.device_id)
+            self._trt_executor = create_tensorrt_executor(self._model_path, self.device_id, self.cuda_stream)
             if not self._trt_executor.initialize():
                 return False
             
@@ -351,31 +355,75 @@ class ArcFaceRecognizer:
         db_session_factory=None,
     ) -> int:
         """
-        Synchronous wrapper for load_from_student_db.
-        
-        Args:
-            db_session_factory: Async session factory from app.db.session.get_session_factory()
-            
-        Returns:
-            Number of identities loaded
+        Synchronous load of enrolled students from database.
+        Directly reads SQLite database to avoid event-loop deadlocks when called
+        from sync/async contexts.
         """
-        import asyncio
-        
-        # Run async load - handle event loop properly
+        import sqlite3
+        db_path = Path("app/data/school.db")
+        if not db_path.exists():
+            return self._fallback_load_from_files_sync()
+
         try:
-            loop = asyncio.get_running_loop()
-            # If we're already in an event loop, we can't use run_until_complete
-            # We'll need to run the async function in a separate thread
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, self.load_from_student_db(db_session_factory))
-                count = future.result()
-        except RuntimeError:
-            # No running loop, safe to use asyncio.run
-            count = asyncio.run(self.load_from_student_db(db_session_factory))
-        
-        logger.info(f"ArcFaceRecognizer: Loaded {count} identities from student database")
-        return count
+            with sqlite3.connect(str(db_path)) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT student_id, full_name, class_id, gender, date_of_birth, embedding_path "
+                    "FROM students WHERE is_active=1 AND enrollment_status='ENROLLED'"
+                )
+                rows = cursor.fetchall()
+
+            embeddings_list = []
+            identities = []
+            metadata_lookup = {}
+            for row in rows:
+                sid, name, class_id, gender, dob, emb_path = row
+                if not emb_path:
+                    emb_path = f"app/data/embeddings/{sid}.npy"
+                p = Path(emb_path)
+                if not p.exists():
+                    continue
+                try:
+                    emb_np = np.load(str(p)).astype(np.float32)
+                    if emb_np.ndim == 1:
+                        emb_np = emb_np.reshape(1, -1)
+                    if emb_np.shape[1] != self.arcface_config.embedding_dim:
+                        continue
+                    norm = np.linalg.norm(emb_np)
+                    if norm > 0:
+                        emb_np = emb_np / norm
+                    emb_tensor = torch.from_numpy(emb_np.squeeze(0)).to(self.device).float()
+                    embeddings_list.append(emb_tensor)
+                    identities.append(sid)
+                    metadata_lookup[sid] = {
+                        "name": name,
+                        "class_id": class_id,
+                        "gender": gender,
+                        "date_of_birth": dob,
+                    }
+                except Exception as e:
+                    logger.error(f"ArcFaceRecognizer: Failed to load embedding for {sid}: {e}")
+                    continue
+
+            with self._lock:
+                if embeddings_list:
+                    self.embeddings_matrix = torch.stack(embeddings_list, dim=0)
+                else:
+                    self.embeddings_matrix = torch.empty((0, self.arcface_config.embedding_dim), device=self.device, dtype=torch.float32)
+                self.identities = identities
+                self.metadata_lookup = metadata_lookup
+
+                self._enrollment_embeddings.clear()
+                self._enrollment_metadata.clear()
+                for i, student_id in enumerate(identities):
+                    self._enrollment_embeddings[student_id] = self.embeddings_matrix[i]
+                    self._enrollment_metadata[student_id] = metadata_lookup.get(student_id, {})
+
+            logger.info(f"ArcFaceRecognizer: Loaded {len(identities)} identities from student database")
+            return len(identities)
+        except Exception as e:
+            logger.warning(f"ArcFaceRecognizer: Sync DB load error: {e}, falling back to file scan")
+            return self._fallback_load_from_files_sync()
 
     async def _load_from_student_list(self, students: List["Student"]) -> int:
         """Load embeddings from a list of Student objects."""
@@ -549,6 +597,14 @@ class ArcFaceRecognizer:
         Returns:
             Preprocessed tensor: (1, 3, 112, 112) float32 normalized
         """
+        # Handle numpy arrays
+        if isinstance(aligned_face, np.ndarray):
+            aligned_face = torch.from_numpy(aligned_face)
+        
+        # Move input to the correct device BEFORE any operations
+        if hasattr(aligned_face, "to") and aligned_face.device != self.device:
+            aligned_face = aligned_face.to(self.device)
+        
         # Handle different input formats
         if aligned_face.dim() == 3:
             if aligned_face.shape[-1] == 3:
@@ -620,10 +676,19 @@ class ArcFaceRecognizer:
         if not self._initialized:
             raise RuntimeError("ArcFaceRecognizer not initialized")
         
-        if self._use_tensorrt:
-            return self._infer_raw_tensorrt(input_tensor)
+        # Run inference within the camera's CUDA stream if provided
+        stream = getattr(self, "cuda_stream", None)
+        if stream is not None:
+            with torch.cuda.stream(stream):
+                if self._use_tensorrt:
+                    return self._infer_raw_tensorrt(input_tensor)
+                else:
+                    return self._infer_raw_onnx(input_tensor)
         else:
-            return self._infer_raw_onnx(input_tensor)
+            if self._use_tensorrt:
+                return self._infer_raw_tensorrt(input_tensor)
+            else:
+                return self._infer_raw_onnx(input_tensor)
     
     def _infer_raw_tensorrt(self, input_tensor: torch.Tensor) -> Tuple[torch.Tensor, float]:
         """Run raw inference with TensorRT engine."""
@@ -651,7 +716,15 @@ class ArcFaceRecognizer:
         # Run inference
         start = time.perf_counter()
         self._session.run_with_iobinding(self._io_binding)
-        torch.cuda.synchronize(self.device_id)
+        
+        # CRITICAL: Synchronize stream BEFORE returning output tensor
+        # Prevents CPU from reading output while GPU is still writing
+        stream = getattr(self, "cuda_stream", None)
+        if stream is not None:
+            stream.synchronize()
+        else:
+            torch.cuda.synchronize(self.device_id)
+            
         inference_ms = (time.perf_counter() - start) * 1000
         
         # Update stats

@@ -467,6 +467,14 @@ class CrossingEngine:
     def get_events(self) -> List[CrossingEvent]:
         return self._events.copy()
     
+    @property
+    def in_count(self) -> int:
+        return self._stats.get("in_crossings", 0)
+
+    @property
+    def out_count(self) -> int:
+        return self._stats.get("out_crossings", 0)
+
     def get_stats(self) -> Dict[str, int]:
         return self._stats.copy()
     
@@ -535,7 +543,14 @@ class AttendanceEngine:
     
     def process_tracks(self, tracking_result: TrackingResult) -> List[CrossingEvent]:
         """Process tracking results and generate attendance events."""
-        camera_id = tracking_result.source_frame_id
+        # Safe resolution for camera_id from tracking result
+        camera_id = (
+            getattr(tracking_result, "source_frame_id", None)
+            or getattr(tracking_result, "camera_id", None)
+            or (tracking_result.get("source_frame_id") if isinstance(tracking_result, dict) else None)
+            or (tracking_result.get("camera_id") if isinstance(tracking_result, dict) else None)
+            or "unknown"
+        )
         engine = self._engines.get(camera_id)
         
         if not engine:
@@ -604,6 +619,40 @@ class AttendanceEngine:
                 for cam_id, engine in self._engines.items()
             },
         }
+
+    @property
+    def in_count(self) -> int:
+        return sum(engine.in_count for engine in self._engines.values())
+
+    @property
+    def out_count(self) -> int:
+        return sum(engine.out_count for engine in self._engines.values())
+
+    def update_camera_line(
+        self,
+        camera_id: str,
+        p1: Tuple[float, float],
+        p2: Tuple[float, float],
+        direction_semantics: str = "side_a_to_b_in",
+    ) -> bool:
+        """Dynamically update crossing line geometry for a camera without restarting."""
+        normalized_id = camera_id.lower().replace("-", "").strip()
+        matched = False
+        for cid, engine in self._engines.items():
+            if cid.lower().replace("-", "").strip() == normalized_id:
+                engine.line = LineGeometry(
+                    p1=p1,
+                    p2=p2,
+                    direction_semantics=direction_semantics,
+                )
+                engine.config.line = engine.line
+                logger.info(
+                    f"AttendanceEngine: Dynamically updated crossing line for {cid}: "
+                    f"{p1} -> {p2} ({direction_semantics})"
+                )
+                matched = True
+        return matched
+
 
 
 def create_attendance_engine(config: Optional[Any] = None) -> AttendanceEngine:

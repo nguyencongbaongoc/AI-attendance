@@ -14,6 +14,7 @@ from queue import Empty
 from dataclasses import dataclass, field
 from typing import Optional, Dict, List, Any, Iterator
 from enum import Enum
+from datetime import datetime
 
 from pipeline_engine.ingestion.rtsp_source import RTSPSource, RTSPSourceConfig, RTSPState
 from pipeline_engine.decode.nvdec_decoder import NVDECDecoder, NVDECDecoderConfig, DecoderState
@@ -34,8 +35,36 @@ from pipeline_engine.config import get_config, get_camera_config
 from pipeline_engine.memory.gpu_frame import nv12_to_bgr_cuda
 
 import torch
+import asyncio
+import aiohttp
 
 logger = logging.getLogger(__name__)
+
+# Persistent HTTP session for metadata ingest
+_http_session: Optional[aiohttp.ClientSession] = None
+_http_session_lock = asyncio.Lock()
+
+
+async def _get_http_session() -> aiohttp.ClientSession:
+    """Get or create persistent HTTP session with connection pooling."""
+    global _http_session
+    async with _http_session_lock:
+        if _http_session is None or _http_session.closed:
+            timeout = aiohttp.ClientTimeout(total=0.03, connect=0.01)
+            connector = aiohttp.TCPConnector(limit=10, limit_per_host=5, enable_cleanup_closed=True)
+            _http_session = aiohttp.ClientSession(timeout=timeout, connector=connector)
+            logger.info("[CameraManager] Created persistent HTTP session for metadata ingest")
+        return _http_session
+
+
+async def _close_http_session() -> None:
+    """Close the persistent HTTP session."""
+    global _http_session
+    async with _http_session_lock:
+        if _http_session is not None and not _http_session.closed:
+            await _http_session.close()
+            _http_session = None
+            logger.info("[CameraManager] Closed persistent HTTP session")
 
 
 class CameraState(str, Enum):
@@ -105,7 +134,7 @@ class CameraManager:
     - RTSP source
     - Frame pool
     - Decoder
-    - AI inference
+    - AI inference (using shared singleton models)
     - Tracker
     - Encoder
     - Publisher
@@ -113,7 +142,7 @@ class CameraManager:
     Provides unified control and monitoring.
     """
     
-    def __init__(self, config: Optional[Any] = None):
+    def __init__(self, config: Optional[Any] = None, shared_models: Optional[Dict[str, Any]] = None):
         self.config = config or get_config()
         self._cameras: Dict[str, Dict[str, Any]] = {}
         self._camera_threads: Dict[str, threading.Thread] = {}
@@ -121,6 +150,7 @@ class CameraManager:
         self._lock = threading.RLock()
         self._running = False
         self._start_time: Optional[float] = None
+        self._shared_models = shared_models or {}
         
         # VRAM monitoring
         self._vram_monitor: Optional[VRAMMonitor] = None
@@ -149,6 +179,12 @@ class CameraManager:
                 # Initialize frame pools
                 self._frame_pools = FramePoolManager.from_config(self.config)
                 
+                # Initialize async loop reference for thread-safe metadata dispatch
+                try:
+                    self._async_loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    self._async_loop = None
+                
                 # Initialize cameras
                 cameras_config = self.config.cameras or {}
                 for camera_id, cam_config in cameras_config.items():
@@ -171,6 +207,10 @@ class CameraManager:
     
     def _initialize_camera(self, camera_id: str, cam_config: Dict[str, Any]) -> None:
         """Initialize a single camera pipeline."""
+        # Create dedicated CUDA stream for this camera FIRST (before detectors)
+        device_id = cam_config.get("decode", {}).get("gpu_device", 0)
+        cuda_stream = torch.cuda.Stream(device=device_id)
+        
         # Create RTSP source
         rtsp_source = RTSPSource(
             RTSPSourceConfig(
@@ -200,50 +240,16 @@ class CameraManager:
             height=cam_config.get("expected", {}).get("height", 2160),
             min_size=cam_config.get("decode", {}).get("surfaces", 8),
             max_size=cam_config.get("decode", {}).get("surfaces", 32),
-            device_id=cam_config.get("decode", {}).get("gpu_device", 0),
+            device_id=device_id,
         )
         
-        # Create AI models
-        scrfd_detector = SCRFDDetector(
-            model_path="models/scrfd/scrfd_10g_bnkps.onnx",
-            config=SCRFDConfig(
-                confidence_threshold=cam_config.get("inference", {}).get("scrfd_confidence", 0.5),
-                nms_threshold=cam_config.get("inference", {}).get("scrfd_nms", 0.4),
-            ),
-            device_id=cam_config.get("decode", {}).get("gpu_device", 0),
-        )
+        # Use shared AI models (singletons) instead of creating per-camera instances
+        scrfd_detector = self._shared_models.get('scrfd')
+        arcface_recognizer = self._shared_models.get('arcface')
+        yolo_detector = self._shared_models.get('yolo')
+        reid_detector = self._shared_models.get('reid')
         
-        arcface_recognizer = ArcFaceRecognizer(
-            model_path="models/arcface/glintr100.onnx",
-            config=ArcFaceConfig(
-                similarity_threshold=cam_config.get("inference", {}).get("arcface_threshold", 0.6),
-            ),
-            device_id=cam_config.get("decode", {}).get("gpu_device", 0),
-        )
-        
-        yolo_detector = YOLOPersonDetector(
-            model_path="models/yolo/yolo11n.onnx",
-            config=YOLOConfig(
-                confidence_threshold=cam_config.get("inference", {}).get("yolo_confidence", 0.5),
-                nms_threshold=cam_config.get("inference", {}).get("yolo_nms", 0.45),
-            ),
-            device_id=cam_config.get("decode", {}).get("gpu_device", 0),
-        )
-        
-        # Create ReID detector
-        reid_detector = ReIDDetector(
-            model_path="models/reid/resnet50_reid.onnx",
-            config=ReIDConfig(),
-            device_id=cam_config.get("decode", {}).get("gpu_device", 0),
-        )
-        
-        # Load enrollment database for ArcFace
-        arcface_recognizer.load_enrollment_database(
-            "data/embeddings.npy",
-            "data/embeddings.npy.metadata.json"
-        )
-        
-        # Create tracker
+        # Create tracker with shared recognizer
         tracker = Tracker(
             config=TrackingConfig(
                 min_iou_threshold=cam_config.get("tracking", {}).get("min_iou", 0.3),
@@ -258,11 +264,11 @@ class CameraManager:
         # Create annotator
         annotator = GPUAnnotator(
             config=AnnotationConfig(),
-            device_id=cam_config.get("decode", {}).get("gpu_device", 0),
+            device_id=device_id,
         )
         
         # Create quality assessor
-        quality_assessor = QualityAssessor(device_id=cam_config.get("decode", {}).get("gpu_device", 0))
+        quality_assessor = QualityAssessor(device_id=device_id)
         
         # Store camera components (decoder, encoder, publisher will be created on start)
         self._cameras[camera_id] = {
@@ -284,12 +290,14 @@ class CameraManager:
             "quality_assessor": quality_assessor,
             "encoder": None,
             "publisher": None,
+            # Dedicated CUDA stream for this camera
+            "cuda_stream": cuda_stream,
             # Telemetry
             "frame_times": [],  # For FPS calculation
             "last_metrics_update": time.time(),
         }
         
-        logger.info(f"CameraManager: Initialized camera {camera_id}")
+        logger.info(f"CameraManager: Initialized camera {camera_id} with shared models")
     
     def start_all(self) -> bool:
         """Start all cameras concurrently for faster cold start."""
@@ -337,6 +345,17 @@ class CameraManager:
             if self._vram_monitor:
                 self._vram_monitor.stop()
                 self._vram_monitor = None
+            
+            # Close persistent HTTP session
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    loop.create_task(_close_http_session())
+                else:
+                    loop.run_until_complete(_close_http_session())
+            except Exception:
+                # Best effort cleanup
+                pass
             
             self._running = False
             self._start_time = None
@@ -400,20 +419,21 @@ class CameraManager:
             return False
         camera["decoder"] = decoder
         
-        # Initialize AI models
+        # AI models are shared singletons - already initialized by PipelineEngine
+        # Just verify they are available
         scrfd = camera["scrfd"]
         arcface = camera["arcface"]
         yolo = camera["yolo"]
         reid = camera["reid"]
         
         for name, model in [("SCRFD", scrfd), ("ArcFace", arcface), ("YOLO", yolo), ("ReID", reid)]:
-            if not model.initialize():
-                logger.error(f"CameraManager({camera_id}): {name} initialization failed")
+            if model is None:
+                logger.error(f"CameraManager({camera_id}): {name} not available (shared model not initialized)")
                 decoder.stop()
                 rtsp_source.stop()
                 with self._lock:
                     camera["state"] = CameraState.ERROR
-                    camera["metrics"].last_error = f"{name} init failed"
+                    camera["metrics"].last_error = f"{name} not available"
                 return False
         
         # Initialize encoder (if enabled)
@@ -517,11 +537,8 @@ class CameraManager:
         if decoder:
             decoder.stop()
         
-        # Cleanup AI models
-        for model_name in ["scrfd", "arcface", "yolo", "reid"]:
-            model = camera.get(model_name)
-            if model:
-                model.cleanup()
+        # NOTE: AI models are now shared singletons managed by PipelineEngine
+        # Do NOT cleanup shared models here - they are cleaned up by PipelineEngine shutdown
         
         # Stop RTSP source
         rtsp_source = camera.get("rtsp_source")
@@ -568,6 +585,10 @@ class CameraManager:
         attendance = camera["attendance"]
         annotator = camera["annotator"]
         
+        # Get dedicated CUDA stream for this camera
+        cuda_stream = camera["cuda_stream"]
+        device_id = camera["config"].get("decode", {}).get("gpu_device", 0)
+        
         frame_counter = 0
         stream_epoch = 0
         epoch_start_time = time.time()
@@ -580,17 +601,17 @@ class CameraManager:
         camera["frame_times"] = frame_timestamps
         
         try:
-            while self._running and camera["state"] == CameraState.RUNNING:
+            while self._running and camera["state"] in (CameraState.RUNNING, CameraState.DEGRADED):
                 loop_start = time.perf_counter()
                 
                 # ========== STAGE 1: DECODE (Latest-Only Frame Drop Policy) ==========
                 decode_start = time.perf_counter()
-                gpu_frame = self._drain_to_latest_frame(decoder, max_age_ms=80.0)
+                gpu_frame = self._drain_to_latest_frame(decoder, max_age_ms=35.0)
                 decode_ms = (time.perf_counter() - decode_start) * 1000
                 
                 if gpu_frame is None:
                     # No valid frame available - brief sleep to prevent tight loop
-                    time.sleep(0.005)
+                    time.sleep(0.001)
                     continue
                 
                 camera["metrics"].frames_decoded += 1
@@ -610,58 +631,96 @@ class CameraManager:
                 frame_counter += 1
                 camera["metrics"].frames_received += 1
                 
-                # ========== STAGE 2: AI INFERENCE ==========
+                # ========== STAGE 2: AI INFERENCE (within dedicated CUDA stream) ==========
                 ai_start = time.perf_counter()
                 
-                # Run face detection
-                face_detections = scrfd.detect(gpu_frame)
+                with torch.cuda.stream(cuda_stream):
+                    # Run face detection
+                    face_detections = scrfd.detect(gpu_frame)
+                    
+                    # Run person detection
+                    person_detections = yolo.detect(gpu_frame)
+                    
+                    # Check VRAM pressure & enforce backpressure
+                    skip_heavy_inference = False
+                    try:
+                        if torch.cuda.is_available():
+                            res_mb = torch.cuda.memory_reserved(device_id) / (1024 * 1024)
+                            tot_mb = torch.cuda.get_device_properties(device_id).total_memory / (1024 * 1024)
+                            util_pct = (res_mb / tot_mb) * 100.0 if tot_mb > 0 else 0.0
+                            
+                            # Warning Threshold (80% / ~4.8 GB): empty_cache + gc.collect + cap batch size to 8
+                            if util_pct >= 80.0:
+                                import gc
+                                torch.cuda.empty_cache()
+                                gc.collect()
+                                if len(face_detections) > 8:
+                                    logger.warning(f"CameraManager({camera_id}): VRAM at {util_pct:.1f}% (>=80%) - Capping face batch {len(face_detections)} -> 8")
+                                    face_detections = face_detections[:8]
+                                if len(person_detections) > 8:
+                                    logger.warning(f"CameraManager({camera_id}): VRAM at {util_pct:.1f}% (>=80%) - Capping person batch {len(person_detections)} -> 8")
+                                    person_detections = person_detections[:8]
+                            
+                            # Critical Threshold (90% / ~5.1 GB): Drop non-keyframe inference, recycle oldest unpinned frame buffer
+                            if util_pct >= 90.0:
+                                import gc
+                                torch.cuda.empty_cache()
+                                gc.collect()
+                                skip_heavy_inference = True
+                                logger.warning(f"CameraManager({camera_id}): CRITICAL VRAM ({util_pct:.1f}%)! Dropping non-keyframe inference for frame {frame_counter} to prevent OOM")
+                                if frame_pool and hasattr(frame_pool, '_try_reclaim'):
+                                    frame_pool._try_reclaim()
+                    except Exception as ve:
+                        logger.debug(f"VRAM check error: {ve}")
+                    
+                    # Run face recognition for each face detection
+                    face_embeddings = {}
+                    if not skip_heavy_inference:
+                        for face_det in face_detections:
+                            # Extract face crop and align (simplified - using face bbox for now)
+                            # In production, would extract aligned 112x112 crop
+                            aligned_face = self._extract_aligned_face(gpu_frame, face_det)
+                            if aligned_face is not None:
+                                embedding = arcface.infer_embedding(aligned_face)
+                                embedding.detection_id = face_det.detection_id
+                                embedding.frame_index = gpu_frame.frame_id
+                                embedding.source_id = gpu_frame.camera_id
+                                face_embeddings[face_det.detection_id] = embedding
+                    
+                    # Run ReID for each person detection
+                    body_embeddings = {}
+                    if not skip_heavy_inference:
+                        for person_det in person_detections:
+                            body_embedding = reid.infer_embedding(
+                                frame=gpu_frame,
+                                person_bbox=person_det.bbox,
+                                detection_id=person_det.detection_id,
+                                frame_index=gpu_frame.frame_id,
+                                source_id=gpu_frame.camera_id,
+                            )
+                            body_embeddings[person_det.detection_id] = body_embedding
+                    
+                    # Quality assessment
+                    quality_assessor = camera["quality_assessor"]
+                    for face_det in face_detections:
+                        if face_det.detection_id in face_embeddings:
+                            face_quality = quality_assessor.assess_face(
+                                gpu_frame, 
+                                face_det.bbox, 
+                                face_det.landmarks5
+                            )
+                            face_embeddings[face_det.detection_id].face_quality = face_quality.overall
+                    
+                    for person_det in person_detections:
+                        if person_det.detection_id in body_embeddings:
+                            body_quality = quality_assessor.assess_body(
+                                gpu_frame, 
+                                person_det.bbox
+                            )
+                            body_embeddings[person_det.detection_id].body_quality = body_quality.overall
                 
-                # Run person detection
-                person_detections = yolo.detect(gpu_frame)
-                
-                # Run face recognition for each face detection
-                face_embeddings = {}
-                for face_det in face_detections:
-                    # Extract face crop and align (simplified - using face bbox for now)
-                    # In production, would extract aligned 112x112 crop
-                    aligned_face = self._extract_aligned_face(gpu_frame, face_det)
-                    if aligned_face is not None:
-                        embedding = arcface.infer_embedding(aligned_face)
-                        embedding.detection_id = face_det.detection_id
-                        embedding.frame_index = gpu_frame.frame_id
-                        embedding.source_id = gpu_frame.camera_id
-                        face_embeddings[face_det.detection_id] = embedding
-                
-                # Run ReID for each person detection
-                body_embeddings = {}
-                for person_det in person_detections:
-                    body_embedding = reid.infer_embedding(
-                        frame=gpu_frame,
-                        person_bbox=person_det.bbox,
-                        detection_id=person_det.detection_id,
-                        frame_index=gpu_frame.frame_id,
-                        source_id=gpu_frame.camera_id,
-                    )
-                    body_embeddings[person_det.detection_id] = body_embedding
-                
-                # Quality assessment
-                quality_assessor = camera["quality_assessor"]
-                for face_det in face_detections:
-                    if face_det.detection_id in face_embeddings:
-                        face_quality = quality_assessor.assess_face(
-                            gpu_frame, 
-                            face_det.bbox, 
-                            face_det.landmarks5
-                        )
-                        face_embeddings[face_det.detection_id].face_quality = face_quality.overall
-                
-                for person_det in person_detections:
-                    if person_det.detection_id in body_embeddings:
-                        body_quality = quality_assessor.assess_body(
-                            gpu_frame, 
-                            person_det.bbox
-                        )
-                        body_embeddings[person_det.detection_id].body_quality = body_quality.overall
+                # Synchronize stream before CPU-side processing (tracking, etc.)
+                cuda_stream.synchronize()
                 
                 ai_ms = (time.perf_counter() - ai_start) * 1000
                 gpu_frame.inference_time_ms = ai_ms
@@ -691,7 +750,49 @@ class CameraManager:
                 # ========== STAGE 4: ATTENDANCE ==========
                 attendance_events = attendance.process_tracks(tracking_result)
                 camera["metrics"].attendance_events += len(attendance_events)
-                camera["metrics"].tracks_active = len(tracking_result.get_active_tracks())
+                active_tracks = tracking_result.get_active_tracks()
+                camera["metrics"].tracks_active = len(active_tracks)
+
+                # Broadcast live metadata to WebSocket clients (Task 6)
+                try:
+                    in_c = getattr(attendance, "in_count", 0)
+                    out_c = getattr(attendance, "out_count", 0)
+                    
+                    # Get frame dimensions for normalization
+                    frame_w = camera["config"].get("expected", {}).get("width", 3840)
+                    frame_h = camera["config"].get("expected", {}).get("height", 2160)
+                    
+                    persons_data = [
+                        {
+                            "track_id": track.track_id,
+                            "bbox": [
+                                track.bbox_original_frame[0] / frame_w,  # xmin normalized
+                                track.bbox_original_frame[1] / frame_h,  # ymin normalized
+                                track.bbox_original_frame[2] / frame_w,  # xmax normalized
+                                track.bbox_original_frame[3] / frame_h,  # ymax normalized
+                            ],
+                            "confidence": float(track.confidence) if hasattr(track, "confidence") else 1.0,
+                            "face_name": getattr(track, "matched_name", None) or getattr(track, "person_name", None) or "Unknown",
+                            "face_id": getattr(track, "matched_id", None) or getattr(track, "person_id", "") or ""
+                        } for track in active_tracks
+                    ]
+                    
+                    payload = {
+                        "camera_id": camera_id.lower(),
+                        "frame_sequence": frame_counter,
+                        "pts_ns": int(gpu_frame.timestamp * 1e9) if hasattr(gpu_frame, 'timestamp') and gpu_frame.timestamp else int(time.time() * 1e9),
+                        "capture_timestamp": datetime.utcnow().isoformat() + "Z",
+                        "persons": persons_data,
+                        "counts": {"in": in_c, "out": out_c}
+                    }
+                    
+                    # Non-blocking async dispatch - never blocks AI pipeline
+                    self._dispatch_metadata(payload)
+                        
+                except Exception as e:
+                    import traceback
+                    logger.error(f"Metadata broadcast error: {e}")
+                    logger.error(traceback.format_exc())
                 
                 # ========== STAGE 5: ANNOTATION ==========
                 annotation_start = time.perf_counter()
@@ -788,10 +889,11 @@ class CameraManager:
                                      f"Allocated: {vram_snapshot.allocated_mb:.1f}MB, "
                                      f"Budget: {self._vram_monitor.budget.max_allocated_mb:.1f}MB")
                         camera["state"] = CameraState.DEGRADED
+                    elif camera["state"] == CameraState.DEGRADED:
+                        camera["state"] = CameraState.RUNNING
                 else:
                     # Fallback to direct torch measurement
                     try:
-                        import torch
                         if torch.cuda.is_available():
                             allocated = torch.cuda.memory_allocated(0) / (1024 * 1024)
                             reserved = torch.cuda.memory_reserved(0) / (1024 * 1024)
@@ -811,7 +913,7 @@ class CameraManager:
                 # Small sleep to prevent CPU spinning
                 loop_elapsed = (time.perf_counter() - loop_start) * 1000
                 if loop_elapsed < 20:  # Target ~50 FPS max processing
-                    time.sleep((20 - loop_elapsed) / 1000)
+                    time.sleep(0.001)
                 
         except Exception as e:
             logger.error(f"CameraManager({camera_id}): Pipeline error: {e}")
@@ -823,7 +925,7 @@ class CameraManager:
         finally:
             logger.info(f"CameraManager({camera_id}): Pipeline loop ended")
 
-    def _drain_to_latest_frame(self, decoder, max_age_ms: float = 80.0) -> Optional[Any]:
+    def _drain_to_latest_frame(self, decoder, max_age_ms: float = 35.0) -> Optional[Any]:
         """Drain decoder queue, keeping only the latest valid frame."""
         latest_frame = None
         now = time.time()
@@ -867,8 +969,7 @@ class CameraManager:
             face_crop = bgr[y1:y2, x1:x2]
             
             # Resize to 112x112
-            import torch.nn.functional as F
-            face_resized = F.interpolate(
+            face_resized = torch.nn.functional.interpolate(
                 face_crop.permute(2, 0, 1).unsqueeze(0).float(),
                 size=(112, 112),
                 mode='bilinear',
@@ -979,12 +1080,44 @@ class CameraManager:
             "total_events": total_events,
             "uptime_seconds": time.time() - self._start_time if self._start_time else 0,
         })
+
+    # ========== ASYNC METADATA DISPATCH ==========
+    
+    def _dispatch_metadata(self, payload: dict) -> None:
+        """Non-blocking metadata dispatch using thread-safe asyncio."""
+        loop = getattr(self, '_async_loop', None)
+        if loop and loop.is_running():
+            try:
+                asyncio.run_coroutine_threadsafe(self._async_post_metadata(payload), loop)
+            except Exception as e:
+                logger.debug(f"Metadata dispatch failed: {e}")
+
+    async def _async_post_metadata(self, payload: dict) -> None:
+        """Async HTTP POST with short timeout - fire and forget.
+        
+        Uses persistent HTTP session with connection pooling for efficiency.
+        """
+        try:
+            session = await _get_http_session()
+            async with session.post(
+                "http://127.0.0.1:8000/api/v1/stream/metadata/ingest",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=0.03)
+            ) as resp:
+                pass  # Non-blocking - drop on backpressure
+        except Exception:
+            pass  # Silent drop - never blocks AI pipeline
     
     def is_camera_healthy(self, camera_id: str) -> bool:
         """Check if camera is healthy."""
         with self._lock:
             camera = self._cameras.get(camera_id)
             if not camera:
+                return False
+            if camera["state"] in (CameraState.ERROR, CameraState.STOPPED):
+                return False
+            decoder = camera.get("decoder")
+            if decoder and hasattr(decoder, "is_degraded") and decoder.is_degraded():
                 return False
             rtsp_source = camera.get("rtsp_source")
             if rtsp_source:
@@ -1019,7 +1152,59 @@ class CameraManager:
                 self.start_camera(camera_id)
             
             return True
-    
+
+    def update_crossing_line(
+        self,
+        camera_id: str,
+        p1: tuple[float, float],
+        p2: tuple[float, float],
+        direction_semantics: str = "side_a_to_b_in"
+    ) -> bool:
+        """Dynamically update crossing line geometry for a camera without restarting."""
+        with self._lock:
+            norm_id = camera_id.lower().replace("-", "").strip()
+            updated = False
+            for cid, cam in self._cameras.items():
+                if cid.lower().replace("-", "").strip() == norm_id:
+                    # Update AttendanceEngine on this camera
+                    att = cam.get("attendance")
+                    if att and hasattr(att, "update_camera_line"):
+                        att.update_camera_line(cid, p1, p2, direction_semantics)
+                    
+                    # Update stored geometry in camera config
+                    if "config" in cam and "geometry" in cam["config"]:
+                        cam["config"]["geometry"]["line_start"] = [int(p1[0]), int(p1[1])]
+                        cam["config"]["geometry"]["line_end"] = [int(p2[0]), int(p2[1])]
+                        cam["config"]["geometry"]["direction_semantics"] = direction_semantics
+                    updated = True
+            return updated
+
+    def reload_gallery(
+        self,
+        npy_path: str = "data/embeddings.npy",
+        metadata_path: str = "data/embeddings.npy.metadata.json"
+    ) -> int:
+        """Reload ArcFace embedding database across all active cameras."""
+        with self._lock:
+            total_loaded = 0
+            for cid, cam in self._cameras.items():
+                arcface = cam.get("arcface")
+                if arcface and hasattr(arcface, "load_enrollment_database"):
+                    try:
+                        count = arcface.load_enrollment_database(npy_path, metadata_path)
+                        total_loaded = max(total_loaded, count or 0)
+                        logger.info(f"CameraManager({cid}): Reloaded {count} ArcFace embeddings from {npy_path}")
+                    except Exception as e:
+                        logger.error(f"CameraManager({cid}): Failed to reload ArcFace embeddings: {e}")
+            return total_loaded
+
+    def restart_camera(self, camera_id: str) -> bool:
+        """Restart a camera pipeline."""
+        with self._lock:
+            self.stop_camera(camera_id)
+            time.sleep(0.5)
+            return self.start_camera(camera_id)
+
     def __enter__(self):
         self.start_all()
         return self

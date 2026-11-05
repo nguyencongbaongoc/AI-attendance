@@ -32,9 +32,9 @@ class MemoryPressureLevel(str, Enum):
 class MemoryThresholds:
     """Configurable memory thresholds."""
     normal_pct: float = 0.60
-    elevated_pct: float = 0.75
-    high_pct: float = 0.90
-    critical_pct: float = 0.95
+    elevated_pct: float = 0.80   # Warning Threshold (80% / ~4.8 GB on 6GB GTX 1660 Ti)
+    high_pct: float = 0.85
+    critical_pct: float = 0.90   # Critical Threshold (90% / ~5.1 GB on 6GB GTX 1660 Ti)
 
 
 @dataclass
@@ -300,6 +300,45 @@ class GPUMemoryMonitor:
         """Reset peak memory tracking."""
         with self._lock:
             self._peak_allocated_mb = 0.0
+
+    def is_warning(self) -> bool:
+        """Check if memory is at or above warning threshold (80%)."""
+        current = self.get_current()
+        return current is not None and current.utilization_pct >= (self.thresholds.elevated_pct * 100.0)
+
+    def is_critical(self) -> bool:
+        """Check if memory is at or above critical threshold (90%)."""
+        current = self.get_current()
+        return current is not None and current.utilization_pct >= (self.thresholds.critical_pct * 100.0)
+
+    def enforce_vram_safety(self) -> Dict[str, Any]:
+        """
+        Enforce VRAM safety actions according to thresholds:
+        - 80% (Warning): empty_cache + gc.collect, cap batch to 8.
+        - 90% (Critical): empty_cache + gc.collect, drop non-keyframe inference.
+        """
+        import gc
+        current = self.get_current()
+        actions = {"empty_cache": False, "cap_batch": False, "skip_inference": False}
+        if not current:
+            return actions
+        
+        if current.utilization_pct >= (self.thresholds.critical_pct * 100.0):
+            actions["empty_cache"] = True
+            actions["cap_batch"] = True
+            actions["skip_inference"] = True
+            torch.cuda.empty_cache()
+            gc.collect()
+            logger.warning(f"GPUMemoryMonitor: CRITICAL VRAM ({current.utilization_pct:.1f}%) - Frame-skip backpressure triggered!")
+        elif current.utilization_pct >= (self.thresholds.elevated_pct * 100.0):
+            actions["empty_cache"] = True
+            actions["cap_batch"] = True
+            torch.cuda.empty_cache()
+            gc.collect()
+            logger.warning(f"GPUMemoryMonitor: WARNING VRAM ({current.utilization_pct:.1f}%) - empty_cache & batch cap enforced.")
+        
+        return actions
+
 
 
 # Add to_dict method to MemorySnapshot

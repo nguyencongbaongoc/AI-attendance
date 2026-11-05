@@ -45,8 +45,17 @@ def get_timetable() -> Optional[Timetable]:
     """Get the current timetable for export."""
     global _timetable
     if _timetable is None:
-        loader = TimetableLoader()
-        _timetable = loader.load_latest()
+        try:
+            settings = load_settings()
+            timetable_dir = settings.paths.data_dir / "timetables"
+            if timetable_dir.exists():
+                files = sorted(timetable_dir.glob("*.xlsx"), key=lambda p: p.stat().st_mtime, reverse=True)
+                if files:
+                    loader = TimetableLoader()
+                    _timetable = loader.load_from_excel(files[0])
+        except Exception as e:
+            logger.warning(f"Could not load timetable: {e}")
+            _timetable = None
     return _timetable
 
 

@@ -91,6 +91,9 @@ def get_correlation_id() -> Optional[str]:
     return ctx.get("request_id")
 
 
+_get_correlation_id = get_correlation_id
+
+
 def set_correlation_id(correlation_id: str):
     """Set the correlation ID in structlog context (for WebSocket/SSE)."""
     structlog.contextvars.bind_contextvars(request_id=correlation_id)

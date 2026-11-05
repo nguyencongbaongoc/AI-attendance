@@ -187,15 +187,11 @@ def align_face_with_landmarks(
     crop_w = x2 - x1
     crop_h = y2 - y1
     
-    # Map landmarks to crop coordinates
-    src_landmarks = []
-    for lx, ly in landmarks5:
-        # Convert to crop-relative
-        rel_x = (lx - x1) / crop_w * target_size[0]
-        rel_y = (ly - y1) / crop_h * target_size[1]
-        src_landmarks.append([rel_x, rel_y])
-    
-    src_landmarks = np.array(src_landmarks, dtype=np.float32)
+    # Map landmarks to crop coordinates (crop.data is in crop_w x crop_h pixels)
+    src_landmarks = np.array(
+        [[lx - x1, ly - y1] for lx, ly in landmarks5],
+        dtype=np.float32
+    )
     
     # Compute similarity transform
     M, _ = cv2.estimateAffinePartial2D(src_landmarks, ref_landmarks, method=cv2.LMEDS)

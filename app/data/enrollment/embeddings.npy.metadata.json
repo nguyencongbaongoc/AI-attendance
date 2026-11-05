@@ -1,28 +1,83 @@
 {
-  "creation_timestamp": "2026-10-04T08:07:01.912695Z",
-  "model_sha256": "test_model_sha256_placeholder",
+  "schema_version": "1.0",
   "embedding_dimension": 512,
+  "dtype": "float32",
+  "normalization": "L2",
+  "model_id": "arcface",
+  "model_filename": "glintr100.onnx",
+  "model_sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+  "enrollment_contract_version": "1.0",
+  "embedding_count": 1,
   "person_ids": [
-    "TEST-001",
-    "TEST-002",
-    "TEST-003"
+    "TEST_AUDIT_01"
   ],
   "sample_provenance": [
     {
-      "person_id": "TEST-001",
-      "sample_index": 0,
-      "quality": 0.95
-    },
-    {
-      "person_id": "TEST-002",
-      "sample_index": 0,
-      "quality": 0.92
-    },
-    {
-      "person_id": "TEST-003",
-      "sample_index": 0,
-      "quality": 0.88
+      "person_id": "TEST_AUDIT_01",
+      "source_type": "IMAGE",
+      "source": "C:\\Users\\NGUYEN~1\\AppData\\Local\\Temp\\tmp2v32wbdg.jpg",
+      "frame_index": null,
+      "timestamp": null,
+      "face_detection": {
+        "detector_model": "scrfd",
+        "detector_model_sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
+        "detection_confidence": 0.98,
+        "bbox": [
+          50.0,
+          50.0,
+          350.0,
+          350.0
+        ],
+        "landmarks": [
+          [
+            120.0,
+            150.0
+          ],
+          [
+            280.0,
+            150.0
+          ],
+          [
+            200.0,
+            220.0
+          ],
+          [
+            150.0,
+            290.0
+          ],
+          [
+            250.0,
+            290.0
+          ]
+        ],
+        "detection_time_ms": 0.0
+      },
+      "preprocessing": {
+        "crop_method": "safe_crop_face",
+        "alignment_method": "similarity_transform_5pt",
+        "aligned_size": [
+          112,
+          112
+        ],
+        "interpolation": "INTER_LINEAR",
+        "preprocessing_time_ms": 0.0
+      },
+      "arcface_model": {
+        "model_id": "arcface",
+        "model_filename": "glintr100.onnx",
+        "model_sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+        "embedding_dimension": 512,
+        "normalization_method": "L2",
+        "inference_time_ms": 78.38930000070832,
+        "provider": "CUDAExecutionProvider"
+      },
+      "quality_score": 0.99,
+      "quality_passed": true,
+      "rejection_reason": null,
+      "is_duplicate": false,
+      "duplicate_of": null,
+      "sample_id": "TEST_AUDIT_01_tmp2v32wbdg_0_7dcdde91"
     }
   ],
-  "embedding_count": 3
+  "creation_timestamp": "2026-10-16T17:15:41.870649Z"
 }

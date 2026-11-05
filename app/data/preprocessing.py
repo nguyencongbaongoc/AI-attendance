@@ -130,7 +130,7 @@ class UnifiedPreprocessor:
         original_dtype = str(img.dtype)
         
         # Convert color format if needed
-        img = self._convert_color_format(img)
+        img = self._convert_color_format(img, getattr(frame.metadata, "pixel_format", None))
         
         # Resize with aspect ratio preservation
         img, scale, padding = self._resize_with_padding(img)
@@ -160,23 +160,27 @@ class UnifiedPreprocessor:
             }
         )
     
-    def _convert_color_format(self, img: np.ndarray) -> np.ndarray:
-        """Convert image to target color format."""
+    def _convert_color_format(self, img: np.ndarray, source_format: Optional[Any] = None) -> np.ndarray:
+        """Convert image to target color format based on source format."""
         target_format = self.contract.input_format.upper()
+        source_str = (
+            str(source_format.value if hasattr(source_format, "value") else source_format).upper()
+            if source_format is not None
+            else "BGR"
+        )
         
-        if target_format == "RGB":
-            # Assume input is BGR (OpenCV default)
-            if img.ndim == 3 and img.shape[2] == 3:
-                return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        elif target_format == "BGR":
-            # Assume input is RGB
-            if img.ndim == 3 and img.shape[2] == 3:
+        if "RGB" in source_str:
+            if target_format == "BGR" and img.ndim == 3 and img.shape[2] == 3:
                 return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        elif target_format == "GRAY":
-            if img.ndim == 3:
+            elif target_format == "GRAY" and img.ndim == 3:
+                return cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            return img
+        else:
+            if target_format == "RGB" and img.ndim == 3 and img.shape[2] == 3:
+                return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            elif target_format == "GRAY" and img.ndim == 3:
                 return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
-        return img
+            return img
     
     def _resize_with_padding(self, img: np.ndarray) -> Tuple[np.ndarray, float, Tuple[int, int, int, int]]:
         """

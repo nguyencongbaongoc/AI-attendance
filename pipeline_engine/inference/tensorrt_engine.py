@@ -7,6 +7,7 @@ Provides zero-copy GPU inference for TensorRT engines with IO binding support.
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Tuple
@@ -35,7 +36,7 @@ class TensorRTExecutor:
     with CUDA stream and zero-copy IO binding.
     """
     
-    def __init__(self, engine_path: str, device_id: int = 0):
+    def __init__(self, engine_path: str, device_id: int = 0, cuda_stream: Optional[torch.cuda.Stream] = None):
         self.engine_path = engine_path
         self.device_id = device_id
         self.device = f'cuda:{device_id}'
@@ -44,7 +45,7 @@ class TensorRTExecutor:
         self._runtime = None
         self._engine = None
         self._context = None
-        self._stream = None
+        self._stream = cuda_stream if cuda_stream is not None else torch.cuda.Stream(device=device_id)
         
         # Binding info
         self._bindings: List[TensorRTBinding] = []
@@ -60,6 +61,22 @@ class TensorRTExecutor:
         self._total_inference_time = 0.0
         self._last_error: Optional[str] = None
         self._initialized = False
+        
+        # Thread safety lock for concurrent access
+        self._lock = threading.RLock()
+    
+    def _cleanup_partial(self) -> None:
+        """Clean up any partially initialized TensorRT resources.
+        
+        Called when initialization fails mid-way to prevent VRAM leaks.
+        """
+        # TensorRT Python bindings use reference counting - just clear references
+        self._context = None
+        self._engine = None
+        self._runtime = None
+        self._output_tensors.clear()
+        self._initialized = False
+        torch.cuda.empty_cache()
     
     def initialize(self) -> bool:
         """Initialize TensorRT engine and context."""
@@ -87,13 +104,15 @@ class TensorRTExecutor:
             if self._engine is None:
                 self._last_error = "Failed to deserialize engine"
                 logger.error(f"TensorRTExecutor: {self._last_error}")
+                self._cleanup_partial()
                 return False
             
             # Create execution context
             self._context = self._engine.create_execution_context()
             
-            # Create CUDA stream
-            self._stream = torch.cuda.Stream(device=self.device_id)
+            # Use provided CUDA stream (do not create a new one if already provided)
+            if self._stream is None:
+                self._stream = torch.cuda.Stream(device=self.device_id)
             
             # Setup bindings
             self._setup_bindings()
@@ -106,6 +125,7 @@ class TensorRTExecutor:
         except Exception as e:
             self._last_error = str(e)
             logger.error(f"TensorRTExecutor: Initialization failed: {e}")
+            self._cleanup_partial()
             return False
     
     def _setup_bindings(self) -> None:
@@ -217,46 +237,49 @@ class TensorRTExecutor:
         if not self._initialized:
             raise RuntimeError("TensorRTExecutor not initialized")
         
-        try:
-            # Bind inputs and set shapes for dynamic inputs
-            for name, tensor in input_tensors.items():
-                if not self._bind_input(name, tensor):
-                    raise RuntimeError(f"Failed to bind input: {name}")
-                # Set input shape for dynamic inputs (required for execute_async_v3)
-                if hasattr(self._context, 'set_input_shape'):
-                    self._context.set_input_shape(name, tensor.shape)
-            
-            # Bind outputs
-            if not self._bind_outputs():
-                raise RuntimeError("Failed to bind outputs")
-            
-            # Execute
-            start = time.perf_counter()
-            
-            # Use execute_async_v3 for TensorRT 8.5+
-            if hasattr(self._context, 'execute_async_v3'):
-                self._context.execute_async_v3(stream_handle=self._stream.cuda_stream)
-            else:
-                # Legacy execute_async_v2
-                self._context.execute_async_v2(
-                    bindings=self._binding_ptrs,
-                    stream_handle=self._stream.cuda_stream
-                )
-            
-            self._stream.synchronize()
-            inference_ms = (time.perf_counter() - start) * 1000
-            
-            # Update stats
-            self._inference_count += 1
-            self._total_inference_time += inference_ms
-            
-            # Return output tensors (already populated)
-            return self._output_tensors.copy()
-            
-        except Exception as e:
-            self._last_error = str(e)
-            logger.error(f"TensorRTExecutor: Inference failed: {e}")
-            raise
+        with self._lock:
+            try:
+                # Bind inputs and set shapes for dynamic inputs
+                for name, tensor in input_tensors.items():
+                    if not self._bind_input(name, tensor):
+                        raise RuntimeError(f"Failed to bind input: {name}")
+                    # Set input shape for dynamic inputs (required for execute_async_v3)
+                    if hasattr(self._context, 'set_input_shape'):
+                        self._context.set_input_shape(name, tensor.shape)
+                
+                # Bind outputs
+                if not self._bind_outputs():
+                    raise RuntimeError("Failed to bind outputs")
+                
+                # Execute
+                start = time.perf_counter()
+                
+                # Use execute_async_v3 for TensorRT 8.5+
+                if hasattr(self._context, 'execute_async_v3'):
+                    self._context.execute_async_v3(stream_handle=self._stream.cuda_stream)
+                else:
+                    # Legacy execute_async_v2
+                    self._context.execute_async_v2(
+                        bindings=self._binding_ptrs,
+                        stream_handle=self._stream.cuda_stream
+                    )
+                
+                # CRITICAL: Synchronize stream BEFORE reading output tensors
+                # Prevents host/device race condition where CPU reads while GPU is still writing
+                self._stream.synchronize()
+                inference_ms = (time.perf_counter() - start) * 1000
+                
+                # Update stats
+                self._inference_count += 1
+                self._total_inference_time += inference_ms
+                
+                # Return output tensors (already populated)
+                return self._output_tensors.copy()
+                
+            except Exception as e:
+                self._last_error = str(e)
+                logger.error(f"TensorRTExecutor: Inference failed: {e}")
+                raise
     
     def get_binding_info(self) -> Dict[str, Any]:
         """Get binding information for debugging."""
@@ -297,16 +320,33 @@ class TensorRTExecutor:
         }
     
     def cleanup(self) -> None:
-        """Release TensorRT resources."""
-        self._context = None
-        self._engine = None
-        self._runtime = None
-        self._stream = None
-        self._output_tensors.clear()
-        self._initialized = False
-        torch.cuda.empty_cache()
+        """Release TensorRT resources.
+        
+        TensorRT Python bindings use reference counting - clearing references
+        allows garbage collection to free the underlying C++ objects.
+        """
+        with self._lock:
+            self._context = None
+            self._engine = None
+            self._runtime = None
+            self._stream = None
+            self._output_tensors.clear()
+            self._initialized = False
+            torch.cuda.empty_cache()
+    
+    def __enter__(self) -> "TensorRTExecutor":
+        """Context manager entry - initialize if needed."""
+        if not self._initialized:
+            if not self.initialize():
+                raise RuntimeError(f"Failed to initialize TensorRTExecutor: {self._last_error}")
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Context manager exit - cleanup resources."""
+        self.cleanup()
+        return False  # Don't suppress exceptions
 
 
-def create_tensorrt_executor(engine_path: str, device_id: int = 0) -> TensorRTExecutor:
+def create_tensorrt_executor(engine_path: str, device_id: int = 0, cuda_stream: Optional[torch.cuda.Stream] = None) -> TensorRTExecutor:
     """Factory function to create TensorRT executor."""
-    return TensorRTExecutor(engine_path, device_id)
+    return TensorRTExecutor(engine_path, device_id, cuda_stream)

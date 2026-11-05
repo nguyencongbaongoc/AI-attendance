@@ -8,6 +8,7 @@ Input: GPUFrame (NV12) → Preprocess → YOLO TensorRT/ONNX → Person detectio
 from __future__ import annotations
 
 import logging
+import threading
 import time
 import uuid
 from dataclasses import dataclass
@@ -28,11 +29,14 @@ logger = logging.getLogger(__name__)
 @dataclass
 class YOLOConfig:
     """Configuration for YOLO person detector."""
-    confidence_threshold: float = 0.5
+    confidence_threshold: float = 0.40
     nms_threshold: float = 0.45
     input_size: Tuple[int, int] = (640, 640)
     person_class_id: int = 0
     max_detections: int = 100
+    # Geometric sanity filters
+    max_aspect_ratio: float = 2.5  # Reject boxes with w/h > 2.5 (horizontal artifacts)
+    min_box_area: float = 400.0    # Min area in original frame (20x20)
 
 
 @dataclass
@@ -86,10 +90,14 @@ class YOLOPersonDetector:
         model_path: str,
         config: Optional[YOLOConfig] = None,
         device_id: int = 0,
+        cuda_stream: Optional[torch.cuda.Stream] = None,
     ):
         self.yolo_config = config or YOLOConfig()
         self.device_id = device_id
         self.device = f'cuda:{device_id}'
+        
+        # Store CUDA stream for parallel execution
+        self.cuda_stream = cuda_stream
         
         # Backend selection based on model extension
         self._model_path = model_path
@@ -114,6 +122,9 @@ class YOLOPersonDetector:
         self._total_inference_time = 0.0
         self._last_error: Optional[str] = None
         self._initialized = False
+        
+        # Thread safety lock for concurrent access
+        self._lock = threading.RLock()
     
     def initialize(self) -> bool:
         """Initialize backend (TensorRT or ONNX Runtime) based on model file extension."""
@@ -139,7 +150,7 @@ class YOLOPersonDetector:
             pass  # Not needed for TensorRT
         
         try:
-            self._trt_executor = create_tensorrt_executor(self._model_path, self.device_id)
+            self._trt_executor = create_tensorrt_executor(self._model_path, self.device_id, self.cuda_stream)
             if not self._trt_executor.initialize():
                 return False
             
@@ -263,10 +274,19 @@ class YOLOPersonDetector:
         if not self._initialized:
             raise RuntimeError("YOLOPersonDetector not initialized")
         
-        if self._use_tensorrt:
-            return self._infer_tensorrt(input_tensor)
+        # Run inference within the camera's CUDA stream if provided
+        stream = getattr(self, "cuda_stream", None)
+        if stream is not None:
+            with torch.cuda.stream(stream):
+                if self._use_tensorrt:
+                    return self._infer_tensorrt(input_tensor)
+                else:
+                    return self._infer_onnx(input_tensor)
         else:
-            return self._infer_onnx(input_tensor)
+            if self._use_tensorrt:
+                return self._infer_tensorrt(input_tensor)
+            else:
+                return self._infer_onnx(input_tensor)
     
     def _infer_tensorrt(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Run inference with TensorRT engine."""
@@ -290,7 +310,15 @@ class YOLOPersonDetector:
         # Run inference
         start = time.perf_counter()
         self._session.run_with_iobinding(self._io_binding)
-        torch.cuda.synchronize(self.device_id)
+        
+        # CRITICAL: Synchronize stream BEFORE returning output tensor
+        # Prevents CPU from reading output while GPU is still writing
+        stream = getattr(self, "cuda_stream", None)
+        if stream is not None:
+            stream.synchronize()
+        else:
+            torch.cuda.synchronize(self.device_id)
+            
         inference_ms = (time.perf_counter() - start) * 1000
         
         # Update stats
@@ -309,37 +337,48 @@ class YOLOPersonDetector:
         Returns:
             List of PersonDetection in ORIGINAL_FRAME coordinates
         """
-        # Preprocess
-        preprocess_start = time.perf_counter()
-        input_tensor, padding_info = self.preprocess(frame)
-        preprocess_ms = (time.perf_counter() - preprocess_start) * 1000
-        
-        # Inference
-        output_tensor = self.infer(input_tensor)
-        
-        # Parse outputs
-        detections = self._parse_outputs(
-            output_tensor=output_tensor,
-            original_width=frame.width,
-            original_height=frame.height,
-            padding_info=padding_info,
-            frame_id=frame.frame_id,
-            camera_id=frame.camera_id,
-        )
-        
-        # Apply NMS
-        detections = self._apply_nms(detections)
-        
-        # Filter by confidence and class
-        detections = [
-            d for d in detections 
-            if d.confidence >= self.yolo_config.confidence_threshold and d.class_id == self.yolo_config.person_class_id
-        ]
-        
-        # Limit max detections
-        detections = detections[:self.yolo_config.max_detections]
-        
-        return detections
+        with self._lock:
+            # Debug: Log input frame format
+            try:
+                y_tensor, uv_tensor = frame.get_tensors()
+                logger.debug(f"[YOLO_IN] shape=({y_tensor.shape}, {uv_tensor.shape}), dtype={y_tensor.dtype}, min={y_tensor.min().item()}, max={y_tensor.max().item()}")
+            except Exception as e:
+                logger.debug(f"[YOLO_IN] Could not log frame format: {e}")
+            
+            # Preprocess
+            preprocess_start = time.perf_counter()
+            input_tensor, padding_info = self.preprocess(frame)
+            preprocess_ms = (time.perf_counter() - preprocess_start) * 1000
+            
+            # Inference
+            output_tensor = self.infer(input_tensor)
+            
+            # Parse outputs
+            detections = self._parse_outputs(
+                output_tensor=output_tensor,
+                original_width=frame.width,
+                original_height=frame.height,
+                padding_info=padding_info,
+                frame_id=frame.frame_id,
+                camera_id=frame.camera_id,
+            )
+            
+            # Apply NMS
+            detections = self._apply_nms(detections)
+            
+            # Filter by confidence and class
+            detections = [
+                d for d in detections 
+                if d.confidence >= self.yolo_config.confidence_threshold and d.class_id == self.yolo_config.person_class_id
+            ]
+            
+            # Limit max detections
+            detections = detections[:self.yolo_config.max_detections]
+            
+            # Log detection count
+            logger.info(f"[YOLO_RESULT] Detected {len(detections)} persons")
+            
+            return detections
     
     def _parse_outputs(
         self,
@@ -354,14 +393,19 @@ class YOLOPersonDetector:
         detections = []
         
         # Handle different output formats
-        # Format 1: (1, 84, 8400) - YOLOv8/v11
+        # Format 1: (1, 84, 8400) - YOLOv8/v11 raw TensorRT output
         # Format 2: (1, 8400, 84) - transposed
         # Format 3: (1, num_boxes, 85) - YOLOv5 style
         
+        # DEBUG: Log output tensor shape
+        logger.debug(f"[YOLO_PARSE] Raw output shape: {output_tensor.shape}")
+        
         if output_tensor.dim() == 3:
-            if output_tensor.shape[1] > output_tensor.shape[2]:
-                # (1, 84, 8400) -> (1, 8400, 84)
+            # YOLOv11 TensorRT raw output is typically (1, 84, 8400) where 84 = 4 box coords + 80 classes
+            if output_tensor.shape[1] < output_tensor.shape[2]:
+                # (1, 84, 8400) -> transpose to (1, 8400, 84)
                 output_tensor = output_tensor.transpose(1, 2)
+                logger.debug(f"[YOLO_PARSE] Transposed to: {output_tensor.shape}")
             
             # Now (1, num_boxes, 84) or (1, num_boxes, 85)
             batch, num_boxes, dims = output_tensor.shape
@@ -373,53 +417,85 @@ class YOLOPersonDetector:
             new_W = padding_info["new_width"]
             new_H = padding_info["new_height"]
             
-            # Valid region
+            # Valid region - the image is placed at (pad_left, pad_top) with size (new_W, new_H)
             valid_x1 = pad_left
             valid_y1 = pad_top
-            valid_x2 = self.input_w - (self.input_w - new_W - pad_left)
-            valid_y2 = self.input_h - (self.input_h - new_H - pad_top)
+            valid_x2 = pad_left + new_W
+            valid_y2 = pad_top + new_H
+            
+            # Extract box coordinates (channels 0-3): [cx, cy, w, h] in letterboxed input space [0..640]
+            box_coords = output_tensor[:, :, :4]
+            
+            # Extract class scores (channels 4-83): 80 classes
+            class_scores_raw = output_tensor[:, :, 4:4+80]
+            
+            # Ultralytics YOLOv11 ONNX export already applies sigmoid in the Detect head.
+            # The output channels 4:84 are already probabilities in [0.0, 1.0].
+            # Only apply sigmoid if model outputs raw logits (values outside [0, 1]).
+            person_scores = class_scores_raw[0, :, 0]  # Class 0: person
+            if person_scores.min() < -0.01 or person_scores.max() > 1.01:
+                class_probs = torch.sigmoid(torch.clamp(class_scores_raw, -50.0, 50.0))
+                logger.debug("[YOLO_PARSE] Applied sigmoid to class scores (raw logits detected)")
+            else:
+                class_probs = class_scores_raw
+                logger.debug("[YOLO_PARSE] Class scores already in [0,1] range (no sigmoid applied)")
             
             for i in range(num_boxes):
-                box_data = output_tensor[0, i]  # (84,) or (85,)
+                # Get box coordinates [cx, cy, w, h] in model input space [0..640]
+                cx = float(box_coords[0, i, 0])
+                cy = float(box_coords[0, i, 1])
+                w = float(box_coords[0, i, 2])
+                h = float(box_coords[0, i, 3])
                 
-                # Extract bbox (cx, cy, w, h) in model input space
-                cx, cy, w, h = box_data[:4]
-                
-                # Object confidence
-                obj_conf = float(box_data[4])
-                
-                if obj_conf < self.yolo_config.confidence_threshold:
-                    continue
-                
-                # Class scores
-                if dims == 85:
-                    class_scores = box_data[5:]
-                else:
-                    # YOLOv8: 80 classes starting at index 4
-                    class_scores = box_data[4:]
-                
-                class_id = int(torch.argmax(class_scores))
-                class_conf = float(class_scores[class_id])
-                
-                confidence = obj_conf * class_conf
-                
-                if confidence < self.yolo_config.confidence_threshold:
-                    continue
-                
-                # Convert bbox from center format to corners in model input space
+                # Convert center format to corners in model input space
                 x1 = cx - w / 2
                 y1 = cy - h / 2
                 x2 = cx + w / 2
                 y2 = cy + h / 2
                 
-                # Check if in valid region
+                # Get class probabilities
+                class_scores = class_probs[0, i]
+                
+                class_id = int(torch.argmax(class_scores))
+                class_conf = float(class_scores[class_id])
+                
+                # YOLOv8/v11 uses class confidence directly (no separate object confidence)
+                confidence = class_conf
+                
+                if confidence < self.yolo_config.confidence_threshold:
+                    continue
+                
+                # Only keep person class (class_id == 0)
+                if class_id != self.yolo_config.person_class_id:
+                    continue
+                
+                # Check if in valid region (remove padding)
                 if x1 < valid_x1 or x2 > valid_x2 or y1 < valid_y1 or y2 > valid_y2:
                     continue
                 
                 # Convert to original frame coordinates
                 bbox_original = self._convert_bbox_to_original(
-                    x1, y1, x2, y2, scale, pad_left, pad_top, original_width, original_height
+                    x1, y1, x2, y2, scale, pad_left, pad_top, new_W, new_H, original_width, original_height
                 )
+                
+                # Filter out absurdly small boxes (likely false positives)
+                box_w = bbox_original[2] - bbox_original[0]
+                box_h = bbox_original[3] - bbox_original[1]
+                if box_w < 20.0 or box_h < 20.0:
+                    continue
+                
+                # Geometric sanity filter: reject boxes with extreme aspect ratio (horizontal artifacts/desk edges)
+                # Guard against division by zero
+                if box_h <= 1.0:
+                    continue  # Discard degenerate zero-height box
+                aspect_ratio = box_w / box_h
+                if aspect_ratio > self.yolo_config.max_aspect_ratio:
+                    continue
+                
+                # Filter by minimum area
+                box_area = box_w * box_h
+                if box_area < self.yolo_config.min_box_area:
+                    continue
                 
                 detection = PersonDetection(
                     bbox=bbox_original,
@@ -438,14 +514,27 @@ class YOLOPersonDetector:
         self,
         x1: float, y1: float, x2: float, y2: float,
         scale: float, pad_left: int, pad_top: int,
+        new_W: int, new_H: int,
         orig_w: int, orig_h: int
     ) -> Tuple[float, float, float, float]:
-        """Convert bbox from model input space to original frame space."""
-        x1 = (x1 - pad_left) / scale
-        y1 = (y1 - pad_top) / scale
-        x2 = (x2 - pad_left) / scale
-        y2 = (y2 - pad_top) / scale
+        """Convert bbox from model input space to original frame space.
         
+        Correctly accounts for asymmetric letterbox padding:
+        - Image is resized to (new_W, new_H) maintaining aspect ratio
+        - Then placed at (pad_left, pad_top) in the 640x640 canvas
+        - scale = new_W / orig_w = new_H / orig_h
+        """
+        # Remove padding offset and scale back to original coordinates in one step
+        # (x - pad) / scale = x * (orig_w / new_W) - pad * (orig_w / new_W)
+        # This correctly handles asymmetric padding
+        inv_scale = 1.0 / scale
+        
+        x1 = (x1 - pad_left) * inv_scale
+        y1 = (y1 - pad_top) * inv_scale
+        x2 = (x2 - pad_left) * inv_scale
+        y2 = (y2 - pad_top) * inv_scale
+        
+        # Final clamp to original frame
         x1 = max(0.0, min(x1, orig_w - 1))
         y1 = max(0.0, min(y1, orig_h - 1))
         x2 = max(0.0, min(x2, orig_w))

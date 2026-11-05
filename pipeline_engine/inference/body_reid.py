@@ -74,10 +74,14 @@ class ReIDDetector:
         model_path: str,
         config: Optional[ReIDConfig] = None,
         device_id: int = 0,
+        cuda_stream: Optional[torch.cuda.Stream] = None,
     ):
         self.reid_config = config or ReIDConfig()
         self.device_id = device_id
         self.device = f'cuda:{device_id}'
+        
+        # Store CUDA stream for parallel execution
+        self.cuda_stream = cuda_stream
         
         # Backend selection based on model extension
         self._model_path = model_path
@@ -127,7 +131,7 @@ class ReIDDetector:
             pass  # Not needed for TensorRT
         
         try:
-            self._trt_executor = create_tensorrt_executor(self._model_path, self.device_id)
+            self._trt_executor = create_tensorrt_executor(self._model_path, self.device_id, self.cuda_stream)
             if not self._trt_executor.initialize():
                 return False
             
@@ -265,10 +269,19 @@ class ReIDDetector:
         if not self._initialized:
             raise RuntimeError("ReIDDetector not initialized")
         
-        if self._use_tensorrt:
-            return self._infer_raw_tensorrt(input_tensor)
+        # Run inference within the camera's CUDA stream if provided
+        stream = getattr(self, "cuda_stream", None)
+        if stream is not None:
+            with torch.cuda.stream(stream):
+                if self._use_tensorrt:
+                    return self._infer_raw_tensorrt(input_tensor)
+                else:
+                    return self._infer_raw_onnx(input_tensor)
         else:
-            return self._infer_raw_onnx(input_tensor)
+            if self._use_tensorrt:
+                return self._infer_raw_tensorrt(input_tensor)
+            else:
+                return self._infer_raw_onnx(input_tensor)
     
     def _infer_raw_tensorrt(self, input_tensor: torch.Tensor) -> Tuple[torch.Tensor, float]:
         """Run raw inference with TensorRT engine."""
@@ -293,7 +306,15 @@ class ReIDDetector:
         # Run inference
         start = time.perf_counter()
         self._session.run_with_iobinding(self._io_binding)
-        torch.cuda.synchronize(self.device_id)
+        
+        # CRITICAL: Synchronize stream BEFORE returning output tensor
+        # Prevents CPU from reading output while GPU is still writing
+        stream = getattr(self, "cuda_stream", None)
+        if stream is not None:
+            stream.synchronize()
+        else:
+            torch.cuda.synchronize(self.device_id)
+            
         inference_ms = (time.perf_counter() - start) * 1000
         
         # Update stats

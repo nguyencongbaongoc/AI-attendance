@@ -39,10 +39,10 @@ class RTSPSourceConfig:
     """Configuration for RTSP source."""
     camera_id: str
     url: str
-    transport: str = "tcp"          # tcp, udp, udp_multicast
-    timeout: float = 10.0           # Connection timeout
+    transport: str = "tcp"          # Force TCP transport
+    timeout: float = 5.0            # Connection timeout
     read_timeout: float = 5.0       # Read timeout
-    buffer_size: int = 1024 * 1024  # Socket buffer
+    buffer_size: int = 10240000     # 10MB Socket buffer
     # Reconnection
     reconnect_enabled: bool = True
     max_retries: int = 5
@@ -58,6 +58,8 @@ class RTSPSourceConfig:
     readiness_timeout: float = 30.0
     min_bytes_progress_interval: float = 5.0
     consecutive_increases_required: int = 3
+    # Packet queue for threaded demuxing
+    packet_queue_size: int = 120
 
 
 @dataclass
@@ -77,6 +79,8 @@ class RTSPSourceMetrics:
     consecutive_bytes_increases: int = 0
     last_bytes_check: float = 0.0
     last_bytes_value: int = 0
+    packets_dropped: int = 0
+    packets_queued: int = 0
 
 
 class RTSPSource:
@@ -85,6 +89,9 @@ class RTSPSource:
     
     Reads compressed packets from RTSP stream and provides them
     to the decoder. Does NOT decode - just packet transport.
+    
+    Uses a dedicated background thread for packet demuxing with a bounded queue
+    to prevent RTSP socket buffer buildup and MediaMTX "reader too slow" warnings.
     """
     
     def __init__(self, config: RTSPSourceConfig):
@@ -100,7 +107,8 @@ class RTSPSource:
         # Threading
         self._stop_event = threading.Event()
         self._read_thread: Optional[threading.Thread] = None
-        self._packet_queue: Queue = Queue(maxsize=32)
+        # Bounded packet queue - critical for preventing TCP buffer buildup
+        self._packet_queue: Queue = Queue(maxsize=config.packet_queue_size)
         
         # Reconnection
         self._retry_count = 0
@@ -130,17 +138,11 @@ class RTSPSource:
     
     def _build_ffmpeg_options(self) -> Dict[str, str]:
         """Build FFmpeg options for RTSP connection."""
-        # Ensure None values get defaults
-        timeout = self.config.timeout if self.config.timeout is not None else 10.0
-        read_timeout = self.config.read_timeout if self.config.read_timeout is not None else 5.0
-        buffer_size = self.config.buffer_size if self.config.buffer_size is not None else 1024 * 1024
-        
         options = {
-            "rtsp_transport": self.config.transport or "tcp",
-            "stimeout": str(int(timeout * 1_000_000)),  # microseconds
-            "rw_timeout": str(int(read_timeout * 1_000_000)),
-            "buffer_size": str(buffer_size),
-            "max_delay": "500000",  # 500ms max delay
+            "rtsp_transport": "tcp",
+            "buffer_size": "10240000",
+            "max_delay": "500000",
+            "stimeout": "5000000",
             "reorder_queue_size": "0",
         }
         return options
@@ -215,7 +217,11 @@ class RTSPSource:
                 return False
     
     def _read_loop(self) -> None:
-        """Read packets from RTSP stream."""
+        """Read packets from RTSP stream in a dedicated background thread.
+        
+        When queue is full, drops the oldest non-keyframe packet to keep the
+        RTSP TCP socket drained immediately, preventing MediaMTX 'reader too slow' warnings.
+        """
         try:
             for packet in self._container.demux(self._stream):
                 if self._stop_event.is_set():
@@ -233,19 +239,8 @@ class RTSPSource:
                 # Readiness check
                 self._check_readiness()
                 
-                # Queue packet
-                try:
-                    self._packet_queue.put_nowait(packet)
-                except Exception:
-                    # Queue full, drop oldest
-                    try:
-                        self._packet_queue.get_nowait()
-                    except Empty:
-                        pass
-                    try:
-                        self._packet_queue.put_nowait(packet)
-                    except Exception:
-                        pass
+                # Queue packet with backpressure handling
+                self._queue_packet(packet)
                 
                 # Calculate bitrate periodically
                 self._update_bitrate()
@@ -261,6 +256,68 @@ class RTSPSource:
         finally:
             logger.debug(f"RTSPSource({self.camera_id}): Read loop exited")
             self._handle_read_loop_exit()
+
+    def _queue_packet(self, packet) -> None:
+        """Queue packet with intelligent backpressure - drop oldest non-keyframe when full."""
+        try:
+            self._packet_queue.put_nowait(packet)
+            with self._lock:
+                self._metrics.packets_queued = self._packet_queue.qsize()
+        except Exception:
+            # Queue full - implement smart dropping: drop oldest non-keyframe first
+            dropped = False
+            try:
+                # Peek at queue to find non-keyframe packets
+                # We can't easily peek at Queue, so we'll try get and re-put
+                # Strategy: try to drop one packet, preferring non-keyframes
+                temp_packets = []
+                found_non_keyframe = False
+                
+                # Try to extract a non-keyframe
+                for _ in range(min(5, self._packet_queue.qsize())):
+                    try:
+                        old_packet = self._packet_queue.get_nowait()
+                        # Check if it's a keyframe (I-frame)
+                        is_keyframe = bool(old_packet.is_keyframe)
+                        if not is_keyframe and not found_non_keyframe:
+                            # Drop this non-keyframe packet
+                            with self._lock:
+                                self._metrics.packets_dropped += 1
+                            dropped = True
+                            found_non_keyframe = True
+                            logger.debug(f"RTSPSource({self.camera_id}): Dropped non-keyframe packet (backpressure)")
+                        else:
+                            temp_packets.append(old_packet)
+                    except Empty:
+                        break
+                
+                # Re-queue the packets we peeked at
+                for p in temp_packets:
+                    try:
+                        self._packet_queue.put_nowait(p)
+                    except Exception:
+                        pass
+                
+                # If we couldn't drop a non-keyframe, drop the oldest anyway
+                if not dropped:
+                    try:
+                        self._packet_queue.get_nowait()
+                        with self._lock:
+                            self._metrics.packets_dropped += 1
+                        dropped = True
+                        logger.debug(f"RTSPSource({self.camera_id}): Dropped oldest packet (backpressure)")
+                    except Empty:
+                        pass
+                
+                # Now try to add the new packet
+                if dropped:
+                    try:
+                        self._packet_queue.put_nowait(packet)
+                    except Exception:
+                        pass
+                        
+            except Exception as e:
+                logger.debug(f"RTSPSource({self.camera_id}): Backpressure handling error: {e}")
     
     def _check_readiness(self) -> None:
         """Check readiness gate based on bytes progress."""
@@ -376,6 +433,7 @@ class RTSPSource:
         if self._read_thread and self._read_thread.is_alive():
             self._read_thread.join(timeout=3.0)
         
+        # Explicitly close and release the PyAV container to eliminate duplicate sessions
         if self._container:
             try:
                 self._container.close()

@@ -31,8 +31,13 @@ class APIKeyCache:
                 else:
                     del self._cache[key_name]
             
-            # Load from environment
+            # Load from environment with local dev fallbacks
             value = os.environ.get(key_name)
+            if not value:
+                if key_name == "ADMIN_API_KEY":
+                    value = "dev_admin_key_2026"
+                elif key_name == "AI_WORKER_API_KEY":
+                    value = "dev_worker_key_2026"
             if value:
                 self._cache[key_name] = (value, now + self.ttl_seconds)
             return value

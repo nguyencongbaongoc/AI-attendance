@@ -129,6 +129,20 @@ class Track:
     @property
     def is_identified(self) -> bool:
         return self.person_id is not None and self.identity_confidence > 0.5
+
+    def to_tlbr(self) -> np.ndarray:
+        """Return bounding box in TLBR format."""
+        return np.array(self.bbox_original_frame)
+
+    @property
+    def matched_name(self) -> Optional[str]:
+        """Matched face/person name or None."""
+        return self.person_name
+
+    @property
+    def matched_id(self) -> Optional[str]:
+        """Matched person ID or None."""
+        return self.person_id
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -184,13 +198,28 @@ class TrackingResult:
         return [t for t in self.tracks if t.is_identified]
 
 
+def _to_pixel_coords(
+    bbox: Tuple[float, float, float, float],
+    frame_w: float,
+    frame_h: float
+) -> Tuple[float, float, float, float]:
+    """Convert normalized coordinates [0,1] to pixel coordinates if needed."""
+    x1, y1, x2, y2 = bbox[:4]
+    if max(x1, y1, x2, y2) <= 1.01:
+        return (x1 * frame_w, y1 * frame_h, x2 * frame_w, y2 * frame_h)
+    return (x1, y1, x2, y2)
+
+
 def compute_iou(
     bbox1: Tuple[float, float, float, float],
-    bbox2: Tuple[float, float, float, float]
+    bbox2: Tuple[float, float, float, float],
+    frame_w: float = 3840.0,
+    frame_h: float = 2160.0
 ) -> float:
-    """Compute Intersection over Union of two bboxes."""
-    x1_1, y1_1, x2_1, y2_1 = bbox1
-    x1_2, y1_2, x2_2, y2_2 = bbox2
+    """Compute Intersection over Union of two bboxes in pixel coordinate space."""
+    # Denormalize if coordinates are in [0,1] range
+    x1_1, y1_1, x2_1, y2_1 = _to_pixel_coords(bbox1, frame_w, frame_h)
+    x1_2, y1_2, x2_2, y2_2 = _to_pixel_coords(bbox2, frame_w, frame_h)
     
     x1_i = max(x1_1, x1_2)
     y1_i = max(y1_1, y1_2)
@@ -222,8 +251,8 @@ def compute_track_detection_score(
     track_bbox = track.bbox_original_frame
     det_bbox = person_detection.bbox
     
-    # IoU score
-    iou_score = compute_iou(track_bbox, det_bbox)
+    # IoU score - pass frame dimensions for denormalization
+    iou_score = compute_iou(track_bbox, det_bbox, 3840.0, 2160.0)
     
     # Center distance score
     frame_w, frame_h = 3840, 2160  # Default, could be from frame metadata

@@ -18,6 +18,10 @@ from typing import Any, Dict, List, Optional, Tuple
 from pydantic import Field
 from app.attendance.contract import AttendanceRecord, validate_attendance_record
 
+# Shared connection for SQLite WAL mode
+_global_connection: Optional[sqlite3.Connection] = None
+_global_connection_lock = threading.Lock()
+
 
 def _get_attendance_db_path() -> Path:
     """Get the canonical attendance database path.
@@ -184,27 +188,34 @@ class AttendanceStorage:
         self._init_database()
     
     def _get_connection(self) -> sqlite3.Connection:
-        """Get thread-local database connection."""
-        if not hasattr(self._local, 'connection') or self._local.connection is None:
-            db_path = Path(self.config.database_path)
-            db_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            conn = sqlite3.connect(
-                str(db_path),
-                check_same_thread=False,
-                timeout=self.config.busy_timeout_ms / 1000.0,
-            )
-            conn.row_factory = sqlite3.Row
-            
-            if self.config.enable_wal:
-                conn.execute("PRAGMA journal_mode=WAL;")
-            if self.config.foreign_keys:
-                conn.execute("PRAGMA foreign_keys=ON;")
-            conn.execute(f"PRAGMA busy_timeout={self.config.busy_timeout_ms};")
-            
-            self._local.connection = conn
+        """Get shared database connection with WAL mode enabled.
         
-        return self._local.connection
+        Uses a single global connection with check_same_thread=False to allow
+        concurrent access from multiple threads while maintaining WAL mode.
+        """
+        global _global_connection
+        with _global_connection_lock:
+            if _global_connection is None:
+                db_path = Path(self.config.database_path)
+                db_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                conn = sqlite3.connect(
+                    str(db_path),
+                    check_same_thread=False,
+                    timeout=self.config.busy_timeout_ms / 1000.0,
+                )
+                conn.row_factory = sqlite3.Row
+                
+                if self.config.enable_wal:
+                    conn.execute("PRAGMA journal_mode=WAL;")
+                if self.config.foreign_keys:
+                    conn.execute("PRAGMA foreign_keys=ON;")
+                conn.execute(f"PRAGMA busy_timeout={self.config.busy_timeout_ms};")
+                conn.execute("PRAGMA synchronous=NORMAL;")
+                
+                _global_connection = conn
+            
+            return _global_connection
     
     def _init_database(self) -> None:
         """Initialize database schema."""
@@ -250,10 +261,15 @@ class AttendanceStorage:
             cursor.close()
     
     def close(self) -> None:
-        """Close the database connection."""
-        if hasattr(self._local, 'connection') and self._local.connection is not None:
-            self._local.connection.close()
-            self._local.connection = None
+        """Close the database connection.
+        
+        Note: With global connection, we don't actually close it here
+        as it's shared across all instances. The connection will be
+        closed when the application shuts down.
+        """
+        # With global shared connection, we don't close per-instance
+        # The global connection cleanup should happen at app shutdown
+        pass
     
     def __enter__(self) -> "AttendanceStorage":
         return self
@@ -321,7 +337,7 @@ class AttendanceStorage:
                         snapshot_face_url,
                         snapshot_scene_url,
                         video_clip_url
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     record.attendance_record_id,
                     record.identity_certainty.value if hasattr(record.identity_certainty, 'value') else record.identity_certainty,
@@ -349,8 +365,8 @@ class AttendanceStorage:
                     record.geometry_config_hash,
                     record.resolver_version,
                     record.resolver_config_hash,
-                    record.previous_state,
-record.new_state,
+record.previous_state,
+                    record.new_state,
                     record.stream_epoch,
                     record.pts,
                     record.time_base.numerator,
@@ -365,7 +381,7 @@ record.new_state,
                     # Phase 17: Evidence storage URIs
                     record.snapshot_face_url,
                     record.snapshot_scene_url,
-                    record.video_clip_url
+                    record.video_clip_url,
                 ))
                 return True
             except sqlite3.IntegrityError as e:
@@ -635,7 +651,7 @@ record.attendance_schema_version,
         params = []
         
         if camera_id is not None:
-            conditions.append("camera_id = ?")
+            conditions.append("camera_id = ? COLLATE NOCASE")
             params.append(camera_id)
         
         if local_track_id is not None:
@@ -804,7 +820,7 @@ record.attendance_schema_version,
         params = []
         
         if camera_id is not None:
-            conditions.append("camera_id = ?")
+            conditions.append("camera_id = ? COLLATE NOCASE")
             params.append(camera_id)
         
         if local_track_id is not None:
@@ -907,6 +923,21 @@ record.attendance_schema_version,
             conn.backup(backup_conn)
         finally:
             backup_conn.close()
+
+
+def close_global_connection() -> None:
+    """Close the global shared database connection.
+    
+    Should be called at application shutdown.
+    """
+    global _global_connection
+    with _global_connection_lock:
+        if _global_connection is not None:
+            try:
+                _global_connection.close()
+            except Exception:
+                pass
+            _global_connection = None
 
 
 def create_attendance_storage(config: Optional[StorageConfig] = None) -> AttendanceStorage:

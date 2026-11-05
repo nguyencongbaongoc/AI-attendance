@@ -129,7 +129,7 @@ class NVENCEncoder:
             self._state = state
             self._metrics.state = state
             if old_state != state:
-                logger.info(f"NVENCEncoder({self.camera_id}): state {old_state.value} → {state.value}")
+                logger.info(f"NVENCEncoder({self.camera_id}): state {old_state.value} -> {state.value}")
     
     def start(self) -> bool:
         """Start the encoder."""

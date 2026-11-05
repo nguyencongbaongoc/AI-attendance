@@ -150,6 +150,11 @@ class NVDECDecoder:
         self._y_gpu = None
         self._uv_gpu = None
         self._use_hw_decode = False
+        
+        # Transient decode error & IDR keyframe recovery tracking
+        self._waiting_for_keyframe = False
+        self._first_decode_error_time: Optional[float] = None
+        self._consecutive_decode_errors = 0
 
     @property
     def state(self) -> DecoderState:
@@ -167,7 +172,7 @@ class NVDECDecoder:
             self._state = state
             self._metrics.state = state
             if old_state != state:
-                logger.info(f"NVDECDecoder({self.camera_id}): state {old_state.value} → {state.value}")
+                logger.info(f"NVDECDecoder({self.camera_id}): state {old_state.value} -> {state.value}")
 
     def _build_hwaccel(self):
         """Build PyNvVideoCodec decoder for true hardware NVDEC."""
@@ -204,7 +209,12 @@ class NVDECDecoder:
             options = {"rtmp_buffer": "100"}
         else:  # RTSP
             format_name = "rtsp"
-            options = {"rtsp_transport": "tcp"}
+            options = {
+                "rtsp_transport": "tcp",
+                "buffer_size": "10240000",
+                "max_delay": "500000",
+                "stimeout": "5000000",
+            }
         
         import av
         self._container = av.open(
@@ -315,16 +325,55 @@ class NVDECDecoder:
         import av
         
         try:
+            self._waiting_for_keyframe = False
+            self._first_decode_error_time = None
+            self._consecutive_decode_errors = 0
+            
             # Use PyAV container for demuxing (RTSP/RTMP)
-            for packet in self._container.demux(self._stream):
+            demux_iter = iter(self._container.demux(self._stream))
+            while not self._stop_event.is_set():
+                try:
+                    packet = next(demux_iter)
+                except StopIteration:
+                    break
+                except Exception as e:
+                    # Transient demux error (e.g. truncated packet)
+                    now = time.time()
+                    self._metrics.decode_errors += 1
+                    self._metrics.frames_dropped += 1
+                    self._waiting_for_keyframe = True
+                    if self._first_decode_error_time is None:
+                        self._first_decode_error_time = now
+                    err_dur = now - self._first_decode_error_time
+                    if err_dur > 3.0:
+                        logger.error(f"NVDECDecoder({self.camera_id}): Demux errors persisted > 3s: {e}")
+                        raise
+                    logger.warning(
+                        f"NVDECDecoder({self.camera_id}): Transient demux error ({err_dur:.2f}s), "
+                        f"waiting for IDR keyframe: {e}"
+                    )
+                    time.sleep(0.01)
+                    continue
+
                 if self._stop_event.is_set():
                     break
-                
+
+                # If waiting for IDR keyframe after decode error or corrupted packet
+                if self._waiting_for_keyframe:
+                    if not packet.is_keyframe:
+                        self._metrics.frames_dropped += 1
+                        continue
+                    else:
+                        logger.info(f"NVDECDecoder({self.camera_id}): IDR Keyframe received, recovering decode stream")
+                        self._waiting_for_keyframe = False
+
                 if packet.is_corrupt:
+                    self._metrics.frames_dropped += 1
+                    self._waiting_for_keyframe = True
                     continue
-                
+
                 decode_start = time.perf_counter()
-                
+
                 # Create PyNvVideoCodec PacketData from PyAV packet
                 pnv_packet = nvc.PacketData()
                 pnv_packet.bsl = packet.size
@@ -336,14 +385,39 @@ class NVDECDecoder:
                 pnv_packet.key = 1 if packet.is_keyframe else 0
                 pnv_packet.is_video = 1
                 pnv_packet.stream_index = 0
-                
+
                 # Decode packet with PyNvVideoCodec
                 try:
-                    decoded_frames = self._decoder.Decode(pnv_packet)
+                    decode_fn = getattr(self._decoder, "Decode", None) or getattr(self._decoder, "decode", None)
+                    decoded_frames = decode_fn(pnv_packet)
+                    # Successful decode resets error streak
+                    self._first_decode_error_time = None
+                    self._consecutive_decode_errors = 0
                 except Exception as e:
-                    logger.error(f"NVDECDecoder({self.camera_id}): Decode failed: {e}")
+                    now = time.time()
                     self._metrics.decode_errors += 1
-                    continue
+                    self._metrics.frames_dropped += 1
+                    self._consecutive_decode_errors += 1
+                    if self._first_decode_error_time is None:
+                        self._first_decode_error_time = now
+
+                    error_duration = now - self._first_decode_error_time
+                    self._waiting_for_keyframe = True
+
+                    # Only degrade and exit reader loop if errors persist > 3 consecutive seconds
+                    if error_duration > 3.0:
+                        logger.error(
+                            f"NVDECDecoder({self.camera_id}): Decode errors persisted for {error_duration:.1f}s (> 3s threshold): {e}"
+                        )
+                        self._metrics.last_error = str(e)
+                        self._set_state(DecoderState.ERROR)
+                        break
+                    else:
+                        logger.warning(
+                            f"NVDECDecoder({self.camera_id}): Transient decode error ({error_duration:.2f}s elapsed), "
+                            f"dropping frame and waiting for next IDR keyframe: {e}"
+                        )
+                        continue
                 
                 # Process decoded frames
                 for decoded_frame in decoded_frames:
@@ -503,10 +577,26 @@ class NVDECDecoder:
         except Exception as e:
             logger.error(f"NVDECDecoder({self.camera_id}): Reader loop error: {e}")
             logger.debug(traceback.format_exc())
-            self._error = e
         finally:
             logger.debug(f"NVDECDecoder({self.camera_id}): Reader loop exited")
-            self._set_state(DecoderState.ERROR)
+            if self._stop_event.is_set():
+                self._set_state(DecoderState.STOPPED)
+            elif self._first_decode_error_time and (time.time() - self._first_decode_error_time) > 3.0:
+                self._set_state(DecoderState.ERROR)
+            else:
+                self._set_state(DecoderState.STOPPED)
+
+    def is_degraded(self) -> bool:
+        """Check if decoder is in degraded state (persistent errors > 3 seconds)."""
+        with self._lock:
+            if self._first_decode_error_time is not None:
+                if (time.time() - self._first_decode_error_time) > 3.0:
+                    return True
+            return self._state == DecoderState.ERROR
+
+    def is_healthy(self) -> bool:
+        """Check if decoder is healthy (not in persistent error state)."""
+        return not self.is_degraded()
 
     def get_frame(self, timeout: float = 1.0) -> Optional[GPUFrame]:
         """Get next decoded GPUFrame."""

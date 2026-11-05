@@ -371,18 +371,18 @@ class GlobalIdentityService:
         
         return person_id, initial_state
 
-    def update_track(self, camera_id: str, track: Track) -> IdentityState:
+    def update_track(self, camera_id: str, track: Track) -> tuple:
         """
         Update an existing track with new embeddings.
         
         Returns:
-            Updated identity state
+            Tuple of (person_id, identity_state)
         """
         track_key = (camera_id, str(track.track_id))
         
         if track_key not in self._track_identity:
             # Track not registered yet - register it
-            return self.register_track(camera_id, track)[1]
+            return self.register_track(camera_id, track)
         
         track_ref = self._track_identity[track_key]
         person_id = track_ref.global_person_id
@@ -472,7 +472,7 @@ class GlobalIdentityService:
                 body_similarity=body_match[1] if body_match else 0.0,
             )
         
-        return new_state
+        return person_id, new_state
 
     def resolve_crossing(self, camera_id: str, local_track_id: str) -> Tuple[str, IdentityState]:
         """

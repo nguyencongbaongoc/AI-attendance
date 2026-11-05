@@ -75,6 +75,12 @@ class PipelineEngine:
         self.frame_pool_manager: Optional[FramePoolManager] = None
         self.memory_monitor: Optional[GPUMemoryMonitor] = None
         
+        # Shared AI models (singletons) - created once, shared across cameras
+        self._shared_scrfd: Optional[Any] = None
+        self._shared_arcface: Optional[Any] = None
+        self._shared_yolo: Optional[Any] = None
+        self._shared_reid: Optional[Any] = None
+        
         # State
         self._state = EngineState.STOPPED
         self._metrics = EngineMetrics()
@@ -180,6 +186,85 @@ class PipelineEngine:
         
         return True
     
+    def _initialize_shared_models(self) -> None:
+        """Initialize shared AI models as singletons to avoid VRAM duplication."""
+        import torch
+        from pipeline_engine.inference.face_detection import SCRFDDetector, SCRFDConfig
+        from pipeline_engine.inference.face_recognition import ArcFaceRecognizer, ArcFaceConfig
+        from pipeline_engine.inference.person_detection import YOLOPersonDetector, YOLOConfig
+        from pipeline_engine.inference.body_reid import ReIDDetector, ReIDConfig
+        
+        device_id = self.config.gpu.get("device_id", 0) if self.config else 0
+        
+        # Create shared CUDA stream for inference
+        cuda_stream = torch.cuda.Stream(device=device_id)
+        
+        # SCRFD Face Detector
+        scrfd_cfg = self.config.models.get("scrfd", {}) if self.config and self.config.models else {}
+        self._shared_scrfd = SCRFDDetector(
+            model_path="models/scrfd/scrfd_10g_bnkps_fp16.engine",
+            config=SCRFDConfig(
+                confidence_threshold=scrfd_cfg.get("confidence_threshold", 0.5),
+                nms_threshold=scrfd_cfg.get("nms_threshold", 0.4),
+            ),
+            device_id=device_id,
+            cuda_stream=cuda_stream,
+        )
+        
+        # ArcFace Recognizer
+        arcface_cfg = self.config.models.get("arcface", {}) if self.config and self.config.models else {}
+        self._shared_arcface = ArcFaceRecognizer(
+            model_path="models/arcface/glintr100_fp16.engine",
+            config=ArcFaceConfig(
+                similarity_threshold=arcface_cfg.get("similarity_threshold", 0.6),
+            ),
+            device_id=device_id,
+            cuda_stream=cuda_stream,
+        )
+        
+        # Load enrollment database for ArcFace
+        self._shared_arcface.load_enrollment_database(
+            "data/embeddings.npy",
+            "data/embeddings.npy.metadata.json"
+        )
+        
+        # YOLO Person Detector
+        yolo_cfg = self.config.models.get("yolo", {}) if self.config and self.config.models else {}
+        self._shared_yolo = YOLOPersonDetector(
+            model_path="models/yolo/yolo11n_fp16.engine",
+            config=YOLOConfig(
+                confidence_threshold=yolo_cfg.get("confidence_threshold", 0.35),
+                nms_threshold=yolo_cfg.get("nms_threshold", 0.45),
+                input_size=tuple(yolo_cfg.get("input_size", [640, 640])),
+                person_class_id=yolo_cfg.get("person_class_id", 0),
+                max_detections=yolo_cfg.get("max_detections", 100),
+            ),
+            device_id=device_id,
+            cuda_stream=cuda_stream,
+        )
+        
+        # ReID Detector
+        reid_cfg = self.config.models.get("reid", {}) if self.config and self.config.models else {}
+        self._shared_reid = ReIDDetector(
+            model_path="models/reid/resnet50_reid_fp16.engine",
+            config=ReIDConfig(),
+            device_id=device_id,
+            cuda_stream=cuda_stream,
+        )
+        
+        # Initialize all shared models
+        for name, model in [
+            ("SCRFD", self._shared_scrfd),
+            ("ArcFace", self._shared_arcface),
+            ("YOLO", self._shared_yolo),
+            ("ReID", self._shared_reid),
+        ]:
+            if not model.initialize():
+                logger.error(f"PipelineEngine: Shared {name} initialization failed")
+                raise RuntimeError(f"Shared {name} initialization failed")
+        
+        logger.info("PipelineEngine: Shared AI models initialized successfully as singletons")
+    
     def initialize(self) -> bool:
         """Initialize all pipeline components."""
         self._set_state(EngineState.INITIALIZING)
@@ -208,8 +293,15 @@ class PipelineEngine:
             
             self.memory_monitor.start()
             
-            # Initialize camera manager
-            self.camera_manager = CameraManager(self.config)
+            # Initialize camera manager with shared models
+            self._initialize_shared_models()
+            
+            self.camera_manager = CameraManager(self.config, shared_models={
+                'scrfd': self._shared_scrfd,
+                'arcface': self._shared_arcface,
+                'yolo': self._shared_yolo,
+                'reid': self._shared_reid,
+            })
             if not self.camera_manager.initialize():
                 logger.error("PipelineEngine: Camera manager initialization failed")
                 return False
@@ -338,6 +430,25 @@ class PipelineEngine:
         # Stop memory monitor
         if self.memory_monitor:
             self.memory_monitor.stop()
+        
+        # Cleanup shared AI models
+        for name, model in [
+            ("SCRFD", self._shared_scrfd),
+            ("ArcFace", self._shared_arcface),
+            ("YOLO", self._shared_yolo),
+            ("ReID", self._shared_reid),
+        ]:
+            if model:
+                try:
+                    model.cleanup()
+                    logger.info(f"PipelineEngine: Cleaned up shared {name}")
+                except Exception as e:
+                    logger.error(f"PipelineEngine: Error cleaning up shared {name}: {e}")
+        
+        self._shared_scrfd = None
+        self._shared_arcface = None
+        self._shared_yolo = None
+        self._shared_reid = None
         
         with self._lock:
             self._state = EngineState.STOPPED

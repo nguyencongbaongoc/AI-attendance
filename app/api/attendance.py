@@ -68,6 +68,15 @@ class AttendanceRecordResponse(BaseModel):
     decision_reason: str
     created_at: str
     persisted_at: str
+    class_id: Optional[str] = None
+    crop_url: Optional[str] = None
+    id: Optional[str] = None
+    student_id: Optional[str] = None
+    event_type: Optional[str] = None
+    confidence: Optional[float] = None
+    evidence_snapshot_path: Optional[str] = None
+    evidence_clip_path: Optional[str] = None
+    offset_seconds: Optional[float] = None
 
 
 class AttendanceSummaryResponse(BaseModel):
@@ -77,6 +86,32 @@ class AttendanceSummaryResponse(BaseModel):
     left_early: int
     absent: int
     total: int
+    total_students: int = 0
+
+
+_student_cache: Dict[str, tuple[str, str]] = {}
+
+def _lookup_student(student_id: Optional[str]) -> tuple[str, str]:
+    """Look up (full_name, class_id) for student from school.db."""
+    if not student_id or student_id in ("UNKNOWN", "None", ""):
+        return "Chưa xác định", "N/A"
+    if student_id in _student_cache:
+        return _student_cache[student_id]
+    try:
+        import sqlite3
+        from app.config.settings import load_settings
+        settings = load_settings()
+        db_path = settings.paths.data_dir / "school.db"
+        if db_path.exists():
+            with sqlite3.connect(db_path) as conn:
+                cur = conn.cursor()
+                row = cur.execute("SELECT full_name, class_id FROM students WHERE student_id = ?", (student_id,)).fetchone()
+                if row:
+                    _student_cache[student_id] = (row[0], row[1])
+                    return row[0], row[1]
+    except Exception:
+        pass
+    return student_id, "N/A"
 
 
 class AttendanceQueryParams(BaseModel):
@@ -122,12 +157,29 @@ async def get_attendance_summary_endpoint():
     repository = get_repository()
     summary = get_attendance_summary(repository)
     
+    total_students = 0
+    try:
+        import sqlite3
+        from app.config.settings import load_settings
+        settings = load_settings()
+        db_path = settings.paths.data_dir / "school.db"
+        if db_path.exists():
+            with sqlite3.connect(db_path) as conn:
+                row = conn.execute("SELECT COUNT(*) FROM students WHERE is_active = 1").fetchone()
+                if row:
+                    total_students = row[0]
+    except Exception:
+        pass
+    
+    absent = max(0, total_students - summary.in_count)
+    
     return AttendanceSummaryResponse(
         present=summary.in_count,  # IN events = present
-        late=0,  # Would need more logic to determine late
+        late=0,
         left_early=summary.out_count,  # OUT events = left
-        absent=0,  # Would need timetable to determine absent
+        absent=absent,
         total=summary.total_records,
+        total_students=total_students,
     )
 
 
@@ -139,6 +191,8 @@ async def get_attendance_records(
     direction: Optional[str] = Query(None),
     identity_certainty: Optional[str] = Query(None),
     identity_candidate: Optional[str] = Query(None),
+    class_id: Optional[str] = Query(None),
+    date: Optional[str] = Query(None),
     start_time: Optional[float] = Query(None),
     end_time: Optional[float] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
@@ -162,6 +216,20 @@ async def get_attendance_records(
         builder.identity_certainty(identity_certainty)
     if identity_candidate:
         builder.identity_candidate(identity_candidate)
+        
+    if date:
+        clean_d = date.replace("-", "").strip()
+        try:
+            dt = datetime.strptime(clean_d, "%Y%m%d")
+            d_start = dt.replace(hour=0, minute=0, second=0).timestamp()
+            d_end = dt.replace(hour=23, minute=59, second=59).timestamp()
+            if start_time is None:
+                start_time = d_start
+            if end_time is None:
+                end_time = d_end
+        except Exception:
+            pass
+
     if start_time is not None:
         builder.since(start_time)
     if end_time is not None:
@@ -173,30 +241,50 @@ async def get_attendance_records(
     
     # Convert records to response format
     records_response = []
-    for record in result.records:
+    for idx, record in enumerate(result.records):
+        candidate = record.identity_candidate or "UNKNOWN"
+        name, student_class = _lookup_student(candidate)
+        if class_id and student_class != class_id:
+            continue
+        if name == "Chưa xác định" and record.local_track_id:
+            name = f"Track #{record.local_track_id}"
+        
+        crop_url = record.snapshot_face_url
+        conf = float(record.identity_confidence or 0.0)
+        event_type = "IN" if (record.direction.value if hasattr(record.direction, "value") else str(record.direction)).lower() == "in" else "OUT"
+        
         records_response.append(AttendanceRecordResponse(
             attendance_record_id=record.attendance_record_id,
             source_resolution_id=record.source_resolution_id,
-            person_id=record.identity_candidate or "UNKNOWN",
-            person_name=f"Person {record.identity_candidate or record.local_track_id}",
+            person_id=candidate,
+            person_name=name,
             camera_id=record.camera_id,
             local_track_id=record.local_track_id,
             global_observation_id=record.global_observation_id or "",
-            direction=record.direction.value,
-            identity_certainty=record.identity_certainty.value,
+            direction=record.direction.value if hasattr(record.direction, "value") else str(record.direction),
+            identity_certainty=record.identity_certainty.value if hasattr(record.identity_certainty, "value") else str(record.identity_certainty),
             identity_candidate=record.identity_candidate,
-            identity_confidence=0.0,  # Not stored in AttendanceRecord
+            identity_confidence=conf,
             timestamp=record.event_timestamp,
             timestamp_iso=format_timestamp(record.event_timestamp),
             day=datetime.utcfromtimestamp(record.event_timestamp).strftime("%Y-%m-%d"),
             session_id=None,
             session_type=None,
             attendance_state=record.new_state,
-            in_state="on_time" if record.direction.value == "in" else "not_applicable",
-            out_state="on_time" if record.direction.value == "out" else "not_applicable",
+            in_state="on_time" if event_type == "IN" else "not_applicable",
+            out_state="on_time" if event_type == "OUT" else "not_applicable",
             decision_reason="Auto-generated from resolution",
             created_at=record.created_at,
             persisted_at=record.persisted_at,
+            class_id=student_class,
+            crop_url=crop_url,
+            id=record.attendance_record_id,
+            student_id=candidate,
+            event_type=event_type,
+            confidence=conf,
+            evidence_snapshot_path=crop_url,
+            evidence_clip_path=record.video_clip_url,
+            offset_seconds=0.0,
         ))
     
     return AttendanceQueryResultResponse(

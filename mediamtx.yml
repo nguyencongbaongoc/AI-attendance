@@ -120,12 +120,12 @@ hlsServerKey: server.key
 hlsServerCert: server.crt
 hlsAllowOrigins: ['*']
 hlsTrustedProxies: []
-hlsAlwaysRemux: no
-hlsVariant: lowLatency
-hlsSegmentCount: 7
+hlsAlwaysRemux: yes
+hlsVariant: fmp4
+hlsSegmentCount: 12
 hlsSegmentDuration: 1s
 hlsPartDuration: 200ms
-hlsSegmentMaxSize: 50M
+hlsSegmentMaxSize: 200M
 hlsDirectory: ''
 hlsMuxerCloseAfter: 60s
 
@@ -159,7 +159,8 @@ srtAddress: :8890
 
 pathDefaults:
   source: publisher
-  record: yes
+  record: no
+  useAbsoluteTimestamp: false
   recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
   recordFormat: fmp4
   recordPartDuration: 2s
@@ -173,21 +174,29 @@ paths:
   # CAM1 - RTMP publisher input (stream key: cam1, app: live -> path: live/cam1)
   live/cam1:
     source: publisher
-    record: yes
+    record: no
+    useAbsoluteTimestamp: false
 
   # CAM2 - RTMP publisher input (stream key: cam2, app: live -> path: live/cam2)
   live/cam2:
     source: publisher
-    record: yes
+    record: no
+    useAbsoluteTimestamp: false
 
   # CAM1 - AI-Annotated H.264 output.
   live/cam1-ai:
     source: publisher
+    record: no
+    useAbsoluteTimestamp: false
 
   # CAM2 - AI-Annotated H.264 output.
   live/cam2-ai:
     source: publisher
+    record: no
+    useAbsoluteTimestamp: false
 
   # Settings under path "all_others" are applied to all paths that
   # do not match another entry.
   all_others:
+    record: no
+    useAbsoluteTimestamp: false

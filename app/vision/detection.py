@@ -347,14 +347,6 @@ class FaceDetector:
                     original_height=frame.metadata.original_height,
                 )
             
-            # Parse SCRFD outputs
-            detections = self._parse_outputs(
-                outputs=outputs,
-                prep_result=gpu_prep_result.to_preprocessing_result() if isinstance(frame.data, GPUFrameContract) and self.gpu_preprocessor is not None else prep_result,
-                original_width=frame.metadata.original_width,
-                original_height=frame.metadata.original_height,
-            )
-            
             # Apply NMS
             detections = self._apply_nms(detections)
             
@@ -422,14 +414,14 @@ class FaceDetector:
             raise ValueError(f"Unsupported stride: {stride}")
         
         # Generate grid of anchor centers matching model output order:
-        # Scale first, then spatial (y, x) - this matches SCRFD model output order
+        # Spatial (y, x) first, then 2 anchors per location
         anchors = []
         anchor_scales_list = []
-        for scale in anchor_scales:
-            for y in range(fm_h):
-                for x in range(fm_w):
-                    cx = (x + 0.5) * stride
-                    cy = (y + 0.5) * stride
+        for y in range(fm_h):
+            for x in range(fm_w):
+                cx = (x + 0.5) * stride
+                cy = (y + 0.5) * stride
+                for scale in anchor_scales:
                     anchors.append([cx, cy])
                     anchor_scales_list.append(scale)
         
@@ -450,16 +442,15 @@ class FaceDetector:
         - Level 2 (stride 16): scores [num_anchors_2], bboxes [num_anchors_2, 4], keypoints [num_anchors_2, 10]
         - Level 3 (stride 32): scores [num_anchors_3], bboxes [num_anchors_3, 4], keypoints [num_anchors_3, 10]
         
-        Bbox outputs are (dx, dy, dw, dh) offsets from anchor centers:
-        - cx = anchor_cx + dx * stride
-        - cy = anchor_cy + dy * stride
-        - w = exp(dw) * anchor_scale
-        - h = exp(dh) * anchor_scale
+        Bbox outputs are (dl, dt, dr, db) distance offsets from anchor centers in stride units:
+        - x1 = anchor_cx - dl * stride
+        - y1 = anchor_cy - dt * stride
+        - x2 = anchor_cx + dr * stride
+        - y2 = anchor_cy + db * stride
         
-        Keypoint outputs are (dx, dy) offsets from anchor centers for 5 keypoints.
-        
-        Actual output order from model (stride order: 8, 16, 32):
-        [score_8, score_16, score_32, bbox_8, bbox_16, bbox_32, kps_8, kps_16, kps_32]
+        Keypoint outputs are (dx, dy) offsets from anchor centers for 5 keypoints in stride units:
+        - kpx = anchor_cx + dx * stride
+        - kpy = anchor_cy + dy * stride
         """
         detections = []
         
@@ -480,27 +471,22 @@ class FaceDetector:
         input_width = self.contract.input_width    # 640 (from SCRFD contract)
         
         # Output order from model: scores (8,16,32), bboxes (8,16,32), keypoints (8,16,32)
-        # Indices: 0,1,2 = scores; 3,4,5 = bboxes; 6,7,8 = keypoints
-        # Level 0 = stride 8, Level 1 = stride 16, Level 2 = stride 32
         score_outputs = [outputs[0], outputs[1], outputs[2]]      # [score_8, score_16, score_32]
         bbox_outputs = [outputs[3], outputs[4], outputs[5]]       # [bbox_8, bbox_16, bbox_32]
         kps_outputs = [outputs[6], outputs[7], outputs[8]]        # [kps_8, kps_16, kps_32]
         strides = [8, 16, 32]
         
+        valid_x1 = pad_left
+        valid_y1 = pad_top
+        valid_x2 = input_width - pad_right
+        valid_y2 = input_height - pad_bottom
+
         # Process each feature map level (3 levels: stride 8, 16, 32)
         for level_idx in range(3):
             stride = strides[level_idx]
-            scores = score_outputs[level_idx]   # [num_anchors]
-            bboxes = bbox_outputs[level_idx]    # [num_anchors, 4] - (dx, dy, dw, dh)
-            keypoints = kps_outputs[level_idx]  # [num_anchors, 10] - 5 keypoints * (dx, dy)
-            
-            # Ensure correct shapes (squeeze if needed)
-            if scores.ndim > 1:
-                scores = scores.squeeze()
-            if bboxes.ndim > 2:
-                bboxes = bboxes.squeeze(0)
-            if keypoints.ndim > 2:
-                keypoints = keypoints.squeeze(0)
+            scores = score_outputs[level_idx].reshape(-1)
+            bboxes = bbox_outputs[level_idx].reshape(-1, 4)
+            keypoints = kps_outputs[level_idx].reshape(-1, 5, 2)
             
             num_anchors = scores.shape[0]
             
@@ -508,14 +494,9 @@ class FaceDetector:
             anchors, anchor_scales = self._generate_anchors(stride, input_height, input_width)
             
             if anchors.shape[0] != num_anchors:
-                # Handle case where model output doesn't match expected anchor count
-                # This can happen with dynamic shapes - truncate or pad
                 if anchors.shape[0] > num_anchors:
                     anchors = anchors[:num_anchors]
                     anchor_scales = anchor_scales[:num_anchors]
-                else:
-                    # Pad anchors (shouldn't happen in practice)
-                    pass
             
             # Process each anchor at this level
             for i in range(num_anchors):
@@ -524,45 +505,39 @@ class FaceDetector:
                 if confidence < self.confidence_threshold:
                     continue
                 
-                # Get anchor center and scale
                 anchor_cx, anchor_cy = anchors[i]
-                anchor_scale = anchor_scales[i]
                 
-                # Decode bbox: (dx, dy, dw, dh) -> (x1, y1, x2, y2)
-                dx, dy, dw, dh = bboxes[i]
+                # Decode bbox: in SCRFD 10G, bboxes are distance offsets (dl, dt, dr, db)
+                dl, dt, dr, db = bboxes[i]
                 
-                # Decode center and size
-                cx = anchor_cx + dx * stride
-                cy = anchor_cy + dy * stride
-                w = np.exp(dw) * anchor_scale
-                h = np.exp(dh) * anchor_scale
+                x1 = anchor_cx - dl * stride
+                y1 = anchor_cy - dt * stride
+                x2 = anchor_cx + dr * stride
+                y2 = anchor_cy + db * stride
                 
-                # Convert to (x1, y1, x2, y2) in model input space
-                x1 = cx - w / 2
-                y1 = cy - h / 2
-                x2 = cx + w / 2
-                y2 = cy + h / 2
+                # Filter out detections whose center is outside valid region
+                center_x = (x1 + x2) / 2.0
+                center_y = (y1 + y2) / 2.0
+                if center_x < valid_x1 or center_x > valid_x2 or center_y < valid_y1 or center_y > valid_y2:
+                    continue
                 
-                bbox_model = np.array([x1, y1, x2, y2], dtype=np.float32)
+                # Clamp bbox to valid region in model input space
+                x1_c = max(valid_x1, min(valid_x2, x1))
+                y1_c = max(valid_y1, min(valid_y2, y1))
+                x2_c = max(valid_x1, min(valid_x2, x2))
+                y2_c = max(valid_y1, min(valid_y2, y2))
+                
+                if x2_c <= x1_c or y2_c <= y1_c:
+                    continue
+                
+                bbox_model = np.array([x1_c, y1_c, x2_c, y2_c], dtype=np.float32)
                 
                 # Decode keypoints: 5 keypoints * (dx, dy) offsets from anchor center
-                kps_model = keypoints[i].reshape(5, 2)
+                kps_model = keypoints[i].copy()
                 for kp_idx in range(5):
                     kp_dx, kp_dy = kps_model[kp_idx]
                     kps_model[kp_idx, 0] = anchor_cx + kp_dx * stride
                     kps_model[kp_idx, 1] = anchor_cy + kp_dy * stride
-                
-                # Filter out detections in padded regions
-                # Check if bbox (in model input space) is fully within valid (non-padded) region
-                # Valid region in model input space: x=[pad_left, input_width-pad_right], y=[pad_top, input_height-pad_bottom]
-                valid_x1 = pad_left
-                valid_y1 = pad_top
-                valid_x2 = input_width - pad_right
-                valid_y2 = input_height - pad_bottom
-                
-                # Check bbox is fully within valid region
-                if x1 < valid_x1 or x2 > valid_x2 or y1 < valid_y1 or y2 > valid_y2:
-                    continue  # Skip detections that extend into padded regions
                 
                 # Convert from model input space to original frame space
                 bbox_original = self._convert_bbox_model_to_original(

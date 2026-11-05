@@ -68,6 +68,7 @@ class TrackRef:
     """Reference to a camera-local track."""
     camera_id: str
     local_track_id: str
+    global_person_id: str
     identity_state: IdentityState
     face_similarity: float
     body_similarity: float

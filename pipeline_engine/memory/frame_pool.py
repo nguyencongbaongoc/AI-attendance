@@ -150,11 +150,22 @@ class FramePool:
                 # Try to reclaim oldest completed frame
                 frame = self._try_reclaim()
                 if frame is None:
-                    self.stats.allocation_failures += 1
-                    raise RuntimeError(
-                        f"FramePool({self.camera_id}): exhausted, "
-                        f"max_size={self.config.max_size} reached"
-                    )
+                    # Bounded ring-buffer recycling: recycle oldest unpinned/stale frame to prevent OOM
+                    if self._in_use:
+                        oldest_gfid, oldest_frame = next(iter(self._in_use.items()))
+                        del self._in_use[oldest_gfid]
+                        self.stats.current_in_use -= 1
+                        logger.warning(
+                            f"FramePool({self.camera_id}): Ring buffer backpressure recycling oldest frame {oldest_gfid} "
+                            f"(status={oldest_frame.status.value}, ref_count={oldest_frame.ref_count}) to prevent OOM"
+                        )
+                        frame = oldest_frame
+                    else:
+                        self.stats.allocation_failures += 1
+                        raise RuntimeError(
+                            f"FramePool({self.camera_id}): exhausted, "
+                            f"max_size={self.config.max_size} reached"
+                        )
             
             # Initialize frame for new use
             frame.frame_id = frame_id

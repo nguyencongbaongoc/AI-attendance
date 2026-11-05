@@ -77,7 +77,20 @@ async def init_database() -> None:
             url,
             echo=False,
             poolclass=NullPool,
+            connect_args={"check_same_thread": False} if "sqlite" in url else {},
         )
+        
+        # Enforce WAL mode for SQLite to handle concurrent read/write
+        if "sqlite" in url:
+            from sqlalchemy import event
+            
+            @event.listens_for(_engine.sync_engine, "connect")
+            def set_sqlite_pragma(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL;")
+                cursor.execute("PRAGMA synchronous=NORMAL;")
+                cursor.execute("PRAGMA busy_timeout=5000;")
+                cursor.close()
     
     _session_factory = async_sessionmaker(
         _engine,

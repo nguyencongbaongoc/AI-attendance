@@ -94,7 +94,9 @@ class SCRFDDetector:
         model_path: str,
         config: Optional[SCRFDConfig] = None,
         device_id: int = 0,
+        cuda_stream: Optional[torch.cuda.Stream] = None,
     ):
+        self.cuda_stream = cuda_stream
         self.scrfd_config = config or SCRFDConfig()
         self.device_id = device_id
         self.device = f'cuda:{device_id}'
@@ -170,7 +172,7 @@ class SCRFDDetector:
     def _initialize_tensorrt(self) -> bool:
         """Initialize TensorRT executor for .engine file."""
         try:
-            self._trt_executor = create_tensorrt_executor(self._model_path, self.device_id)
+            self._trt_executor = create_tensorrt_executor(self._model_path, self.device_id, self.cuda_stream)
             if not self._trt_executor.initialize():
                 return False
             
@@ -266,10 +268,19 @@ class SCRFDDetector:
         if not self._initialized:
             raise RuntimeError("SCRFDDetector not initialized")
         
-        if self._use_tensorrt:
-            return self._infer_tensorrt(input_tensor)
+        # Run inference within the camera's CUDA stream if provided
+        stream = getattr(self, "cuda_stream", None)
+        if stream is not None:
+            with torch.cuda.stream(stream):
+                if self._use_tensorrt:
+                    return self._infer_tensorrt(input_tensor)
+                else:
+                    return self._infer_onnx(input_tensor)
         else:
-            return self._infer_onnx(input_tensor)
+            if self._use_tensorrt:
+                return self._infer_tensorrt(input_tensor)
+            else:
+                return self._infer_onnx(input_tensor)
     
     def _infer_tensorrt(self, input_tensor: torch.Tensor) -> Dict[str, torch.Tensor]:
         """Run inference with TensorRT engine."""
@@ -323,7 +334,15 @@ class SCRFDDetector:
         # Run inference
         start = time.perf_counter()
         self._session.run_with_iobinding(self._io_binding)
-        torch.cuda.synchronize(self.device_id)
+        
+        # CRITICAL: Synchronize stream BEFORE returning output tensors
+        # Prevents CPU from reading outputs while GPU is still writing
+        stream = getattr(self, "cuda_stream", None)
+        if stream is not None:
+            stream.synchronize()
+        else:
+            torch.cuda.synchronize(self.device_id)
+            
         inference_ms = (time.perf_counter() - start) * 1000
         
         # Update stats
@@ -437,25 +456,27 @@ class SCRFDDetector:
                 idx = idx.item()
                 confidence = float(max_scores[idx])
                 
-                # Decode bbox
+                # Decode bbox: in SCRFD 10G, bboxes are distance offsets (dl, dt, dr, db)
                 anchor_cx, anchor_cy = anchors[idx]
-                anchor_scale = anchor_scales[idx]
                 
-                dx, dy, dw, dh = bbox_tensor[0, idx]
+                dl, dt, dr, db = bbox_tensor[0, idx]
                 
-                cx = anchor_cx + dx * stride
-                cy = anchor_cy + dy * stride
-                w = torch.exp(dw) * anchor_scale
-                h = torch.exp(dh) * anchor_scale
+                x1 = anchor_cx - dl * stride
+                y1 = anchor_cy - dt * stride
+                x2 = anchor_cx + dr * stride
+                y2 = anchor_cy + db * stride
                 
-                # Bbox in model input space
-                x1 = cx - w / 2
-                y1 = cy - h / 2
-                x2 = cx + w / 2
-                y2 = cy + h / 2
+                # Check if center is in valid (non-padded) region
+                center_x = (x1 + x2) / 2.0
+                center_y = (y1 + y2) / 2.0
+                if center_x < valid_x1 or center_x > valid_x2 or center_y < valid_y1 or center_y > valid_y2:
+                    continue
                 
-                # Check if in valid (non-padded) region
-                if x1 < valid_x1 or x2 > valid_x2 or y1 < valid_y1 or y2 > valid_y2:
+                x1 = torch.clamp(x1, min=valid_x1, max=valid_x2)
+                y1 = torch.clamp(y1, min=valid_y1, max=valid_y2)
+                x2 = torch.clamp(x2, min=valid_x1, max=valid_x2)
+                y2 = torch.clamp(y2, min=valid_y1, max=valid_y2)
+                if x2 <= x1 or y2 <= y1:
                     continue
                 
                 # Convert to original frame coordinates

@@ -213,7 +213,7 @@ class AttendanceConnectionManager:
     async def send_personal_message(self, message: Dict[str, Any], websocket: WebSocket):
         """Send a message to a specific WebSocket."""
         try:
-            await websocket.send_text(json.dumps(message))
+            await websocket.send_text(json.dumps(message, default=str))
         except Exception as e:
             logger.warning(f"Failed to send message to WebSocket: {e}")
             # Find and disconnect the connection
@@ -230,7 +230,7 @@ class AttendanceConnectionManager:
         self._event_sequence += 1
         message["seq"] = self._event_sequence
         message["timestamp"] = message.get("timestamp", datetime.utcnow().isoformat() + "Z")
-        message_text = json.dumps(message)
+        message_text = json.dumps(message, default=str)
         disconnected = set()
         
         for connection_id, state in self.active_connections.items():

@@ -1,0 +1,19 @@
+2026/10/18 22:19:55 INF MediaMTX v1.21.2, windows, amd64
+2026/10/18 22:19:55 INF configuration loaded from C:\Users\Nguyen Cong Thong\Documents\AI_ATTENDANCE_LAST_KNOWN_GOOD_PRE_NVENC_cb34db0a_SOURCE\mediamtx\mediamtx.yml
+2026/10/18 22:19:55 INF [RTSP] started with listeners on :8554 (TCP/RTSP), :8000 (UDP/RTP), :8001 (UDP/RTCP)
+2026/10/18 22:19:55 INF [RTMP] started with listener on :1935 (TCP/RTMP)
+2026/10/18 22:19:55 INF [HLS] started with listener on :8888 (TCP/HTTP)
+2026/10/18 22:19:55 INF [WebRTC] started with listeners on :8889 (TCP/HTTP), :8189 (UDP/ICE)
+2026/10/18 22:19:55 INF [SRT] started with listener on :8890 (UDP/SRT)
+2026/10/18 22:19:55 INF [MoQ] started with listeners on :8892 (TCP/HTTP2), :8892 (UDP/HTTP3), :8893 (UDP/QUIC)
+2026/10/18 22:19:55 INF [API] started with listener on 127.0.0.1:9997 (TCP/HTTP)
+2026/10/18 22:19:56 INF [RTMP] [conn 100.100.43.107:61013] opened
+2026/10/18 22:19:58 INF [RTMP] [conn 100.69.197.126:61582] opened
+2026/10/18 22:19:58 INF [path live/cam1] stream is available and online, 2 tracks (H264, MPEG-4 Audio)
+2026/10/18 22:19:58 INF [RTMP] [conn 100.100.43.107:61013] is publishing to path 'live/cam1'
+2026/10/18 22:19:58 INF [HLS] [muxer live/cam1] created automatically
+2026/10/18 22:19:58 INF [HLS] [muxer live/cam1] is converting into HLS, 2 tracks (H264, MPEG-4 Audio)
+2026/10/18 22:19:59 INF [path live/cam2] stream is available and online, 2 tracks (H264, MPEG-4 Audio)
+2026/10/18 22:19:59 INF [RTMP] [conn 100.69.197.126:61582] is publishing to path 'live/cam2'
+2026/10/18 22:19:59 INF [HLS] [muxer live/cam2] created automatically
+2026/10/18 22:19:59 INF [HLS] [muxer live/cam2] is converting into HLS, 2 tracks (MPEG-4 Audio, H264)

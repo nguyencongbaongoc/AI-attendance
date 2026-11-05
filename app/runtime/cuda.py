@@ -22,6 +22,7 @@ but clearly labels it as a non-production artifact.
 from __future__ import annotations
 
 import os
+import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -34,36 +35,50 @@ from app.errors import DependencyError
 # Set up CUDA DLL search path BEFORE any onnxruntime import
 # This must happen at module load time to ensure cuDNN DLLs are found
 print("[app.runtime.cuda] Setting up CUDA DLL search path...")
-try:
-    import torch
-    torch_lib = os.path.join(os.path.dirname(torch.__file__), 'lib')
-    print(f"[app.runtime.cuda] Torch lib: {torch_lib}")
-    if os.path.exists(torch_lib):
-        os.environ['PATH'] = torch_lib + ';' + os.environ['PATH']
-        os.add_dll_directory(torch_lib)
-        print(f"[app.runtime.cuda] Added {torch_lib} to PATH and DLL directories")
-except (ImportError, AttributeError) as e:
-    print(f"[app.runtime.cuda] Failed to set up CUDA path: {e}")
-    pass
 
-# Also add NVIDIA pip package DLL directories (nvidia-cuda-runtime, nvidia-cudnn-cu13)
-try:
-    # Find NVIDIA package directories
-    import site
-    for site_path in site.getsitepackages():
-        nvidia_cuda_bin = os.path.join(site_path, 'nvidia', 'cu13', 'bin', 'x86_64')
-        nvidia_cudnn_bin = os.path.join(site_path, 'nvidia', 'cudnn', 'bin')
-        if os.path.exists(nvidia_cuda_bin):
-            os.environ['PATH'] = nvidia_cuda_bin + ';' + os.environ['PATH']
-            os.add_dll_directory(nvidia_cuda_bin)
-            print(f"[app.runtime.cuda] Added NVIDIA CUDA bin: {nvidia_cuda_bin}")
-        if os.path.exists(nvidia_cudnn_bin):
-            os.environ['PATH'] = nvidia_cudnn_bin + ';' + os.environ['PATH']
-            os.add_dll_directory(nvidia_cudnn_bin)
-            print(f"[app.runtime.cuda] Added NVIDIA cuDNN bin: {nvidia_cudnn_bin}")
-except (ImportError, AttributeError, OSError) as e:
-    print(f"[app.runtime.cuda] Failed to set up NVIDIA package paths: {e}")
-    pass
+def setup_cuda_dlls():
+    try:
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        venv_site = Path(sys.executable).parent.parent / "Lib" / "site-packages"
+        if not venv_site.exists():
+            venv_site = Path(sys.executable).parent / "Lib" / "site-packages"
+
+        # Explicitly target TensorRT bin/lib folders along with torch and nvidia packages
+        extra_dirs = [
+            repo_root / "TensorRT-11.3.0.99" / "bin",
+            repo_root / "TensorRT-11.3.0.99" / "lib",
+            repo_root / ".venv2" / "Lib" / "site-packages" / "tensorrt_libs",
+            repo_root / ".venv2" / "Lib" / "site-packages" / "torch" / "lib",
+            venv_site / "tensorrt_libs",
+            venv_site / "tensorrt",
+            venv_site / "torch" / "lib",
+        ]
+        
+        # Automatically scan all nvidia packages inside site-packages (cudnn, cublas, cu13, etc.)
+        nvidia_dirs = [venv_site / "nvidia", repo_root / ".venv2" / "Lib" / "site-packages" / "nvidia"]
+        for nvidia_dir in nvidia_dirs:
+            if nvidia_dir.exists():
+                for sub in nvidia_dir.iterdir():
+                    if sub.is_dir():
+                        bin_path = sub / "bin"
+                        if bin_path.exists():
+                            extra_dirs.append(bin_path)
+                        bin_arch = sub / "bin" / "x86_64"
+                        if bin_arch.exists():
+                            extra_dirs.append(bin_arch)
+
+        for d in extra_dirs:
+            if d.exists():
+                try:
+                    os.add_dll_directory(str(d))
+                    os.environ["PATH"] = str(d) + os.pathsep + os.environ.get("PATH", "")
+                except Exception:
+                    pass
+        print("[app.runtime.cuda] CUDA & TensorRT DLL search paths registered successfully.")
+    except Exception as e:
+        print(f"[app.runtime.cuda] Warning during DLL setup: {e}")
+
+setup_cuda_dlls()
 
 
 @dataclass(frozen=True)

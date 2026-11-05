@@ -322,7 +322,19 @@ class DiskWatchdog:
         retention_service: Optional[RetentionService] = None,
         purge_callback: Optional[Callable[[float], None]] = None,
     ):
-        self.watch_path = Path(watch_path).resolve()
+        # Resolve watch_path to actual data volume - use recordings directory anchor if path is "."
+        if watch_path == ".":
+            # Find the actual data volume from settings
+            try:
+                from app.config.settings import load_settings
+                settings = load_settings()
+                recordings_dir = Path(settings.paths.recordings_dir).resolve()
+                self.watch_path = recordings_dir.anchor  # Watches the actual drive letter (e.g., C:\\)
+            except Exception:
+                self.watch_path = Path(".").resolve()
+        else:
+            self.watch_path = Path(watch_path).resolve()
+            
         self.check_interval_seconds = check_interval_seconds
         self.warning_threshold_pct = warning_threshold_pct
         self.emergency_threshold_pct = emergency_threshold_pct
