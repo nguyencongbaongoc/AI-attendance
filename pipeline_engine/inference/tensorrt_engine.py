@@ -273,8 +273,8 @@ class TensorRTExecutor:
                 self._inference_count += 1
                 self._total_inference_time += inference_ms
                 
-                # Return output tensors (already populated)
-                return self._output_tensors.copy()
+                # Return cloned output tensors to prevent aliasing issues
+                return {k: v.clone() if hasattr(v, 'clone') else v.copy() for k, v in self._output_tensors.items()}
                 
             except Exception as e:
                 self._last_error = str(e)
@@ -324,11 +324,28 @@ class TensorRTExecutor:
         
         TensorRT Python bindings use reference counting - clearing references
         allows garbage collection to free the underlying C++ objects.
+        Explicitly call destroy() on context, engine, and runtime to ensure
+        proper cleanup of CUDA resources.
         """
         with self._lock:
-            self._context = None
-            self._engine = None
-            self._runtime = None
+            if self._context:
+                try:
+                    self._context.destroy()
+                except Exception:
+                    pass
+                self._context = None
+            if self._engine:
+                try:
+                    self._engine.destroy()
+                except Exception:
+                    pass
+                self._engine = None
+            if self._runtime:
+                try:
+                    self._runtime.destroy()
+                except Exception:
+                    pass
+                self._runtime = None
             self._stream = None
             self._output_tensors.clear()
             self._initialized = False

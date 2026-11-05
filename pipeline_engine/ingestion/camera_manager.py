@@ -10,6 +10,8 @@ import logging
 import threading
 import time
 import concurrent.futures
+import asyncio
+import aiohttp
 from queue import Empty
 from dataclasses import dataclass, field
 from typing import Optional, Dict, List, Any, Iterator
@@ -164,6 +166,10 @@ class CameraManager:
             "total_frames": 0,
             "total_events": 0,
         }
+        
+        # Non-blocking metadata dispatch queue
+        self._metadata_queue = asyncio.Queue(maxsize=120)
+        self._dispatcher_task = None
     
     def initialize(self) -> bool:
         """Initialize camera manager and all configured cameras."""
@@ -197,6 +203,14 @@ class CameraManager:
                 self._running = True
                 self._start_time = time.time()
                 self._global_metrics["total_cameras"] = len(self._cameras)
+                
+                # Start metadata dispatcher background task
+                try:
+                    loop = asyncio.get_running_loop()
+                    self._dispatcher_task = loop.create_task(self._metadata_dispatcher_worker())
+                except RuntimeError:
+                    # No running loop - will start when cameras start
+                    pass
                 
                 logger.info(f"CameraManager: Initialized {len(self._cameras)} cameras")
                 return True
@@ -345,6 +359,11 @@ class CameraManager:
             if self._vram_monitor:
                 self._vram_monitor.stop()
                 self._vram_monitor = None
+            
+            # Stop metadata dispatcher
+            if self._dispatcher_task:
+                self._dispatcher_task.cancel()
+                self._dispatcher_task = None
             
             # Close persistent HTTP session
             try:
@@ -1081,32 +1100,38 @@ class CameraManager:
             "uptime_seconds": time.time() - self._start_time if self._start_time else 0,
         })
 
-    # ========== ASYNC METADATA DISPATCH ==========
+    # ========== ASYNC METADATA DISPATCH (NON-BLOCKING) ==========
     
     def _dispatch_metadata(self, payload: dict) -> None:
-        """Non-blocking metadata dispatch using thread-safe asyncio."""
-        loop = getattr(self, '_async_loop', None)
-        if loop and loop.is_running():
-            try:
-                asyncio.run_coroutine_threadsafe(self._async_post_metadata(payload), loop)
-            except Exception as e:
-                logger.debug(f"Metadata dispatch failed: {e}")
-
-    async def _async_post_metadata(self, payload: dict) -> None:
-        """Async HTTP POST with short timeout - fire and forget.
+        """Non-blocking metadata dispatch using asyncio queue.
         
-        Uses persistent HTTP session with connection pooling for efficiency.
+        Puts payload in queue immediately - never blocks the AI pipeline.
+        A background worker handles actual HTTP delivery.
         """
         try:
-            session = await _get_http_session()
-            async with session.post(
-                "http://127.0.0.1:8000/api/v1/stream/metadata/ingest",
-                json=payload,
-                timeout=aiohttp.ClientTimeout(total=0.03)
-            ) as resp:
-                pass  # Non-blocking - drop on backpressure
-        except Exception:
-            pass  # Silent drop - never blocks AI pipeline
+            self._metadata_queue.put_nowait(payload)
+        except asyncio.QueueFull:
+            # Drop frame if backend is backed up - NEVER block the AI loop
+            pass
+
+    async def _metadata_dispatcher_worker(self) -> None:
+        """Background worker that drains the metadata queue and posts to HTTP endpoint."""
+        session = await _get_http_session()
+        while self._running:
+            try:
+                payload = await self._metadata_queue.get()
+                try:
+                    await session.post(
+                        "http://127.0.0.1:8000/api/v1/stream/metadata/ingest",
+                        json=payload,
+                        timeout=aiohttp.ClientTimeout(total=0.04)
+                    )
+                except Exception:
+                    pass  # Silent drop - never blocks
+                finally:
+                    self._metadata_queue.task_done()
+            except Exception:
+                await asyncio.sleep(0.01)  # Brief pause on error
     
     def is_camera_healthy(self, camera_id: str) -> bool:
         """Check if camera is healthy."""

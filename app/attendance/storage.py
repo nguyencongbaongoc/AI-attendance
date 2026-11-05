@@ -18,10 +18,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from pydantic import Field
 from app.attendance.contract import AttendanceRecord, validate_attendance_record
 
-# Shared connection for SQLite WAL mode
-_global_connection: Optional[sqlite3.Connection] = None
-_global_connection_lock = threading.Lock()
-
 
 def _get_attendance_db_path() -> Path:
     """Get the canonical attendance database path.
@@ -188,34 +184,32 @@ class AttendanceStorage:
         self._init_database()
     
     def _get_connection(self) -> sqlite3.Connection:
-        """Get shared database connection with WAL mode enabled.
+        """Get thread-local database connection with WAL mode enabled.
         
-        Uses a single global connection with check_same_thread=False to allow
-        concurrent access from multiple threads while maintaining WAL mode.
+        Each thread gets its own connection to avoid contention and corruption
+        while still benefiting from WAL mode for concurrent reads/writes.
         """
-        global _global_connection
-        with _global_connection_lock:
-            if _global_connection is None:
-                db_path = Path(self.config.database_path)
-                db_path.parent.mkdir(parents=True, exist_ok=True)
-                
-                conn = sqlite3.connect(
-                    str(db_path),
-                    check_same_thread=False,
-                    timeout=self.config.busy_timeout_ms / 1000.0,
-                )
-                conn.row_factory = sqlite3.Row
-                
-                if self.config.enable_wal:
-                    conn.execute("PRAGMA journal_mode=WAL;")
-                if self.config.foreign_keys:
-                    conn.execute("PRAGMA foreign_keys=ON;")
-                conn.execute(f"PRAGMA busy_timeout={self.config.busy_timeout_ms};")
-                conn.execute("PRAGMA synchronous=NORMAL;")
-                
-                _global_connection = conn
+        if not hasattr(self._local, 'conn') or self._local.conn is None:
+            db_path = Path(self.config.database_path)
+            db_path.parent.mkdir(parents=True, exist_ok=True)
             
-            return _global_connection
+            conn = sqlite3.connect(
+                str(db_path),
+                check_same_thread=False,
+                timeout=self.config.busy_timeout_ms / 1000.0,
+            )
+            conn.row_factory = sqlite3.Row
+            
+            if self.config.enable_wal:
+                conn.execute("PRAGMA journal_mode=WAL;")
+            if self.config.foreign_keys:
+                conn.execute("PRAGMA foreign_keys=ON;")
+            conn.execute(f"PRAGMA busy_timeout={self.config.busy_timeout_ms};")
+            conn.execute("PRAGMA synchronous=NORMAL;")
+            
+            self._local.conn = conn
+        
+        return self._local.conn
     
     def _init_database(self) -> None:
         """Initialize database schema."""
@@ -261,15 +255,13 @@ class AttendanceStorage:
             cursor.close()
     
     def close(self) -> None:
-        """Close the database connection.
-        
-        Note: With global connection, we don't actually close it here
-        as it's shared across all instances. The connection will be
-        closed when the application shuts down.
-        """
-        # With global shared connection, we don't close per-instance
-        # The global connection cleanup should happen at app shutdown
-        pass
+        """Close the thread-local database connection."""
+        if hasattr(self._local, 'conn') and self._local.conn is not None:
+            try:
+                self._local.conn.close()
+            except Exception:
+                pass
+            self._local.conn = None
     
     def __enter__(self) -> "AttendanceStorage":
         return self
@@ -292,6 +284,57 @@ class AttendanceStorage:
         conn = self._get_connection()
         with self._transaction(conn) as cursor:
             try:
+                # DEBUG: Build parameter tuple
+                params = (
+                    record.attendance_record_id,
+                    record.identity_certainty.value if hasattr(record.identity_certainty, 'value') else record.identity_certainty,
+                    record.identity_candidate,
+                    record.identity_confidence,
+                    record.identity_evidence_ref,
+                    record.face_evidence_ref,
+                    record.body_evidence_ref,
+                    record.face_quality,
+                    record.body_quality,
+                    record.association_method,
+                    record.conflict_flag,
+                    record.provisional_person_id,
+                    record.identity_state,
+                    record.direction.value if hasattr(record.direction, 'value') else record.direction,
+                    record.event_timestamp,
+                    record.event_frame_index,
+                    record.camera_id,
+                    record.local_track_id,
+                    record.global_observation_id,
+                    record.source_raw_event_id,
+                    record.source_resolution_id,
+                    record.source_crossing_event_id,
+                    record.geometry_version,
+                    record.geometry_config_hash,
+                    record.resolver_version,
+                    record.resolver_config_hash,
+                    record.previous_state,
+                    record.new_state,
+                    record.stream_epoch,
+                    record.pts,
+                    record.time_base.numerator,
+                    record.time_base.denominator,
+                    record.capture_timestamp,
+                    record.processing_timestamp,
+                    record.model_version,
+                    record.enrollment_version,
+                    record.attendance_schema_version,
+                    record.created_at,
+                    record.persisted_at,
+                    # Phase 17: Evidence storage URIs
+                    record.snapshot_face_url,
+                    record.snapshot_scene_url,
+                    record.video_clip_url,
+                )
+                # DEBUG: Log parameter count
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.debug(f"Inserting record with {len(params)} parameters")
+                
                 cursor.execute("""
                     INSERT INTO attendance_records (
                         attendance_record_id,
@@ -337,52 +380,9 @@ class AttendanceStorage:
                         snapshot_face_url,
                         snapshot_scene_url,
                         video_clip_url
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    record.attendance_record_id,
-                    record.identity_certainty.value if hasattr(record.identity_certainty, 'value') else record.identity_certainty,
-                    record.identity_candidate,
-                    record.identity_confidence,
-                    record.identity_evidence_ref,
-                    record.face_evidence_ref,
-                    record.body_evidence_ref,
-                    record.face_quality,
-                    record.body_quality,
-                    record.association_method,
-                    record.conflict_flag,
-                    record.provisional_person_id,
-                    record.identity_state,
-                    record.direction.value if hasattr(record.direction, 'value') else record.direction,
-                    record.event_timestamp,
-                    record.event_frame_index,
-                    record.camera_id,
-                    record.local_track_id,
-                    record.global_observation_id,
-                    record.source_raw_event_id,
-                    record.source_resolution_id,
-                    record.source_crossing_event_id,
-                    record.geometry_version,
-                    record.geometry_config_hash,
-                    record.resolver_version,
-                    record.resolver_config_hash,
-record.previous_state,
-                    record.new_state,
-                    record.stream_epoch,
-                    record.pts,
-                    record.time_base.numerator,
-                    record.time_base.denominator,
-                    record.capture_timestamp,
-                    record.processing_timestamp,
-                    record.model_version,
-                    record.enrollment_version,
-                    record.attendance_schema_version,
-                    record.created_at,
-                    record.persisted_at,
-                    # Phase 17: Evidence storage URIs
-                    record.snapshot_face_url,
-                    record.snapshot_scene_url,
-                    record.video_clip_url,
-                ))
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, params)
+                logger.debug(f"Inserted {len(params)} values successfully")
                 return True
             except sqlite3.IntegrityError as e:
                 if "UNIQUE constraint failed: attendance_records.source_resolution_id" in str(e):
@@ -923,21 +923,6 @@ record.attendance_schema_version,
             conn.backup(backup_conn)
         finally:
             backup_conn.close()
-
-
-def close_global_connection() -> None:
-    """Close the global shared database connection.
-    
-    Should be called at application shutdown.
-    """
-    global _global_connection
-    with _global_connection_lock:
-        if _global_connection is not None:
-            try:
-                _global_connection.close()
-            except Exception:
-                pass
-            _global_connection = None
 
 
 def create_attendance_storage(config: Optional[StorageConfig] = None) -> AttendanceStorage:

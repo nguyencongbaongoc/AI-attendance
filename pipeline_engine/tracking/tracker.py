@@ -130,6 +130,32 @@ class Track:
     def is_identified(self) -> bool:
         return self.person_id is not None and self.identity_confidence > 0.5
 
+    def is_stationary(self) -> bool:
+        """Check if track represents a stationary person (e.g., sitting at desk).
+        
+        A track is considered stationary if:
+        - Age > 30 frames (established track)
+        - Missed frames == 0 (consistently detected)
+        - Low velocity between consecutive frames
+        """
+        if self.age < 30 or self.missed_frames > 0:
+            return False
+        # Check if we have enough history to compute velocity
+        if not hasattr(self, '_prev_center') or self._prev_center is None:
+            return False
+        
+        current_center = self.center
+        dx = current_center[0] - self._prev_center[0]
+        dy = current_center[1] - self._prev_center[1]
+        velocity = np.sqrt(dx*dx + dy*dy)
+        
+        # Stationary if velocity < 5 pixels/frame (approx < 150 pixels/sec at 30 FPS)
+        return velocity < 5.0
+
+    def _update_stationary_check(self) -> None:
+        """Update stationary tracking state."""
+        self._prev_center = self.center
+
     def to_tlbr(self) -> np.ndarray:
         """Return bounding box in TLBR format."""
         return np.array(self.bbox_original_frame)
@@ -198,28 +224,36 @@ class TrackingResult:
         return [t for t in self.tracks if t.is_identified]
 
 
-def _to_pixel_coords(
-    bbox: Tuple[float, float, float, float],
-    frame_w: float,
-    frame_h: float
-) -> Tuple[float, float, float, float]:
-    """Convert normalized coordinates [0,1] to pixel coordinates if needed."""
-    x1, y1, x2, y2 = bbox[:4]
-    if max(x1, y1, x2, y2) <= 1.01:
-        return (x1 * frame_w, y1 * frame_h, x2 * frame_w, y2 * frame_h)
-    return (x1, y1, x2, y2)
-
-
 def compute_iou(
     bbox1: Tuple[float, float, float, float],
     bbox2: Tuple[float, float, float, float],
     frame_w: float = 3840.0,
     frame_h: float = 2160.0
 ) -> float:
-    """Compute Intersection over Union of two bboxes in pixel coordinate space."""
-    # Denormalize if coordinates are in [0,1] range
-    x1_1, y1_1, x2_1, y2_1 = _to_pixel_coords(bbox1, frame_w, frame_h)
-    x1_2, y1_2, x2_2, y2_2 = _to_pixel_coords(bbox2, frame_w, frame_h)
+    """Compute Intersection over Union of two bboxes.
+    
+    Handles both normalized [0,1] and pixel coordinate spaces automatically.
+    If both bboxes have max coordinate <= 1.01, evaluates in unit space.
+    Otherwise denormalizes to pixel coordinates.
+    """
+    x1_1, y1_1, x2_1, y2_1 = bbox1[:4]
+    x1_2, y1_2, x2_2, y2_2 = bbox2[:4]
+    
+    # Detect coordinate space: if both boxes are normalized, compute in unit space
+    max_coord1 = max(x1_1, y1_1, x2_1, y2_1)
+    max_coord2 = max(x1_2, y1_2, x2_2, y2_2)
+    
+    if max_coord1 <= 1.01 and max_coord2 <= 1.01:
+        # Both normalized - compute directly in [0,1] space
+        scale_w = scale_h = 1.0
+    else:
+        # At least one in pixel space - denormalize both to pixel coordinates
+        scale_w = frame_w
+        scale_h = frame_h
+        if max_coord1 <= 1.01:
+            x1_1, y1_1, x2_1, y2_1 = x1_1 * frame_w, y1_1 * frame_h, x2_1 * frame_w, y2_1 * frame_h
+        if max_coord2 <= 1.01:
+            x1_2, y1_2, x2_2, y2_2 = x1_2 * frame_w, y1_2 * frame_h, x2_2 * frame_w, y2_2 * frame_h
     
     x1_i = max(x1_1, x1_2)
     y1_i = max(y1_1, y1_2)
@@ -229,9 +263,12 @@ def compute_iou(
     if x2_i <= x1_i or y2_i <= y1_i:
         return 0.0
     
-    intersection = (x2_i - x1_i) * (y2_i - y1_i)
-    area1 = (x2_1 - x1_1) * (y2_1 - y1_1)
-    area2 = (x2_2 - x1_2) * (y2_2 - y1_2)
+    inter_w = max(0.0, x2_i - x1_i)
+    inter_h = max(0.0, y2_i - y1_i)
+    intersection = inter_w * inter_h
+    
+    area1 = max(0.0, x2_1 - x1_1) * max(0.0, y2_1 - y1_1)
+    area2 = max(0.0, x2_2 - x1_2) * max(0.0, y2_2 - y1_2)
     union = area1 + area2 - intersection
     
     return intersection / union if union > 0 else 0.0
@@ -585,11 +622,19 @@ def update_tracks(
             global_person_id=global_person_id,
             identity_state=identity_state,
         )
+        updated_track._update_stationary_check()
         updated_tracks.append(updated_track)
     
     # Age unmatched tracks
     for track_idx in unmatched_track_indices:
         track = active_lost_tracks[track_idx]
+        
+        # Check if track is stationary (e.g., person sitting at desk)
+        # Grant 3x max_lost tolerance before transitioning to LOST/CLOSED
+        if track.is_stationary():
+            allowed_misses = config.max_lost_frames * 3
+        else:
+            allowed_misses = config.max_lost_frames
         
         aged_track = Track(
             track_id=track.track_id,
@@ -599,7 +644,7 @@ def update_tracks(
             bbox_original_frame=track.bbox_original_frame,
             confidence=track.confidence,
             lifecycle_state=(
-                TrackLifecycleState.LOST if track.missed_frames + 1 >= config.max_lost_frames 
+                TrackLifecycleState.LOST if track.missed_frames + 1 >= allowed_misses 
                 else TrackLifecycleState.ACTIVE
             ),
             age=track.age,
@@ -638,7 +683,7 @@ def update_tracks(
             identity_state=track.identity_state,
         )
         
-        if aged_track.missed_frames >= config.max_lost_frames:
+        if aged_track.missed_frames >= allowed_misses:
             aged_track.lifecycle_state = TrackLifecycleState.CLOSED
             newly_closed.append(aged_track)
         else:
@@ -732,6 +777,7 @@ def update_tracks(
             global_person_id=None,  # Will be assigned by GIS
             identity_state="unknown",
         )
+        new_track._update_stationary_check()
         new_tracks.append(new_track)
         updated_tracks.append(new_track)
     
