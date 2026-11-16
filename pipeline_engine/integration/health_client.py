@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class HealthClientConfig:
     """Configuration for health client."""
-    backend_base_url: str = "http://localhost:19146"
+    backend_base_url: str = "http://localhost:8000"
     worker_id: str = "pipeline_engine_1"
     worker_version: str = "1.0.0"
     api_key: Optional[str] = None
@@ -252,10 +252,10 @@ class LegacyBackendHealthClient:
                     "state": state.value if hasattr(state, 'value') else str(state),
                     "stream_epoch": self._stream_epochs.get(cam_id, 0),
                     "stream_connected": state == "RUNNING",
-                    "last_frame_timestamp": metrics.last_frame_timestamp if metrics else 0.0,
-                    "last_inference_timestamp": metrics.last_inference_timestamp if metrics else 0.0,
-                    "decode_fps": metrics.decode_fps if metrics else 0.0,
-                    "inference_fps": metrics.inference_fps if metrics else 0.0,
+                    "last_frame_timestamp": getattr(metrics, "last_frame_timestamp", time.time()) if metrics else 0.0,
+                    "last_inference_timestamp": getattr(metrics, "last_inference_timestamp", time.time()) if metrics else 0.0,
+                    "decode_fps": getattr(metrics, "decoded_fps", getattr(metrics, "decode_fps", 0.0)) if metrics else 0.0,
+                    "inference_fps": getattr(metrics, "ai_fps", getattr(metrics, "inference_fps", 0.0)) if metrics else 0.0,
                     "track_count": metrics.tracks_active if metrics else 0,
                 }
         except Exception as e:
@@ -277,11 +277,11 @@ class LegacyBackendHealthClient:
         
         # Check if models are loaded in the engine's inference modules
         try:
-            if hasattr(self.engine, 'scrfd') and self.engine.scrfd:
+            if getattr(self.engine, '_shared_scrfd', None) or getattr(self.engine, 'scrfd', None):
                 readiness["scrfd"] = True
-            if hasattr(self.engine, 'arcface') and self.engine.arcface:
+            if getattr(self.engine, '_shared_arcface', None) or getattr(self.engine, 'arcface', None):
                 readiness["arcface"] = True
-            if hasattr(self.engine, 'yolo') and self.engine.yolo:
+            if getattr(self.engine, '_shared_yolo', None) or getattr(self.engine, 'yolo', None):
                 readiness["yolo"] = True
         except Exception:
             pass

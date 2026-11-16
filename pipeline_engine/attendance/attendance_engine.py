@@ -7,6 +7,8 @@ Integrates with tracker to generate attendance events from track trajectories.
 from __future__ import annotations
 
 import logging
+import math
+import threading
 import uuid
 import time
 import json
@@ -96,6 +98,17 @@ class CrossingEvent:
     # NEW: GIS fields (P3.11)
     global_person_id: Optional[str] = None
     identity_state: str = "unknown"
+
+    def __post_init__(self) -> None:
+        self.camera_id = str(self.camera_id).lower().strip()
+
+    @property
+    def identity_candidate(self) -> Optional[str]:
+        return self.person_name or self.person_id
+
+    @property
+    def frame_sequence(self) -> int:
+        return self.frame_index
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -107,10 +120,12 @@ class CrossingEvent:
             "crossing_point": self.crossing_point,
             "timestamp": self.timestamp,
             "frame_index": self.frame_index,
+            "frame_sequence": self.frame_index,
             "previous_position": self.previous_position,
             "current_position": self.current_position,
             "person_id": self.person_id,
             "person_name": self.person_name,
+            "identity_candidate": self.identity_candidate,
             "identity_confidence": self.identity_confidence,
             # NEW: GIS fields
             "global_person_id": self.global_person_id,
@@ -137,63 +152,90 @@ class CameraAttendanceConfig:
 
 
 class AttendanceStore:
-    """SQLite-based attendance event store."""
+    """SQLite-based attendance event store with WAL concurrency & write locking."""
     
     def __init__(self, db_path: str = "data/attendance_events.db"):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.RLock()
         self._init_db()
+
+    def _connect(self) -> sqlite3.Connection:
+        """Open a thread-safe SQLite connection configured with WAL mode and busy timeout."""
+        conn = sqlite3.connect(
+            str(self.db_path),
+            timeout=30.0,
+            check_same_thread=False,
+        )
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
+        conn.execute("PRAGMA busy_timeout=30000;")
+        return conn
+
+    def _run_with_retry(self, fn):
+        """Serialize SQLite access and retry briefly on transient lock contention."""
+        with self._lock:
+            for attempt in range(5):
+                try:
+                    return fn()
+                except sqlite3.OperationalError as e:
+                    if "locked" in str(e).lower() and attempt < 4:
+                        time.sleep(0.02 * (attempt + 1))
+                        continue
+                    raise
     
     def _init_db(self) -> None:
         """Initialize database schema."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS attendance_events (
-                    event_id TEXT PRIMARY KEY,
-                    camera_id TEXT NOT NULL,
-                    track_id INTEGER NOT NULL,
-                    direction TEXT NOT NULL,
-                    event_type TEXT NOT NULL,
-                    crossing_point_x REAL NOT NULL,
-                    crossing_point_y REAL NOT NULL,
-                    timestamp REAL NOT NULL,
-                    frame_index INTEGER NOT NULL,
-                    previous_position_x REAL NOT NULL,
-                    previous_position_y REAL NOT NULL,
-                    current_position_x REAL NOT NULL,
-                    current_position_y REAL NOT NULL,
-                    person_id TEXT,
-                    person_name TEXT,
-                    identity_confidence REAL,
-                    -- NEW: GIS fields (P3.11)
-                    global_person_id TEXT,
-                    identity_state TEXT,
-                    created_at REAL NOT NULL
-                )
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_camera_timestamp 
-                ON attendance_events(camera_id, timestamp)
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_person_timestamp 
-                ON attendance_events(person_id, timestamp)
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_global_person_timestamp 
-                ON attendance_events(global_person_id, timestamp)
-            """)
-            conn.commit()
+        def _do_init():
+            with self._connect() as conn:
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS attendance_events (
+                        event_id TEXT PRIMARY KEY,
+                        camera_id TEXT NOT NULL,
+                        track_id INTEGER NOT NULL,
+                        direction TEXT NOT NULL,
+                        event_type TEXT NOT NULL,
+                        crossing_point_x REAL NOT NULL,
+                        crossing_point_y REAL NOT NULL,
+                        timestamp REAL NOT NULL,
+                        frame_index INTEGER NOT NULL,
+                        previous_position_x REAL NOT NULL,
+                        previous_position_y REAL NOT NULL,
+                        current_position_x REAL NOT NULL,
+                        current_position_y REAL NOT NULL,
+                        person_id TEXT,
+                        person_name TEXT,
+                        identity_confidence REAL,
+                        -- NEW: GIS fields (P3.11)
+                        global_person_id TEXT,
+                        identity_state TEXT,
+                        created_at REAL NOT NULL
+                    )
+                """)
+                conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_camera_timestamp 
+                    ON attendance_events(camera_id, timestamp)
+                """)
+                conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_person_timestamp 
+                    ON attendance_events(person_id, timestamp)
+                """)
+                conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_global_person_timestamp 
+                    ON attendance_events(global_person_id, timestamp)
+                """)
+                conn.commit()
+        self._run_with_retry(_do_init)
     
     def store_event(self, event: CrossingEvent) -> bool:
-        """Store a crossing event."""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
+        """Store a crossing event with WAL lock safety."""
+        def _do_store() -> bool:
+            with self._connect() as conn:
                 conn.execute("""
-                    INSERT INTO attendance_events VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT OR REPLACE INTO attendance_events VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     event.event_id,
-                    event.camera_id,
+                    str(event.camera_id).lower().strip(),
                     event.track_id,
                     event.direction.value,
                     event.event_type.value,
@@ -215,9 +257,14 @@ class AttendanceStore:
                 ))
                 conn.commit()
             return True
+
+        try:
+            return self._run_with_retry(_do_store)
         except Exception as e:
             logger.error(f"AttendanceStore: Failed to store event: {e}")
             return False
+
+    record_attendance = store_event
     
     def get_events(
         self, 
@@ -228,8 +275,8 @@ class AttendanceStore:
         limit: int = 1000,
     ) -> List[Dict[str, Any]]:
         """Query attendance events."""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
+        def _do_query() -> List[Dict[str, Any]]:
+            with self._connect() as conn:
                 conn.row_factory = sqlite3.Row
                 
                 query = "SELECT * FROM attendance_events WHERE 1=1"
@@ -237,7 +284,7 @@ class AttendanceStore:
                 
                 if camera_id:
                     query += " AND camera_id = ?"
-                    params.append(camera_id)
+                    params.append(camera_id.lower().strip())
                 
                 if person_id:
                     query += " AND person_id = ?"
@@ -256,14 +303,17 @@ class AttendanceStore:
                 
                 cursor = conn.execute(query, params)
                 return [dict(row) for row in cursor.fetchall()]
+
+        try:
+            return self._run_with_retry(_do_query)
         except Exception as e:
             logger.error(f"AttendanceStore: Query failed: {e}")
             return []
     
     def get_daily_summary(self, date: str) -> Dict[str, Any]:
         """Get daily attendance summary (date format: YYYY-MM-DD)."""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
+        def _do_summary() -> Dict[str, Any]:
+            with self._connect() as conn:
                 conn.row_factory = sqlite3.Row
                 
                 start = time.mktime(time.strptime(date + " 00:00:00", "%Y-%m-%d %H:%M:%S"))
@@ -287,6 +337,9 @@ class AttendanceStore:
                     summary["records"].append(dict(row))
                 
                 return summary
+
+        try:
+            return self._run_with_retry(_do_summary)
         except Exception as e:
             logger.error(f"AttendanceStore: Daily summary failed: {e}")
             return {"date": date, "records": []}
@@ -335,109 +388,110 @@ class CrossingEngine:
         timestamp: float,
         frame_index: int,
     ) -> List[CrossingEvent]:
-        """Process a single track update and detect crossings."""
+        """Process a single track update and detect line crossings across 1+ frames."""
         if not track.is_active and not track.is_new:
             return []
-        
-        # Get current center
+
         current_center = track.center
-        
-        # Get previous center from track state
         track_id = track.track_id
-        
+
         if track_id not in self._track_states:
+            init_side = self.line.side_of_point(current_center)
             self._track_states[track_id] = {
-                "current_side": self.line.side_of_point(current_center),
-                "confirmed_side": self.line.side_of_point(current_center),
+                "current_side": init_side,
+                "confirmed_side": init_side,
+                "anchor_position": current_center,
                 "frames_on_current_side": 1,
                 "last_crossing_timestamp": 0.0,
                 "last_crossing_direction": None,
                 "last_position": current_center,
             }
             return []
-        
+
         state = self._track_states[track_id]
         previous_center = state["last_position"]
-        
-        # Update position
         state["last_position"] = current_center
-        
-        # Get current and previous sides
-        prev_side = self.line.side_of_point(previous_center)
+
+        frame_prev_side = self.line.side_of_point(previous_center)
+        prev_side = state["confirmed_side"] if state["confirmed_side"] != 0 else frame_prev_side
         current_side = self.line.side_of_point(current_center)
-        
-        # Check for crossing: different sides, both non-zero
+
+        if state["confirmed_side"] == 0 and current_side != 0:
+            state["confirmed_side"] = current_side
+            state["current_side"] = current_side
+            state["anchor_position"] = current_center
+            return []
+
+        # Detect crossing against confirmed/previous side (supports gradual multi-frame motion)
         if current_side != prev_side and current_side != 0 and prev_side != 0:
-            # Potential crossing
-            
-            # Check debounce
             time_since_last = timestamp - state["last_crossing_timestamp"]
             if state["last_crossing_timestamp"] > 0 and time_since_last < self.policy.temporal_debounce_seconds:
                 self._stats["rejected_debounce"] += 1
-            else:
-                # Check distance
-                prev_dist = self.line.distance_to_line(previous_center)
-                current_dist = self.line.distance_to_line(current_center)
-                crossing_distance = prev_dist + current_dist
-                
-                if crossing_distance >= self.policy.min_crossing_distance:
-                    # Determine direction
-                    if self.line.direction_semantics == "side_a_to_b_in":
-                        direction = CrossingDirection.IN if prev_side == 1 and current_side == -1 else CrossingDirection.OUT
-                    elif self.line.direction_semantics == "side_b_to_a_in":
-                        direction = CrossingDirection.IN if prev_side == -1 and current_side == 1 else CrossingDirection.OUT
-                    else:
-                        direction = CrossingDirection.IN if prev_side > current_side else CrossingDirection.OUT
-                    
-                    # Calculate crossing point (intersection)
-                    crossing_point = self._calculate_intersection(previous_center, current_center)
-                    
-                    # Create event
-                    event = CrossingEvent(
-                        event_id=f"CE-{track_id}-{frame_index}-{int(timestamp*1000)}",
-                        camera_id=self.config.camera_id,
-                        track_id=track_id,
-                        direction=direction,
-                        crossing_point=crossing_point,
-                        timestamp=timestamp,
-                        frame_index=frame_index,
-                        previous_position=previous_center,
-                        current_position=current_center,
-                        person_id=track.person_id,
-                        person_name=track.person_name,
-                        identity_confidence=track.identity_confidence,
-                        # NEW: GIS fields (P3.11)
-                        global_person_id=getattr(track, 'global_person_id', None),
-                        identity_state=getattr(track, 'identity_state', 'unknown'),
-                    )
-                    
-                    self._events.append(event)
-                    self._stats["total_crossings"] += 1
-                    if direction == CrossingDirection.IN:
-                        self._stats["in_crossings"] += 1
-                    else:
-                        self._stats["out_crossings"] += 1
-                    
-                    # Update state
-                    state["last_crossing_timestamp"] = timestamp
-                    state["last_crossing_direction"] = direction
-                    state["confirmed_side"] = current_side
-                    state["current_side"] = current_side
-                    state["frames_on_current_side"] = 1
-                    
-                    return [event]
+                state["confirmed_side"] = current_side
+                state["current_side"] = current_side
+                state["anchor_position"] = current_center
+                return []
+
+            anchor_pos = state.get("anchor_position", previous_center)
+            perp_span = self.line.distance_to_line(anchor_pos) + self.line.distance_to_line(current_center)
+            euclid_span = math.hypot(current_center[0] - anchor_pos[0], current_center[1] - anchor_pos[1])
+            crossing_distance = max(perp_span, euclid_span)
+
+            if crossing_distance >= self.policy.min_crossing_distance:
+                if self.line.direction_semantics == "side_a_to_b_in":
+                    direction = CrossingDirection.IN if prev_side == 1 and current_side == -1 else CrossingDirection.OUT
+                elif self.line.direction_semantics == "side_b_to_a_in":
+                    direction = CrossingDirection.IN if prev_side == -1 and current_side == 1 else CrossingDirection.OUT
                 else:
-                    self._stats["rejected_distance"] += 1
+                    direction = CrossingDirection.IN if prev_side > current_side else CrossingDirection.OUT
+
+                crossing_point = self._calculate_intersection(anchor_pos, current_center)
+
+                event = CrossingEvent(
+                    event_id=f"CE-{track_id}-{frame_index}-{int(timestamp*1000)}",
+                    camera_id=self.config.camera_id.lower().strip(),
+                    track_id=track_id,
+                    direction=direction,
+                    crossing_point=crossing_point,
+                    timestamp=timestamp,
+                    frame_index=frame_index,
+                    previous_position=anchor_pos,
+                    current_position=current_center,
+                    person_id=track.person_id,
+                    person_name=track.person_name,
+                    identity_confidence=track.identity_confidence,
+                    global_person_id=getattr(track, 'global_person_id', None),
+                    identity_state=getattr(track, 'identity_state', 'unknown'),
+                )
+
+                self._events.append(event)
+                self._stats["total_crossings"] += 1
+                if direction == CrossingDirection.IN:
+                    self._stats["in_crossings"] += 1
+                else:
+                    self._stats["out_crossings"] += 1
+
+                state["last_crossing_timestamp"] = timestamp
+                state["last_crossing_direction"] = direction
+                state["confirmed_side"] = current_side
+                state["current_side"] = current_side
+                state["anchor_position"] = current_center
+                state["frames_on_current_side"] = 1
+
+                return [event]
+            else:
+                self._stats["rejected_distance"] += 1
         else:
-            # No crossing - update confirmation
             if current_side == state["current_side"]:
                 state["frames_on_current_side"] += 1
-                if state["frames_on_current_side"] >= self.policy.side_confirmation_frames:
+                if current_side != 0 and state["frames_on_current_side"] >= self.policy.side_confirmation_frames:
+                    if state["confirmed_side"] == 0:
+                        state["anchor_position"] = current_center
                     state["confirmed_side"] = current_side
             else:
                 state["current_side"] = current_side
                 state["frames_on_current_side"] = 1
-        
+
         return []
     
     def _calculate_intersection(
@@ -508,7 +562,8 @@ class AttendanceEngine:
         for camera_id, cam_config in cameras.items():
             if not cam_config.get("enabled", True):
                 continue
-            
+
+            norm_cam_id = str(camera_id).lower().strip()
             geom = cam_config.get("geometry", {})
             line_start = geom.get("line_start", [0, 1080])
             line_end = geom.get("line_end", [3840, 1080])
@@ -529,13 +584,13 @@ class AttendanceEngine:
             )
             
             camera_config = CameraAttendanceConfig(
-                camera_id=camera_id,
+                camera_id=norm_cam_id,
                 line=line,
                 crossing_policy=policy,
             )
             
-            self._engines[camera_id] = CrossingEngine(camera_config)
-            logger.info(f"AttendanceEngine: Initialized crossing engine for {camera_id}")
+            self._engines[norm_cam_id] = CrossingEngine(camera_config)
+            logger.info(f"AttendanceEngine: Initialized crossing engine for {norm_cam_id}")
     
     def register_event_callback(self, callback: callable) -> None:
         """Register callback for attendance events."""
@@ -544,13 +599,14 @@ class AttendanceEngine:
     def process_tracks(self, tracking_result: TrackingResult) -> List[CrossingEvent]:
         """Process tracking results and generate attendance events."""
         # Safe resolution for camera_id from tracking result
-        camera_id = (
-            getattr(tracking_result, "source_frame_id", None)
-            or getattr(tracking_result, "camera_id", None)
-            or (tracking_result.get("source_frame_id") if isinstance(tracking_result, dict) else None)
+        raw_cam_id = (
+            getattr(tracking_result, "camera_id", None)
+            or getattr(tracking_result, "source_frame_id", None)
             or (tracking_result.get("camera_id") if isinstance(tracking_result, dict) else None)
+            or (tracking_result.get("source_frame_id") if isinstance(tracking_result, dict) else None)
             or "unknown"
         )
+        camera_id = str(raw_cam_id).lower().strip()
         engine = self._engines.get(camera_id)
         
         if not engine:
@@ -627,6 +683,14 @@ class AttendanceEngine:
     @property
     def out_count(self) -> int:
         return sum(engine.out_count for engine in self._engines.values())
+
+    def get_camera_counts(self, camera_id: str) -> Dict[str, int]:
+        """Return per-camera IN and OUT crossing counts."""
+        norm_cam_id = str(camera_id).lower().strip()
+        engine = self._engines.get(norm_cam_id)
+        if not engine:
+            return {"in": 0, "out": 0}
+        return {"in": engine.in_count, "out": engine.out_count}
 
     def update_camera_line(
         self,

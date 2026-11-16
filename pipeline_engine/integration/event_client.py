@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EventDeliveryConfig:
     """Configuration for event delivery client."""
-    backend_base_url: str = "http://localhost:19146"
+    backend_base_url: str = "http://localhost:8000"
     api_key: str = ""
     queue_max_size: int = 1000
     delivery_interval: float = 1.0
@@ -67,11 +67,17 @@ class EventDeliveryClient:
         self._lock = asyncio.Lock()
         self._delivered_event_ids: set = set()  # For idempotency
         self._delivered_ids_lock = asyncio.Lock()
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
         
     async def start(self) -> None:
         """Start the event delivery client."""
         if self._task is not None:
             return
+
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = None
             
         # Load API key from environment if not set
         if not self.config.api_key:
@@ -126,6 +132,20 @@ class EventDeliveryClient:
             logger.warning(f"Event delivery queue full ({self.config.queue_max_size}), dropping event")
             async with self._lock:
                 self._failed_count += 1
+            return False
+
+    def submit_event_sync(self, event: Any) -> bool:
+        """Thread-safe wrapper to submit an event from synchronous worker threads."""
+        loop = self._loop
+        if loop is not None and loop.is_running():
+            asyncio.run_coroutine_threadsafe(self.submit_event(event), loop)
+            return True
+        try:
+            self._queue.put_nowait(QueuedEvent(event=event))
+            self._pending_count += 1
+            return True
+        except asyncio.QueueFull:
+            self._failed_count += 1
             return False
             
     async def _delivery_loop(self) -> None:
@@ -259,7 +279,7 @@ def create_event_client(config: Optional[EventDeliveryConfig] = None) -> EventDe
 
 async def setup_event_delivery(
     worker_id: str,
-    backend_base_url: str = "http://localhost:19146",
+    backend_base_url: str = "http://localhost:8000",
     config: Optional[EventDeliveryConfig] = None
 ) -> EventDeliveryClient:
     """Set up event delivery for a worker."""

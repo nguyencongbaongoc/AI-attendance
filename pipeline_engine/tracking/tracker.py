@@ -8,12 +8,15 @@ and person ReID for identity continuity.
 from __future__ import annotations
 
 import logging
+import math
+import time
 import uuid
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Dict, Any
 from enum import Enum
 
 import numpy as np
+import torch
 
 from pipeline_engine.inference.face_detection import FaceDetection
 from pipeline_engine.inference.person_detection import PersonDetection
@@ -85,13 +88,38 @@ class Track:
     identity_updated_at: float = 0.0                 # Timestamp of last identity update
     
     # NEW: Embedding accumulation (P2.4)
-    face_embeddings_history: List[torch.Tensor] = None  # History of face embeddings
-    body_embeddings_history: List[torch.Tensor] = None  # History of body embeddings
-    avg_face_embedding: Optional[torch.Tensor] = None  # Running average face embedding
-    avg_body_embedding: Optional[torch.Tensor] = None  # Running average body embedding
+    face_embeddings_history: Optional[List[Any]] = None  # History of face embeddings
+    body_embeddings_history: Optional[List[Any]] = None  # History of body embeddings
+    avg_face_embedding: Optional[Any] = None             # Running average face embedding
+    avg_body_embedding: Optional[Any] = None             # Running average body embedding
     max_face_quality: float = 0.0                    # Max face quality seen
     max_body_quality: float = 0.0                    # Max body quality seen
     embedding_count: int = 0                         # Number of embeddings accumulated
+    stationary_frames: int = 0                       # Consecutive stationary frames
+    _prev_center: Optional[Tuple[float, float]] = field(default=None, repr=False)
+
+    @property
+    def camera_id(self) -> str:
+        cid = self.source_frame_id.lower().strip()
+        if cid.startswith("cam_cam"):
+            cid = cid[4:]
+        return cid
+
+    @property
+    def frame_sequence(self) -> int:
+        return self.frame_index
+
+    @property
+    def bbox(self) -> Tuple[float, float, float, float]:
+        return self.bbox_original_frame
+
+    @property
+    def identity_candidate(self) -> Optional[str]:
+        return self.person_name or self.person_id
+
+    @property
+    def state(self) -> str:
+        return self.lifecycle_state.value
     
     @property
     def width(self) -> float:
@@ -130,31 +158,43 @@ class Track:
     def is_identified(self) -> bool:
         return self.person_id is not None and self.identity_confidence > 0.5
 
-    def is_stationary(self) -> bool:
+    def is_stationary(self, velocity_threshold: float = 5.0) -> bool:
         """Check if track represents a stationary person (e.g., sitting at desk).
-        
+
         A track is considered stationary if:
-        - Age > 30 frames (established track)
+        - Age >= 30 frames (established track) or stationary_frames >= 10
         - Missed frames == 0 (consistently detected)
-        - Low velocity between consecutive frames
+        - Low pixel displacement between consecutive frames
         """
-        if self.age < 30 or self.missed_frames > 0:
+        if self.missed_frames > 0:
             return False
-        # Check if we have enough history to compute velocity
-        if not hasattr(self, '_prev_center') or self._prev_center is None:
+        if self.age < 30 and self.stationary_frames < 10:
             return False
-        
+        if self._prev_center is None:
+            return self.stationary_frames >= 10
+
         current_center = self.center
         dx = current_center[0] - self._prev_center[0]
         dy = current_center[1] - self._prev_center[1]
-        velocity = np.sqrt(dx*dx + dy*dy)
-        
-        # Stationary if velocity < 5 pixels/frame (approx < 150 pixels/sec at 30 FPS)
-        return velocity < 5.0
+        velocity = math.hypot(dx, dy)
+
+        # Stationary if displacement < 5 pixels/frame in original-frame pixel space
+        return velocity < velocity_threshold or self.stationary_frames >= 10
 
     def _update_stationary_check(self) -> None:
-        """Update stationary tracking state."""
-        self._prev_center = self.center
+        """Update stationary tracking state based on previous frame center."""
+        current_center = self.center
+        if self._prev_center is not None:
+            dist = math.hypot(
+                current_center[0] - self._prev_center[0],
+                current_center[1] - self._prev_center[1],
+            )
+            if dist < 5.0:
+                self.stationary_frames += 1
+            else:
+                self.stationary_frames = 0
+        else:
+            self._prev_center = current_center
 
     def to_tlbr(self) -> np.ndarray:
         """Return bounding box in TLBR format."""
@@ -216,6 +256,17 @@ class TrackingResult:
     tracks: List[Track] = field(default_factory=list)
     new_tracks: List[Track] = field(default_factory=list)
     closed_tracks: List[Track] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.source_frame_id = str(self.source_frame_id).lower().strip()
+
+    @property
+    def camera_id(self) -> str:
+        return self.source_frame_id
+
+    @property
+    def frame_sequence(self) -> int:
+        return self.frame_index
     
     def get_active_tracks(self) -> List[Track]:
         return [t for t in self.tracks if t.is_active or t.is_new]
@@ -621,6 +672,8 @@ def update_tracks(
             # NEW: GIS integration (P3.11)
             global_person_id=global_person_id,
             identity_state=identity_state,
+            stationary_frames=track.stationary_frames,
+            _prev_center=track.center,
         )
         updated_track._update_stationary_check()
         updated_tracks.append(updated_track)
@@ -681,6 +734,8 @@ def update_tracks(
             # Preserve GIS fields
             global_person_id=track.global_person_id,
             identity_state=track.identity_state,
+            stationary_frames=track.stationary_frames,
+            _prev_center=track.center,
         )
         
         if aged_track.missed_frames >= allowed_misses:
@@ -724,18 +779,25 @@ def update_tracks(
                     person_name = meta.get("name", person_id)
                     embedding = face_embedding.embedding.cpu().numpy()
         
-        # Get body embedding if available
-        if face_detection and face_detection.detection_id in body_embeddings:
+        # Get body embedding if available (keyed by person detection_id or face fallback)
+        if detection.detection_id in body_embeddings:
+            body_embedding = body_embeddings[detection.detection_id]
+            body_quality = getattr(body_embedding, "body_quality", 1.0)
+        elif face_detection and face_detection.detection_id in body_embeddings:
             body_embedding = body_embeddings[face_detection.detection_id]
-            body_quality = 1.0  # TODO: Calculate actual quality
-        
-        # Generate new track ID
-        max_existing_id = max([t.track_id for t in previous_tracks] + [-1])
+            body_quality = getattr(body_embedding, "body_quality", 1.0)
+
+        # Generate unique monotonic track ID (must account for new_tracks created in same frame)
+        max_existing_id = max(
+            [t.track_id for t in previous_tracks]
+            + [t.track_id for t in new_tracks]
+            + [0]
+        )
         track_id = max_existing_id + 1
-        
+
         new_track = Track(
             track_id=track_id,
-            source_frame_id=f"cam_{detection.source_id}",
+            source_frame_id=detection.source_id.lower().strip() or "cam1",
             frame_index=frame_index,
             timestamp=timestamp,
             bbox_original_frame=detection.bbox,
@@ -751,7 +813,7 @@ def update_tracks(
             identity_source=identity_source,
             embedding=embedding,
             # NEW: Live embeddings
-            face_embedding=face_embedding.embedding.cpu().numpy() if (face_detection and face_detection.detection_id in face_embeddings) else None,
+            face_embedding=face_embedding.embedding.cpu().numpy() if face_embedding is not None else None,
             face_quality=face_quality,
             face_model_id=face_model_id,
             face_model_sha256=face_model_sha256,
@@ -766,13 +828,13 @@ def update_tracks(
             person_provenance=detection.detection_id,
             face_provenance=face_detection.detection_id if face_detection else None,
             # NEW: Embedding accumulation (P2.4)
-            face_embeddings_history=[face_embedding.embedding.cpu()] if (face_detection and face_detection.detection_id in face_embeddings) else [],
-            body_embeddings_history=[body_embeddings[face_detection.detection_id].embedding.cpu()] if (face_detection and face_detection.detection_id in body_embeddings) else [],
-            avg_face_embedding=face_embedding.embedding.cpu() if (face_detection and face_detection.detection_id in face_embeddings) else None,
-            avg_body_embedding=body_embeddings[face_detection.detection_id].embedding.cpu() if (face_detection and face_detection.detection_id in body_embeddings) else None,
+            face_embeddings_history=[face_embedding.embedding.cpu()] if face_embedding is not None else [],
+            body_embeddings_history=[body_embedding.embedding.cpu()] if body_embedding is not None else [],
+            avg_face_embedding=face_embedding.embedding.cpu() if face_embedding is not None else None,
+            avg_body_embedding=body_embedding.embedding.cpu() if body_embedding is not None else None,
             max_face_quality=face_quality,
             max_body_quality=body_quality,
-            embedding_count=1 if (face_detection and face_detection.detection_id in face_embeddings) else 0,
+            embedding_count=1 if face_embedding is not None else 0,
             # NEW: GIS integration (P3.11)
             global_person_id=None,  # Will be assigned by GIS
             identity_state="unknown",
@@ -827,13 +889,14 @@ class Tracker:
         person_detections: List[PersonDetection],
         face_detections: List[FaceDetection],
         face_embeddings: Dict[str, FaceEmbedding],
-        body_embeddings: Dict[str, BodyEmbedding],
+        body_embeddings: Dict[str, Any],
         camera_id: str,
         timestamp: float,
     ) -> TrackingResult:
         """Process a single frame and return tracking result."""
         self._frame_index += 1
-        
+        norm_cam = camera_id.lower().strip()
+
         updated_tracks, new_tracks, closed_tracks = update_tracks(
             previous_tracks=self._tracks,
             person_detections=person_detections,
@@ -845,17 +908,36 @@ class Tracker:
             timestamp=timestamp,
             config=self.config,
         )
-        
+
         self._tracks = updated_tracks
-        
+
         return TrackingResult(
-            source_frame_id=camera_id,
+            source_frame_id=norm_cam,
             frame_index=self._frame_index,
             timestamp=timestamp,
             tracks=updated_tracks,
             new_tracks=new_tracks,
             closed_tracks=closed_tracks,
         )
+
+    @staticmethod
+    def _calculate_iou_batch(bboxes1: np.ndarray, bboxes2: np.ndarray) -> np.ndarray:
+        """Vectorized pixel-space IoU matrix between (N, 4) and (M, 4) [x1, y1, x2, y2] arrays."""
+        if len(bboxes1) == 0 or len(bboxes2) == 0:
+            return np.zeros((len(bboxes1), len(bboxes2)), dtype=np.float32)
+        b1 = np.asarray(bboxes1, dtype=np.float32)[:, None, :]
+        b2 = np.asarray(bboxes2, dtype=np.float32)[None, :, :]
+        inter_x1 = np.maximum(b1[..., 0], b2[..., 0])
+        inter_y1 = np.maximum(b1[..., 1], b2[..., 1])
+        inter_x2 = np.minimum(b1[..., 2], b2[..., 2])
+        inter_y2 = np.minimum(b1[..., 3], b2[..., 3])
+        inter_w = np.maximum(0.0, inter_x2 - inter_x1)
+        inter_h = np.maximum(0.0, inter_y2 - inter_y1)
+        inter_area = inter_w * inter_h
+        area1 = np.maximum(0.0, b1[..., 2] - b1[..., 0]) * np.maximum(0.0, b1[..., 3] - b1[..., 1])
+        area2 = np.maximum(0.0, b2[..., 2] - b2[..., 0]) * np.maximum(0.0, b2[..., 3] - b2[..., 1])
+        union = area1 + area2 - inter_area
+        return np.where(union > 0.0, inter_area / np.maximum(union, 1e-12), 0.0).astype(np.float32)
     
     def get_active_tracks(self) -> List[Track]:
         return [t for t in self._tracks if t.is_active or t.is_new]

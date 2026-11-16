@@ -15,6 +15,11 @@ from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import torch
 
+try:
+    import app.runtime.cuda  # Register CUDA and TensorRT DLL paths on Windows
+except Exception:
+    pass
+
 logger = logging.getLogger(__name__)
 
 
@@ -351,6 +356,10 @@ class TensorRTExecutor:
             self._initialized = False
             torch.cuda.empty_cache()
     
+    def destroy(self) -> None:
+        """Alias for cleanup() to explicitly release TensorRT resources."""
+        self.cleanup()
+
     def __enter__(self) -> "TensorRTExecutor":
         """Context manager entry - initialize if needed."""
         if not self._initialized:

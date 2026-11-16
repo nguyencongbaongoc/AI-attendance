@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import os
 import sys
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -835,3 +836,36 @@ def collect_runtime_snapshot() -> RuntimeSnapshot:
         model_hashes=model_hashes,
         git_status=git_status,
     )
+
+
+_runtime_snapshot_lock = threading.Lock()
+_cached_runtime_snapshot: Optional[RuntimeSnapshot] = None
+_cached_runtime_snapshot_ts: float = 0.0
+
+
+def get_cached_runtime_snapshot(
+    max_age_seconds: float = 120.0,
+    force_refresh: bool = False,
+) -> RuntimeSnapshot:
+    """Return a cached RuntimeSnapshot to avoid blocking frequent health polls."""
+    global _cached_runtime_snapshot, _cached_runtime_snapshot_ts
+    now = time.monotonic()
+    if (
+        not force_refresh
+        and _cached_runtime_snapshot is not None
+        and (now - _cached_runtime_snapshot_ts) < max_age_seconds
+    ):
+        return _cached_runtime_snapshot
+
+    with _runtime_snapshot_lock:
+        now = time.monotonic()
+        if (
+            not force_refresh
+            and _cached_runtime_snapshot is not None
+            and (now - _cached_runtime_snapshot_ts) < max_age_seconds
+        ):
+            return _cached_runtime_snapshot
+        snapshot = collect_runtime_snapshot()
+        _cached_runtime_snapshot = snapshot
+        _cached_runtime_snapshot_ts = time.monotonic()
+        return snapshot

@@ -37,22 +37,22 @@ from pipeline_engine.config import get_config, get_camera_config
 from pipeline_engine.memory.gpu_frame import nv12_to_bgr_cuda
 
 import torch
-import asyncio
-import aiohttp
 
 logger = logging.getLogger(__name__)
 
 # Persistent HTTP session for metadata ingest
 _http_session: Optional[aiohttp.ClientSession] = None
-_http_session_lock = asyncio.Lock()
+_http_session_lock: Optional[asyncio.Lock] = None
 
 
 async def _get_http_session() -> aiohttp.ClientSession:
     """Get or create persistent HTTP session with connection pooling."""
-    global _http_session
+    global _http_session, _http_session_lock
+    if _http_session_lock is None:
+        _http_session_lock = asyncio.Lock()
     async with _http_session_lock:
         if _http_session is None or _http_session.closed:
-            timeout = aiohttp.ClientTimeout(total=0.03, connect=0.01)
+            timeout = aiohttp.ClientTimeout(total=0.05, connect=0.02)
             connector = aiohttp.TCPConnector(limit=10, limit_per_host=5, enable_cleanup_closed=True)
             _http_session = aiohttp.ClientSession(timeout=timeout, connector=connector)
             logger.info("[CameraManager] Created persistent HTTP session for metadata ingest")
@@ -61,7 +61,9 @@ async def _get_http_session() -> aiohttp.ClientSession:
 
 async def _close_http_session() -> None:
     """Close the persistent HTTP session."""
-    global _http_session
+    global _http_session, _http_session_lock
+    if _http_session_lock is None:
+        return
     async with _http_session_lock:
         if _http_session is not None and not _http_session.closed:
             await _http_session.close()
@@ -221,6 +223,7 @@ class CameraManager:
     
     def _initialize_camera(self, camera_id: str, cam_config: Dict[str, Any]) -> None:
         """Initialize a single camera pipeline."""
+        camera_id = camera_id.lower().strip()
         # Create dedicated CUDA stream for this camera FIRST (before detectors)
         device_id = cam_config.get("decode", {}).get("gpu_device", 0)
         cuda_stream = torch.cuda.Stream(device=device_id)
@@ -772,42 +775,65 @@ class CameraManager:
                 active_tracks = tracking_result.get_active_tracks()
                 camera["metrics"].tracks_active = len(active_tracks)
 
-                # Broadcast live metadata to WebSocket clients (Task 6)
+                # Broadcast live metadata to WebSocket clients (canonical schema)
                 try:
-                    in_c = getattr(attendance, "in_count", 0)
-                    out_c = getattr(attendance, "out_count", 0)
-                    
+                    if hasattr(attendance, "get_camera_counts"):
+                        cam_counts = attendance.get_camera_counts(camera_id)
+                        in_c = cam_counts.get("in", 0)
+                        out_c = cam_counts.get("out", 0)
+                    else:
+                        in_c = getattr(attendance, "in_count", 0)
+                        out_c = getattr(attendance, "out_count", 0)
+
                     # Get frame dimensions for normalization
-                    frame_w = camera["config"].get("expected", {}).get("width", 3840)
-                    frame_h = camera["config"].get("expected", {}).get("height", 2160)
-                    
-                    persons_data = [
-                        {
+                    frame_w = max(1, camera["config"].get("expected", {}).get("width", 3840))
+                    frame_h = max(1, camera["config"].get("expected", {}).get("height", 2160))
+
+                    persons_data = []
+                    for track in active_tracks:
+                        bx1, by1, bx2, by2 = track.bbox_original_frame
+                        nx1 = max(0.0, min(1.0, float(bx1) / frame_w))
+                        ny1 = max(0.0, min(1.0, float(by1) / frame_h))
+                        nx2 = max(0.0, min(1.0, float(bx2) / frame_w))
+                        ny2 = max(0.0, min(1.0, float(by2) / frame_h))
+                        identity_cand = (
+                            getattr(track, "identity_candidate", None)
+                            or getattr(track, "matched_name", None)
+                            or getattr(track, "person_name", None)
+                            or "Unknown"
+                        )
+                        identity_conf = float(
+                            getattr(track, "identity_confidence", 0.0)
+                            or (track.confidence if getattr(track, "person_id", None) is not None else 0.0)
+                        )
+                        track_state = (
+                            track.lifecycle_state.value
+                            if hasattr(track.lifecycle_state, "value")
+                            else str(track.lifecycle_state)
+                        )
+                        persons_data.append({
                             "track_id": track.track_id,
-                            "bbox": [
-                                track.bbox_original_frame[0] / frame_w,  # xmin normalized
-                                track.bbox_original_frame[1] / frame_h,  # ymin normalized
-                                track.bbox_original_frame[2] / frame_w,  # xmax normalized
-                                track.bbox_original_frame[3] / frame_h,  # ymax normalized
-                            ],
-                            "confidence": float(track.confidence) if hasattr(track, "confidence") else 1.0,
-                            "face_name": getattr(track, "matched_name", None) or getattr(track, "person_name", None) or "Unknown",
-                            "face_id": getattr(track, "matched_id", None) or getattr(track, "person_id", "") or ""
-                        } for track in active_tracks
-                    ]
-                    
+                            "bbox": [round(nx1, 6), round(ny1, 6), round(nx2, 6), round(ny2, 6)],
+                            "confidence": round(float(getattr(track, "confidence", 1.0)), 4),
+                            "identity_candidate": identity_cand,
+                            "identity_confidence": round(identity_conf, 4),
+                            "state": track_state,
+                        })
+
+                    now_ts = float(gpu_frame.timestamp) if getattr(gpu_frame, "timestamp", 0.0) else time.time()
                     payload = {
-                        "camera_id": camera_id.lower(),
-                        "frame_sequence": frame_counter,
-                        "pts_ns": int(gpu_frame.timestamp * 1e9) if hasattr(gpu_frame, 'timestamp') and gpu_frame.timestamp else int(time.time() * 1e9),
-                        "capture_timestamp": datetime.utcnow().isoformat() + "Z",
+                        "camera_id": camera_id.lower().strip(),
+                        "frame_sequence": int(gpu_frame.frame_sequence),
+                        "timestamp": now_ts,
+                        "pts_ns": int(now_ts * 1_000_000_000),
+                        "capture_timestamp": now_ts,
                         "persons": persons_data,
-                        "counts": {"in": in_c, "out": out_c}
+                        "counts": {"in": int(in_c), "out": int(out_c)},
                     }
-                    
+
                     # Non-blocking async dispatch - never blocks AI pipeline
                     self._dispatch_metadata(payload)
-                        
+
                 except Exception as e:
                     import traceback
                     logger.error(f"Metadata broadcast error: {e}")
@@ -972,6 +998,10 @@ class CameraManager:
                 break
         
         return latest_frame
+
+    def _extract_aligned_face(
+        self, frame: GPUFrame, face_det: FaceDetection
+    ) -> Optional[torch.Tensor]:
         """Extract and align 112x112 face crop from GPUFrame using face landmarks."""
         try:
             y_tensor, uv_tensor = frame.get_tensors()
@@ -1102,17 +1132,24 @@ class CameraManager:
 
     # ========== ASYNC METADATA DISPATCH (NON-BLOCKING) ==========
     
-    def _dispatch_metadata(self, payload: dict) -> None:
-        """Non-blocking metadata dispatch using asyncio queue.
-        
-        Puts payload in queue immediately - never blocks the AI pipeline.
-        A background worker handles actual HTTP delivery.
-        """
+    def _enqueue_metadata(self, payload: dict) -> None:
+        """Put metadata payload into asyncio queue on the event loop thread."""
         try:
             self._metadata_queue.put_nowait(payload)
         except asyncio.QueueFull:
-            # Drop frame if backend is backed up - NEVER block the AI loop
             pass
+
+    def _dispatch_metadata(self, payload: dict) -> None:
+        """Non-blocking thread-safe metadata dispatch using asyncio queue.
+
+        Puts payload in queue immediately - never blocks the AI pipeline.
+        A background worker handles actual HTTP delivery.
+        """
+        loop = getattr(self, "_async_loop", None)
+        if loop is not None and loop.is_running():
+            loop.call_soon_threadsafe(self._enqueue_metadata, payload)
+        else:
+            self._enqueue_metadata(payload)
 
     async def _metadata_dispatcher_worker(self) -> None:
         """Background worker that drains the metadata queue and posts to HTTP endpoint."""

@@ -485,6 +485,14 @@ class CameraRuntimeManager:
                         persons.append(PersonMetadata(
                             track_id=track_id,
                             bbox=list(track.bbox) if track.bbox else [0, 0, 0, 0],
+                            confidence=float(getattr(track, 'confidence', 1.0)),
+                            identity_candidate=(
+                                getattr(track, 'identity_candidate', None)
+                                or getattr(track, 'person_name', None)
+                                or getattr(track, 'identity_name', None)
+                            ),
+                            identity_confidence=float(getattr(track, 'identity_confidence', 0.0)),
+                            state=str(getattr(track, 'state', 'active')),
                         ))
             
             # Get crossing line status

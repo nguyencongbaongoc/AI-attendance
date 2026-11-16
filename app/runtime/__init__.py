@@ -37,6 +37,7 @@ from .cuda import (
     detect_cuda_driver_version,
     check_production_models,
     collect_runtime_snapshot,
+    get_cached_runtime_snapshot,
 )
 
 __all__ = [
@@ -72,4 +73,5 @@ __all__ = [
     "detect_cuda_driver_version",
     "check_production_models",
     "collect_runtime_snapshot",
+    "get_cached_runtime_snapshot",
 ]

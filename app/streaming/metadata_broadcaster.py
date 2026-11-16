@@ -20,7 +20,7 @@ from typing import Any, Callable, Dict, List, Optional, Set
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field, field_validator
 
 from app.config.settings import load_settings
 from app.security.api_key_cache import get_api_key_cache
@@ -30,20 +30,49 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/stream", tags=["stream-metadata"])
 
 
+def _clamp_norm_bbox(bbox: List[float]) -> List[float]:
+    """Clamp normalized bounding box coordinates to [0.0, 1.0]."""
+    if not bbox or len(bbox) < 4:
+        return [0.0, 0.0, 0.0, 0.0]
+    coords = [max(0.0, min(1.0, float(v))) for v in bbox[:4]]
+    x1, y1, x2, y2 = coords
+    if x2 < x1:
+        x1, x2 = x2, x1
+    if y2 < y1:
+        y1, y2 = y2, y1
+    return [round(x1, 6), round(y1, 6), round(x2, 6), round(y2, 6)]
+
+
 @dataclass
 class FaceMetadata:
     """Face detection metadata for a single track."""
     track_id: int
-    bbox: List[float]  # [ymin, xmin, ymax, xmax] in source coordinates
+    bbox: List[float]  # Normalized [nx1, ny1, nx2, ny2] in [0.0, 1.0]
     name: str
     confidence: float
+    identity_candidate: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        self.bbox = _clamp_norm_bbox(self.bbox)
+        if self.identity_candidate is None:
+            self.identity_candidate = self.name
 
 
 @dataclass
 class PersonMetadata:
-    """Person detection metadata for a single track."""
+    """Person detection metadata for a single track (canonical contract)."""
     track_id: int
-    bbox: List[float]  # [ymin, xmin, ymax, xmax] in source coordinates
+    bbox: List[float]  # Normalized [nx1, ny1, nx2, ny2] in [0.0, 1.0]
+    confidence: float = 1.0
+    identity_candidate: Optional[str] = None
+    identity_confidence: float = 0.0
+    state: str = "active"
+    face_id: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        self.bbox = _clamp_norm_bbox(self.bbox)
+        self.confidence = max(0.0, min(1.0, float(self.confidence)))
+        self.identity_confidence = max(0.0, min(1.0, float(self.identity_confidence)))
 
 
 @dataclass
@@ -55,14 +84,16 @@ class CrossingLineMetadata:
 
 @dataclass
 class FrameMetadata:
-    """Complete per-frame metadata packet for broadcast."""
+    """Complete per-frame metadata packet for broadcast (canonical contract)."""
     camera_id: str
     frame_sequence: int
-    pts_ns: int
-    capture_timestamp: str
+    pts_ns: int = 0
+    capture_timestamp: Any = ""
+    timestamp: float = field(default_factory=time.time)
     faces: List[FaceMetadata] = field(default_factory=list)
     persons: List[PersonMetadata] = field(default_factory=list)
-    crossing_line: Optional[CrossingLineMetadata] = None
+    counts: Dict[str, int] = field(default_factory=lambda: {"in": 0, "out": 0})
+    crossing_line: Optional[Any] = None
     # Phase 17: Evidence URLs for crossing events
     snapshot_face_url: Optional[str] = None
     snapshot_scene_url: Optional[str] = None
@@ -71,24 +102,53 @@ class FrameMetadata:
     student_id: Optional[str] = None
     student_name: Optional[str] = None
 
+    def __post_init__(self) -> None:
+        self.camera_id = self.camera_id.lower().strip()
+        if not self.pts_ns and self.timestamp:
+            self.pts_ns = int(self.timestamp * 1_000_000_000)
+        if not self.capture_timestamp:
+            self.capture_timestamp = self.timestamp
+        if not self.counts:
+            self.counts = {"in": 0, "out": 0}
+
     def to_dict(self) -> Dict[str, Any]:
+        if isinstance(self.crossing_line, CrossingLineMetadata):
+            cl_payload: Any = {"coords": self.crossing_line.coords, "status": self.crossing_line.status}
+        else:
+            cl_payload = self.crossing_line
+
         return {
             "camera_id": self.camera_id,
-            "frame_sequence": self.frame_sequence,
-            "pts_ns": self.pts_ns,
+            "frame_sequence": int(self.frame_sequence),
+            "timestamp": float(self.timestamp),
+            "pts_ns": int(self.pts_ns),
             "capture_timestamp": self.capture_timestamp,
             "faces": [
-                {"track_id": f.track_id, "bbox": f.bbox, "name": f.name, "confidence": f.confidence}
+                {
+                    "track_id": f.track_id,
+                    "bbox": f.bbox,
+                    "name": f.name,
+                    "identity_candidate": f.identity_candidate or f.name,
+                    "confidence": float(f.confidence),
+                }
                 for f in self.faces
             ],
             "persons": [
-                {"track_id": p.track_id, "bbox": p.bbox}
+                {
+                    "track_id": p.track_id,
+                    "bbox": p.bbox,
+                    "confidence": float(p.confidence),
+                    "identity_candidate": p.identity_candidate,
+                    "identity_confidence": float(p.identity_confidence),
+                    "state": p.state,
+                }
                 for p in self.persons
             ],
-            "crossing_line": (
-                {"coords": self.crossing_line.coords, "status": self.crossing_line.status}
-                if self.crossing_line else None
-            ),
+            "counts": {
+                "in": int(self.counts.get("in", 0)),
+                "out": int(self.counts.get("out", 0)),
+            },
+            "crossing_line": cl_payload,
             # Phase 17: Evidence URLs
             "snapshot_face_url": self.snapshot_face_url,
             "snapshot_scene_url": self.snapshot_scene_url,
@@ -601,14 +661,20 @@ async def get_metadata_stats(camera_id: str):
 
 
 class MetadataIngestRequest(BaseModel):
-    """Request model for ingesting metadata from AI Worker."""
-    camera_id: str
-    frame_sequence: int
-    pts_ns: int
-    capture_timestamp: str
+    """Request model for ingesting metadata from AI Worker (canonical contract)."""
+    camera_id: str = Field(..., validation_alias=AliasChoices("camera_id", "cam_id"))
+    frame_sequence: int = Field(
+        default=0,
+        ge=0,
+        validation_alias=AliasChoices("frame_sequence", "frame_id", "frame_index"),
+    )
+    timestamp: float = Field(default_factory=time.time)
+    pts_ns: Optional[int] = Field(default=None, ge=0)
+    capture_timestamp: Optional[Any] = None
     faces: List[Dict[str, Any]] = Field(default_factory=list)
     persons: List[Dict[str, Any]] = Field(default_factory=list)
-    crossing_line: Optional[Dict[str, Any]] = None
+    counts: Dict[str, int] = Field(default_factory=lambda: {"in": 0, "out": 0})
+    crossing_line: Optional[Any] = None
     # Phase 17: Evidence URLs for crossing events
     snapshot_face_url: Optional[str] = None
     snapshot_scene_url: Optional[str] = None
@@ -617,54 +683,91 @@ class MetadataIngestRequest(BaseModel):
     student_id: Optional[str] = None
     student_name: Optional[str] = None
 
+    @field_validator("camera_id", mode="before")
+    @classmethod
+    def _normalize_camera_id(cls, value: Any) -> str:
+        return str(value or "cam1").lower().strip()
+
 
 @router.post("/metadata/ingest")
 async def ingest_metadata(request: MetadataIngestRequest):
     """
     Ingest metadata from AI Worker for broadcasting.
     
-    Called by CameraRuntimeManager after tracking/attendance processing.
+    Called by CameraManager / CameraRuntimeManager after tracking/attendance processing.
     Non-blocking - drops frame if broadcast queue is full.
     """
     broadcaster = get_metadata_broadcaster()
-    
+    ts = float(request.timestamp or time.time())
+    pts_ns = request.pts_ns if request.pts_ns is not None else int(ts * 1_000_000_000)
+    cap_ts = request.capture_timestamp if request.capture_timestamp is not None else ts
+
+    cl_obj: Optional[Any] = None
+    if isinstance(request.crossing_line, dict) and "coords" in request.crossing_line:
+        cl_obj = CrossingLineMetadata(
+            coords=request.crossing_line["coords"],
+            status=request.crossing_line.get("status", "NORMAL"),
+        )
+    elif isinstance(request.crossing_line, list):
+        cl_obj = request.crossing_line
+
     metadata = FrameMetadata(
         camera_id=request.camera_id,
         frame_sequence=request.frame_sequence,
-        pts_ns=request.pts_ns,
-        capture_timestamp=request.capture_timestamp,
+        timestamp=ts,
+        pts_ns=pts_ns,
+        capture_timestamp=cap_ts,
         faces=[
             FaceMetadata(
-                track_id=f["track_id"],
-                bbox=f["bbox"],
-                name=f["name"],
-                confidence=f["confidence"],
+                track_id=int(f.get("track_id", 0)),
+                bbox=f.get("bbox", [0.0, 0.0, 0.0, 0.0]),
+                name=str(f.get("identity_candidate") or f.get("name") or "Unknown"),
+                confidence=float(f.get("confidence", f.get("identity_confidence", 0.0))),
+                identity_candidate=f.get("identity_candidate") or f.get("name"),
             )
             for f in request.faces
         ],
         persons=[
             PersonMetadata(
-                track_id=p["track_id"],
-                bbox=p["bbox"],
+                track_id=int(p.get("track_id", 0)),
+                bbox=p.get("bbox", [0.0, 0.0, 0.0, 0.0]),
+                confidence=float(p.get("confidence", p.get("score", 1.0))),
+                identity_candidate=(
+                    p.get("identity_candidate")
+                    or p.get("person_name")
+                    or p.get("face_name")
+                    or p.get("student_name")
+                    or p.get("name")
+                ),
+                identity_confidence=float(
+                    p.get("identity_confidence", p.get("confidence", 0.0))
+                ),
+                state=str(p.get("state", "active")),
+                face_id=str(p.get("face_id")) if p.get("face_id") is not None else None,
             )
             for p in request.persons
         ],
-        crossing_line=(
-            CrossingLineMetadata(
-                coords=request.crossing_line["coords"],
-                status=request.crossing_line["status"],
-            )
-            if request.crossing_line else None
-        ),
+        counts={
+            "in": int((request.counts or {}).get("in", 0)),
+            "out": int((request.counts or {}).get("out", 0)),
+        },
+        crossing_line=cl_obj,
         # Phase 17: Evidence URLs
         snapshot_face_url=request.snapshot_face_url,
         snapshot_scene_url=request.snapshot_scene_url,
         video_clip_url=request.video_clip_url,
         event_type=request.event_type,
         student_id=request.student_id,
-        student_name=request.student_name,
+        student_name=request.student_name or (
+            request.persons[0].get("identity_candidate") if request.persons else None
+        ),
     )
     
     await broadcaster.broadcast_metadata(request.camera_id, metadata)
     
-    return {"status": "accepted", "camera_id": request.camera_id, "frame_sequence": request.frame_sequence}
+    return {
+        "status": "accepted",
+        "camera_id": request.camera_id,
+        "frame_sequence": request.frame_sequence,
+        "timestamp": ts,
+    }

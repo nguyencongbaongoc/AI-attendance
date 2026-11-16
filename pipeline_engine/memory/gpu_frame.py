@@ -173,11 +173,17 @@ class GPUFrame:
     error_stage: Optional[str] = None
     
     def __post_init__(self):
+        self.camera_id = str(self.camera_id).lower().strip()
         if self.actual_width is None:
             self.actual_width = self.width
         if self.actual_height is None:
             self.actual_height = self.height
         self._cache_pointers()
+
+    @property
+    def frame_sequence(self) -> int:
+        """Canonical alias for frame_id."""
+        return self.frame_id
     
     @classmethod
     def from_pyav_nvdec(

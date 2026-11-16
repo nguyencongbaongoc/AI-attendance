@@ -53,6 +53,14 @@ class PersonDetection:
     class_id: int = 0
     
     @property
+    def frame_sequence(self) -> int:
+        return self.frame_index
+
+    @property
+    def camera_id(self) -> str:
+        return self.source_id.lower()
+
+    @property
     def width(self) -> float:
         return self.bbox[2] - self.bbox[0]
     
@@ -360,7 +368,7 @@ class YOLOPersonDetector:
                 original_height=frame.height,
                 padding_info=padding_info,
                 frame_id=frame.frame_id,
-                camera_id=frame.camera_id,
+                camera_id=frame.camera_id.lower(),
             )
             
             # Apply NMS

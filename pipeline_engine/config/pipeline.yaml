@@ -136,11 +136,11 @@ cameras:
       consecutive_increases_required: 3
     geometry:
       line_start:
-      - 0
-      - 0
+      - 576
+      - 1620
       line_end:
-      - 0
-      - 0
+      - 3264
+      - 1620
       direction_semantics: side_a_to_b_in
     crossing_policy:
       min_crossing_distance: 50.0

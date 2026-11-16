@@ -57,6 +57,14 @@ class FaceDetection:
     source_id: str = ""
     
     @property
+    def frame_sequence(self) -> int:
+        return self.frame_index
+
+    @property
+    def camera_id(self) -> str:
+        return self.source_id.lower()
+
+    @property
     def width(self) -> float:
         return self.bbox[2] - self.bbox[0]
     
@@ -375,6 +383,8 @@ class SCRFDDetector:
             original_width=frame.width,
             original_height=frame.height,
             padding_info=padding_info,
+            frame_id=frame.frame_id,
+            camera_id=frame.camera_id.lower(),
         )
         
         # Apply NMS
@@ -391,6 +401,8 @@ class SCRFDDetector:
         original_width: int,
         original_height: int,
         padding_info: Dict[str, Any],
+        frame_id: int = 0,
+        camera_id: str = "",
     ) -> List[FaceDetection]:
         """Parse SCRFD raw outputs into FaceDetection objects."""
         detections = []
@@ -499,10 +511,10 @@ class SCRFDDetector:
                 else:
                     # Default 5 points at face center/corners (fallback)
                     cx_orig, cy_orig = self._convert_point_to_original(
-                        cx, cy, scale, pad_left, pad_top, original_width, original_height
+                        float(center_x), float(center_y), scale, pad_left, pad_top, original_width, original_height
                     )
-                    w_orig = (x2 - x1) / scale
-                    h_orig = (y2 - y1) / scale
+                    w_orig = float(x2 - x1) / scale
+                    h_orig = float(y2 - y1) / scale
                     kps_original = [
                         (cx_orig - w_orig/3, cy_orig - h_orig/3),  # left eye
                         (cx_orig + w_orig/3, cy_orig - h_orig/3),  # right eye
@@ -516,8 +528,8 @@ class SCRFDDetector:
                     confidence=confidence,
                     landmarks5=kps_original,
                     detection_id=str(uuid.uuid4())[:8],
-                    frame_index=frame.frame_id,
-                    source_id=frame.camera_id,
+                    frame_index=frame_id,
+                    source_id=str(camera_id).lower(),
                 )
                 
                 detections.append(detection)

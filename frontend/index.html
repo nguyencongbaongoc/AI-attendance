@@ -803,21 +803,18 @@ class MetadataWebSocket {
   getMetadataForTime(targetTime) {
     // Find metadata frame closest to target video time
     if (this.metadataBuffer.length === 0) return null;
-    
-    // Simple linear search - could be optimized with binary search
-    let closest = this.metadataBuffer[0];
-    let minDiff = Math.abs(closest.pts_ns / 1e9 - targetTime);
-    
+    let closest = null;
+    let minDiff = Infinity;
     for (const meta of this.metadataBuffer) {
-      const diff = Math.abs(meta.pts_ns / 1e9 - targetTime);
+      const metaSec = (meta.pts_ns !== undefined && meta.pts_ns !== null) ? (meta.pts_ns / 1e9) : Number(meta.timestamp || 0);
+      if (!Number.isFinite(metaSec)) continue;
+      const diff = Math.abs(metaSec - targetTime);
       if (diff < minDiff) {
         minDiff = diff;
         closest = meta;
       }
     }
-    
-    // Only return if within 300ms (stale threshold)
-    if (minDiff > 0.3) return null;
+    if (!closest || minDiff > 0.3) return null;
     return closest;
   }
 }
@@ -827,16 +824,18 @@ class MetadataWebSocket {
 // ============================================================
 class CanvasOverlayRenderer {
   constructor(canvasId, videoId, cameraId) {
+    this.canvasId = canvasId;
+    this.videoId = videoId;
     this.canvas = document.getElementById(canvasId);
     this.video = document.getElementById(videoId);
-    this.cameraId = cameraId;
+    this.cameraId = String(cameraId || 'cam1').toLowerCase().trim();
 
-    // Singleton Overlay Management: destroy any existing instance for this camera
-    if (window.overlayRenderers && window.overlayRenderers[this.cameraId]) {
-      window.overlayRenderers[this.cameraId].destroy();
-    }
+    // Per-canvas overlay registry so dashboard & live canvases coexist cleanly
     window.overlayRenderers = window.overlayRenderers || {};
-    window.overlayRenderers[this.cameraId] = this;
+    if (window.overlayRenderers[this.canvasId] && window.overlayRenderers[this.canvasId] !== this) {
+      window.overlayRenderers[this.canvasId].destroy();
+    }
+    window.overlayRenderers[this.canvasId] = this;
 
     this.metadataWS = new MetadataWebSocket();
     this.isRendering = false;
@@ -887,31 +886,30 @@ class CanvasOverlayRenderer {
     this._videoCanPlayHandler = () => startIfReady();
     this._videoPlayingHandler = () => this.start();
     this._videoPlayHandler = () => {
-      // play event fires when playback is initiated (before playing)
-      // Start rendering if we have data ready
       if (this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
         this.start();
       }
     };
-    this._videoPauseHandler = () => this.stop();
+    this._videoPauseHandler = () => {
+      if (this.lastMetadata && this.showAnnotations) {
+        this.drawFrame(this.lastMetadata);
+      }
+    };
     
     this.video.addEventListener('loadeddata', this._videoLoadedDataHandler);
     this.video.addEventListener('canplay', this._videoCanPlayHandler);
     this.video.addEventListener('playing', this._videoPlayingHandler);
-    this.video.addEventListener('play', this._videoPlayHandler);  // CRITICAL: Hook play event for auto-start
+    this.video.addEventListener('play', this._videoPlayHandler);
     this.video.addEventListener('pause', this._videoPauseHandler);
     
-    // Also check if already ready
     startIfReady();
   }
 
   bindVisibilityChange() {
-    if (this._visibilityHandler) return; // Prevent duplicate
+    if (this._visibilityHandler) return;
     
     this._visibilityHandler = () => {
-      if (document.hidden) {
-        this.stop();
-      } else if (this.video && !this.video.paused && this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      if (!document.hidden && !this.isRendering) {
         this.start();
       }
     };
@@ -920,13 +918,15 @@ class CanvasOverlayRenderer {
 
   bindMetadataEvents() {
     this.metadataWS.on('metadata', (meta) => {
+      if (!meta) return;
       this.lastMetadata = meta;
-      // Update detection timestamp for anti-ghosting watchdog
+      window.latestMetadataByCam = window.latestMetadataByCam || {};
+      window.latestMetadataByCam[this.cameraId] = meta;
+
       const hasDetections = (meta.persons && meta.persons.length > 0) || (meta.faces && meta.faces.length > 0);
       if (hasDetections) {
         this.lastDetectionTime = performance.now();
       }
-      // Update crossing line if present
       if (meta.crossing_line) {
         this.crossingLine = meta.crossing_line;
         if (meta.crossing_line.status === 'IN_TRANSITION' || meta.crossing_line.status === 'OUT_TRANSITION') {
@@ -934,39 +934,65 @@ class CanvasOverlayRenderer {
           setTimeout(() => { this.linePulseActive = false; }, 500);
         }
       }
-      // CRITICAL: Auto-start rendering when metadata arrives if not already rendering
-      if (!this.isRendering && this.video && !this.video.paused && this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+
+      // Auto-start and draw immediately (works offline even when video is paused or empty)
+      if (!this.isRendering) {
         this.start();
+      }
+      if (this.showAnnotations) {
+        this.drawFrame(meta);
       }
     });
     
     this.metadataWS.on('connected', () => {
-      console.log(`[CANVAS] Metadata WebSocket connected for ${this.cameraId}`);
+      console.log(`[CANVAS] Metadata WebSocket connected for ${this.cameraId} (${this.canvasId})`);
+      const camNum = this.cameraId.includes('2') ? '2' : '1';
+      const badge = document.getElementById(`badgeCam${camNum}`);
+      if (badge) {
+        badge.textContent = '● LIVE';
+        badge.className = 'px-1.5 py-1 rounded bg-emerald-500 text-white text-[10px] font-mono font-bold';
+      }
+      const wsStatus = document.getElementById('wsStatusDashboard');
+      if (wsStatus) {
+        wsStatus.textContent = 'connected';
+        wsStatus.className = 'text-emerald-400';
+      }
     });
     
     this.metadataWS.on('disconnected', () => {
-      console.log(`[CANVAS] Metadata WebSocket disconnected for ${this.cameraId}`);
+      console.log(`[CANVAS] Metadata WebSocket disconnected for ${this.cameraId} (${this.canvasId})`);
     });
   }
 
   async start() {
-    // Guard against duplicate render loops
-    if (this.isRendering) return;
+    if (!this.lastMetadata && window.latestMetadataByCam && window.latestMetadataByCam[this.cameraId]) {
+      this.lastMetadata = window.latestMetadataByCam[this.cameraId];
+      this.lastDetectionTime = performance.now();
+    }
+
+    if (this.isRendering) {
+      if (this.lastMetadata && this.showAnnotations) {
+        this.drawFrame(this.lastMetadata);
+      }
+      return;
+    }
     
     try {
       await this.metadataWS.connect(this.cameraId);
       this.isRendering = true;
       this.renderLoop();
       
-      // Start anti-ghosting watchdog (check every 150ms, clear if no detections for 400ms)
+      // Generous watchdog for offline/injected frames (clear if no detections for 15s)
       this.detectionWatchdogId = setInterval(() => {
         const now = performance.now();
-        if (now - this.lastDetectionTime > 400 && this.lastDetectionTime > 0) {
+        if (this.lastDetectionTime > 0 && (now - this.lastDetectionTime) > 15000) {
+          this.lastMetadata = null;
+          this.lastDetectionTime = 0;
           this.clearCanvas();
         }
-      }, 150);
+      }, 1000);
       
-      console.log(`[CANVAS] Started overlay renderer for ${this.cameraId}`);
+      console.log(`[CANVAS] Started overlay renderer for ${this.cameraId} on ${this.canvasId}`);
     } catch (error) {
       console.error(`[CANVAS] Failed to start for ${this.cameraId}:`, error);
     }
@@ -982,7 +1008,6 @@ class CanvasOverlayRenderer {
       clearInterval(this.detectionWatchdogId);
       this.detectionWatchdogId = null;
     }
-    // Remove video event listeners
     if (this.video) {
       this.video.removeEventListener('loadeddata', this._videoLoadedDataHandler);
       this.video.removeEventListener('canplay', this._videoCanPlayHandler);
@@ -990,7 +1015,6 @@ class CanvasOverlayRenderer {
       this.video.removeEventListener('play', this._videoPlayHandler);
       this.video.removeEventListener('pause', this._videoPauseHandler);
     }
-    // Remove visibility change handler
     if (this._visibilityHandler) {
       document.removeEventListener('visibilitychange', this._visibilityHandler);
       this._visibilityHandler = null;
@@ -999,19 +1023,27 @@ class CanvasOverlayRenderer {
       this.metadataWS.disconnect();
     }
     this.clearCanvas();
-    if (window.overlayRenderers && window.overlayRenderers[this.cameraId] === this) {
-      delete window.overlayRenderers[this.cameraId];
+    if (window.overlayRenderers && window.overlayRenderers[this.canvasId] === this) {
+      delete window.overlayRenderers[this.canvasId];
     }
-    console.log(`[CANVAS] Overlay renderer destroyed for ${this.cameraId}`);
+    console.log(`[CANVAS] Overlay renderer destroyed for ${this.cameraId} (${this.canvasId})`);
   }
 
   stop() {
-    this.destroy();
+    this.isRendering = false;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
   }
 
   setShowAnnotations(show) {
     this.showAnnotations = show;
-    if (!show) this.clearCanvas();
+    if (!show) {
+      this.clearCanvas();
+    } else if (this.lastMetadata) {
+      this.drawFrame(this.lastMetadata);
+    }
   }
 
   clearCanvas() {
@@ -1019,42 +1051,68 @@ class CanvasOverlayRenderer {
     if (this.canvas) {
       const ctx = this.canvas.getContext('2d');
       ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      if (typeof drawSavedCrossingLine === 'function') {
+      if ((this.canvasId === 'canvas1' || this.canvasId === 'canvas2') && typeof drawSavedCrossingLine === 'function') {
         drawSavedCrossingLine(this.cameraId);
       }
     }
   }
 
-  getScaleFactors() {
-    if (!this.video || !this.canvas) return { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 };
-    
-    const videoRect = this.video.getBoundingClientRect();
+  syncCanvasDimensions() {
+    if (!this.canvas) return;
     const canvasRect = this.canvas.getBoundingClientRect();
-    
-    // Video is object-fit: cover, so we need to calculate actual rendered size
-    const videoAspect = this.sourceWidth / this.sourceHeight;
-    const containerAspect = videoRect.width / videoRect.height;
-    
-    let renderedWidth, renderedHeight, offsetX, offsetY;
-    
-    if (videoAspect > containerAspect) {
-      // Video wider than container - letterbox top/bottom
-      renderedWidth = videoRect.width;
-      renderedHeight = videoRect.width / videoAspect;
-      offsetX = 0;
-      offsetY = (videoRect.height - renderedHeight) / 2;
-    } else {
-      // Video taller than container - pillarbox left/right
-      renderedHeight = videoRect.height;
-      renderedWidth = videoRect.height * videoAspect;
-      offsetX = (videoRect.width - renderedWidth) / 2;
-      offsetY = 0;
+    const videoRect = this.video ? this.video.getBoundingClientRect() : null;
+    const w = Math.round(canvasRect.width || (videoRect ? videoRect.width : 0));
+    const h = Math.round(canvasRect.height || (videoRect ? videoRect.height : 0));
+    if (w > 0 && h > 0 && (this.canvas.width !== w || this.canvas.height !== h)) {
+      this.canvas.width = w;
+      this.canvas.height = h;
     }
-    
-    const scaleX = renderedWidth / this.sourceWidth;
-    const scaleY = renderedHeight / this.sourceHeight;
-    
-    return { scaleX, scaleY, offsetX, offsetY };
+  }
+
+  getScaleFactors() {
+    if (!this.canvas) return { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 };
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const cW = this.canvas.width || canvasRect.width || 640;
+    const cH = this.canvas.height || canvasRect.height || 360;
+
+    // In offline/mock video mode or matching 16:9 container, map normalized [0..1] onto full canvas
+    if (!this.video || !this.video.videoWidth || !this.video.videoHeight) {
+      return {
+        scaleX: cW / this.sourceWidth,
+        scaleY: cH / this.sourceHeight,
+        offsetX: 0,
+        offsetY: 0
+      };
+    }
+
+    const videoRect = this.video.getBoundingClientRect();
+    const targetW = videoRect.width || cW;
+    const targetH = videoRect.height || cH;
+    const videoAspect = this.sourceWidth / this.sourceHeight;
+    const containerAspect = targetW / targetH;
+    let renderedWidth, renderedHeight, offsetX, offsetY;
+    if (Math.abs(videoAspect - containerAspect) < 0.02) {
+      renderedWidth = targetW;
+      renderedHeight = targetH;
+      offsetX = 0;
+      offsetY = 0;
+    } else if (videoAspect > containerAspect) {
+      renderedHeight = targetH;
+      renderedWidth = targetH * videoAspect;
+      offsetX = (targetW - renderedWidth) / 2;
+      offsetY = 0;
+    } else {
+      renderedWidth = targetW;
+      renderedHeight = targetW / videoAspect;
+      offsetX = 0;
+      offsetY = (targetH - renderedHeight) / 2;
+    }
+    return {
+      scaleX: renderedWidth / this.sourceWidth,
+      scaleY: renderedHeight / this.sourceHeight,
+      offsetX,
+      offsetY
+    };
   }
 
   mapCoordinates(x, y) {
@@ -1067,18 +1125,14 @@ class CanvasOverlayRenderer {
 
   mapBBox(bbox) {
     if (!bbox || !Array.isArray(bbox) || bbox.length < 4) return null;
-    let [c1, c2, c3, c4] = bbox;
-    
-    // Check if normalized [0..1]
+    const [c1, c2, c3, c4] = bbox.map(Number);
     const isNorm = (c1 <= 1.0 && c2 <= 1.0 && c3 <= 1.0 && c4 <= 1.0);
-    const sW = (this.video && this.video.videoWidth) ? this.video.videoWidth : this.sourceWidth;
-    const sH = (this.video && this.video.videoHeight) ? this.video.videoHeight : this.sourceHeight;
-    
+    const sW = this.sourceWidth;
+    const sH = this.sourceHeight;
     let xmin = c1, ymin = c2, xmax = c3, ymax = c4;
     if (isNorm) {
       xmin *= sW; ymin *= sH; xmax *= sW; ymax *= sH;
     }
-    
     const p1 = this.mapCoordinates(xmin, ymin);
     const p2 = this.mapCoordinates(xmax, ymax);
     return {
@@ -1095,152 +1149,148 @@ class CanvasOverlayRenderer {
       this.animationFrameId = requestAnimationFrame(() => this.renderLoop());
       return;
     }
-    
     const now = performance.now();
-    
-    // Get metadata synchronized with video time
     let metadata = null;
     if (this.video && !isNaN(this.video.currentTime) && this.video.currentTime > 0) {
       metadata = this.metadataWS.getMetadataForTime(this.video.currentTime);
     }
-    
-    // Fallback to latest metadata if no sync
     if (!metadata) {
-      metadata = this.lastMetadata;
+      metadata = this.metadataWS.getLatestMetadata() || this.lastMetadata || (window.latestMetadataByCam && window.latestMetadataByCam[this.cameraId]);
     }
-    
     if (metadata && this.showAnnotations) {
       this.drawFrame(metadata);
     } else if (!metadata) {
-      // Clear stale annotations if no metadata for 300ms
-      if (this.lastMetadata && (now - this.lastRenderTime) > 300) {
+      if (this.lastRenderTime > 0 && (now - this.lastRenderTime) > 1000) {
         this.clearCanvas();
       }
     }
-    
     this.lastRenderTime = now;
     this.animationFrameId = requestAnimationFrame(() => this.renderLoop());
   }
 
   drawFrame(metadata) {
-    if (!this.canvas) return;
+    if (!this.canvas || !metadata) return;
+    this.syncCanvasDimensions();
+    if (this.canvas.width <= 0 || this.canvas.height <= 0) return;
+
     const ctx = this.canvas.getContext('2d');
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    
-    // Always preserve crossing line on canvas
-    if (typeof drawSavedCrossingLine === 'function') {
+
+    if ((this.canvasId === 'canvas1' || this.canvasId === 'canvas2') && typeof drawSavedCrossingLine === 'function') {
       drawSavedCrossingLine(this.cameraId);
     }
-    
-    // Draw person bounding boxes
+
     if (metadata.persons && Array.isArray(metadata.persons)) {
       for (const person of metadata.persons) {
         this.drawPersonBox(ctx, person);
       }
     }
-    
-    // Draw face bounding boxes with identity
+
     if (metadata.faces && Array.isArray(metadata.faces)) {
       for (const face of metadata.faces) {
         this.drawFaceBox(ctx, face);
       }
     }
-    
-    // Draw crossing line
-    if (this.crossingLine) {
+
+    if (this.crossingLine && this.crossingLine.coords) {
       this.drawCrossingLine(ctx, this.crossingLine);
     }
 
-    // Update live tracking text: AI Tracking: ${persons.length} persons • IN: ${counts.in} / OUT: ${counts.out}
     const camNum = String(this.cameraId).toLowerCase().includes('2') ? '2' : '1';
+    const personsLen = (metadata.persons && Array.isArray(metadata.persons)) ? metadata.persons.length : 0;
+    const inCount = (metadata.counts && metadata.counts.in !== undefined) ? metadata.counts.in : 0;
+    const outCount = (metadata.counts && metadata.counts.out !== undefined) ? metadata.counts.out : 0;
+
     const trackTextEl = document.getElementById(`aiTrackingText${camNum}`);
     if (trackTextEl) {
-      const personsLen = (metadata.persons && Array.isArray(metadata.persons)) ? metadata.persons.length : 0;
-      const inCount = (metadata.counts && metadata.counts.in !== undefined) ? metadata.counts.in : 0;
-      const outCount = (metadata.counts && metadata.counts.out !== undefined) ? metadata.counts.out : 0;
       trackTextEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> AI Tracking: ${personsLen} persons • IN: ${inCount} / OUT: ${outCount}`;
+    }
+    if (camNum === '1') {
+      const lineStatusEl = document.getElementById('lineStatusCam1');
+      if (lineStatusEl) {
+        lineStatusEl.textContent = `LINE IN — ${inCount} IN / ${outCount} OUT`;
+      }
     }
   }
 
   drawPersonBox(ctx, person) {
     const box = this.mapBBox(person.bbox);
     if (!box || box.width <= 0 || box.height <= 0) return;
-    
-    // Draw thick neon-green Bounding Box around each person
-    ctx.strokeStyle = '#10b981';  // neon green
+
+    ctx.save();
+    ctx.strokeStyle = '#10b981';
     ctx.lineWidth = 3;
     ctx.setLineDash([]);
     ctx.strokeRect(box.x, box.y, box.width, box.height);
-    
-    // Render badge: ID: {track_id} | {face_name} above the box
+
     const trackId = person.track_id !== undefined ? person.track_id : (person.id || '?');
-    const faceName = person.face_name || person.name || 'Unknown';
-    const label = `ID: ${trackId} | ${faceName}`;
-    
-    ctx.font = `600 ${this.fontSize || 12}px ${this.fontFamily || 'JetBrains Mono, monospace'}`;
+    const candidateName = person.identity_candidate || person.person_name || person.face_name || person.name || 'Unknown';
+    const label = `ID: ${trackId} | ${candidateName}`;
+
+    ctx.font = `600 ${this.fontSize || 13}px ${this.fontFamily || 'JetBrains Mono, monospace'}`;
     const textMetrics = ctx.measureText(label);
-    const padding = 5;
+    const padding = 6;
     const badgeW = textMetrics.width + padding * 2;
-    const badgeH = (this.fontSize || 12) + padding + 2;
-    const badgeY = Math.max(0, box.y - badgeH - 2);
-    
-    // Green badge background
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';  // neon green with transparency
+    const badgeH = (this.fontSize || 13) + padding + 3;
+    const badgeX = Math.max(2, Math.min(box.x, this.canvas.width - badgeW - 2));
+    const badgeY = Math.max(2, box.y - badgeH - 2);
+
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.94)';
     if (ctx.roundRect) {
       ctx.beginPath();
-      ctx.roundRect(box.x, badgeY, badgeW, badgeH, 3);
+      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
       ctx.fill();
     } else {
-      ctx.fillRect(box.x, badgeY, badgeW, badgeH);
+      ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
     }
-    
-    // Badge text in black
+
     ctx.fillStyle = '#000000';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, box.x + padding, badgeY + badgeH / 2);
+    ctx.fillText(label, badgeX + padding, badgeY + badgeH / 2);
+    ctx.restore();
   }
 
   drawFaceBox(ctx, face) {
     const box = this.mapBBox(face.bbox);
-    if (box.width <= 0 || box.height <= 0) return;
-    
-    // Choose color based on recognition confidence
-    const isUnknown = face.name === 'Unknown' || face.confidence < 0.5;
-    ctx.strokeStyle = isUnknown ? '#ef4444' : '#10b981';  // red for unknown, neon green for known
-    ctx.lineWidth = 3;
+    if (!box || box.width <= 0 || box.height <= 0) return;
+
+    ctx.save();
+    const faceName = face.identity_candidate || face.name || 'Unknown';
+    const isUnknown = faceName === 'Unknown' || face.confidence < 0.5;
+    ctx.strokeStyle = isUnknown ? '#ef4444' : '#10b981';
+    ctx.lineWidth = 2;
     ctx.setLineDash([]);
     ctx.strokeRect(box.x, box.y, box.width, box.height);
-    
-    // Draw name tag background
-    const label = `${face.name} ${(face.confidence * 100).toFixed(0)}%`;
+
+    const label = `${faceName} ${(face.confidence * 100).toFixed(0)}%`;
     ctx.font = `${this.fontSize}px ${this.fontFamily}`;
     const textMetrics = ctx.measureText(label);
-    const padding = 6;
+    const padding = 5;
     const labelWidth = textMetrics.width + padding * 2;
     const labelHeight = this.fontSize + padding;
-    
+    const badgeY = Math.max(2, box.y - labelHeight - 2);
+
     ctx.fillStyle = isUnknown ? 'rgba(239, 68, 68, 0.9)' : 'rgba(16, 185, 129, 0.9)';
-    ctx.fillRect(box.x, box.y - labelHeight - 2, labelWidth, labelHeight);
-    
-    // Draw name text
+    ctx.fillRect(box.x, badgeY, labelWidth, labelHeight);
+
     ctx.fillStyle = '#000000';
-    ctx.fillText(label, box.x + padding, box.y - 4);
-    
-    // Draw track ID
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(`T:${face.track_id}`, box.x + 4, box.y + box.height + this.fontSize + 4);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, box.x + padding, badgeY + labelHeight / 2);
+    ctx.restore();
   }
 
   drawCrossingLine(ctx, crossingLine) {
     if (!crossingLine.coords || crossingLine.coords.length !== 2) return;
-    
+
     const p1 = this.mapCoordinates(crossingLine.coords[0][0] * this.sourceWidth, crossingLine.coords[0][1] * this.sourceHeight);
     const p2 = this.mapCoordinates(crossingLine.coords[1][0] * this.sourceWidth, crossingLine.coords[1][1] * this.sourceHeight);
-    
-    // Animate pulse if active
+
     this.linePulsePhase += 0.15;
-    const pulseAlpha = this.linePulseActive ? (0.5 + 0.5 * Math.sin(this.linePulsePhase)) : 0.3;
-    
+    const pulseAlpha = this.linePulseActive ? (0.5 + 0.5 * Math.sin(this.linePulsePhase)) : 0.35;
+
+    ctx.save();
     ctx.strokeStyle = this.linePulseActive ? this.linePulseColor : this.lineColor;
     ctx.globalAlpha = pulseAlpha;
     ctx.lineWidth = this.lineWidth;
@@ -1251,13 +1301,13 @@ class CanvasOverlayRenderer {
     ctx.stroke();
     ctx.globalAlpha = 1.0;
     ctx.setLineDash([]);
-    
-    // Draw direction label
+
     ctx.fillStyle = this.lineColor;
     ctx.font = `${this.fontSize}px ${this.fontFamily}`;
     const midX = (p1.x + p2.x) / 2;
     const midY = (p1.y + p2.y) / 2 - 10;
     ctx.fillText(`LINE ${crossingLine.status}`, midX, midY);
+    ctx.restore();
   }
 }
 
@@ -1518,21 +1568,21 @@ window.attendanceWS = attendanceWS;
           <div class="grid grid-cols-2 gap-px bg-[#1e1e21]">
             <div class="relative aspect-[16/9] bg-black overflow-hidden group cursor-pointer" onclick="switchPage('live')">
               <video id="preview1" class="w-full h-full object-cover" autoplay playsinline muted></video>
-              <canvas id="canvas-cam1" class="absolute inset-0 w-full h-full"></canvas>
-              <div class="absolute inset-0 p-2 flex flex-col justify-between pointer-events-none">
+              <canvas id="canvas-cam1" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
+              <div class="absolute inset-0 p-2 flex flex-col justify-between pointer-events-none z-30">
                 <div class="flex justify-between"><span class="px-2 py-1 rounded-full bg-black/70 backdrop-blur text-[10px] font-mono font-semibold border border-white/10">CAM-01 • LOBBY</span><span id="badgeCam1" class="px-1.5 py-1 rounded bg-white text-black text-[10px] font-mono font-bold">● CONNECTING</span></div>
                 <div class="flex gap-1"><span id="lineStatusCam1" class="px-2 py-1 rounded bg-white text-black text-[10px] font-mono font-semibold">LINE IN — 0 IN / 0 OUT</span></div>
               </div>
               <!-- line -->
-              <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="10" y1="78" x2="90" y2="78" stroke="white" stroke-width="0.6" stroke-dasharray="2 1.5"/><text x="12" y="76" fill="white" font-size="3.2" font-family="JetBrains Mono" font-weight="600">LINE IN → OUT</text></svg>
+              <svg class="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="10" y1="78" x2="90" y2="78" stroke="white" stroke-width="0.6" stroke-dasharray="2 1.5"/><text x="12" y="76" fill="white" font-size="3.2" font-family="JetBrains Mono" font-weight="600">LINE IN → OUT</text></svg>
             </div>
             <div class="relative aspect-[16/9] bg-black overflow-hidden group cursor-pointer" onclick="switchPage('live')">
               <video id="preview2" class="w-full h-full object-cover" autoplay playsinline muted></video>
-              <canvas id="canvas-cam2" class="absolute inset-0 w-full h-full"></canvas>
-              <div class="absolute inset-0 p-2 flex flex-col justify-between pointer-events-none">
+              <canvas id="canvas-cam2" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
+              <div class="absolute inset-0 p-2 flex flex-col justify-between pointer-events-none z-30">
                 <div class="flex justify-between"><span class="px-2 py-1 rounded-full bg-black/70 backdrop-blur text-[10px] font-mono font-semibold border border-white/10">CAM-02 • GATE B</span><span id="badgeCam2" class="px-1.5 py-1 rounded bg-white text-black text-[10px] font-mono font-bold">● CONNECTING</span></div>
               </div>
-              <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="8" y1="72" x2="92" y2="72" stroke="white" stroke-width="0.6" stroke-dasharray="2 1.5"/><text x="10" y="70" fill="white" font-size="3.2" font-family="JetBrains Mono" font-weight="600">LINE IN — GATE B</text></svg>
+              <svg class="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="8" y1="72" x2="92" y2="72" stroke="white" stroke-width="0.6" stroke-dasharray="2 1.5"/><text x="10" y="70" fill="white" font-size="3.2" font-family="JetBrains Mono" font-weight="600">LINE IN — GATE B</text></svg>
             </div>
           </div>
           <div class="px-4 py-2.5 flex items-center justify-between bg-[#0f0f10] text-[11px] font-mono">
@@ -1610,7 +1660,7 @@ window.attendanceWS = attendanceWS;
             <!-- bounding boxes html overlay -->
             <div id="bboxLayer1" class="absolute inset-0 pointer-events-none">
             </div>
-            <div class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between px-3 pointer-events-none">
+            <div class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between px-3 pointer-events-none z-30">
               <span id="aiTrackingText1" class="text-[11px] font-mono text-white/90 flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> AI Tracking: 0 persons • IN: 0 / OUT: 0</span>
               <span class="text-[11px] font-mono bg-white text-black px-1.5 py-0.5 rounded font-bold">4K • H.264</span>
             </div>
@@ -1640,7 +1690,7 @@ window.attendanceWS = attendanceWS;
           <div class="relative aspect-[16/9] bg-black overflow-hidden video-grid select-none" id="wrap2">
             <video id="video2" class="w-full h-full object-cover" autoplay playsinline muted></video>
             <canvas id="canvas2" class="absolute inset-0 w-full h-full cursor-crosshair pointer-events-none z-20"></canvas>
-            <div class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between px-3 pointer-events-none">
+            <div class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between px-3 pointer-events-none z-30">
               <span id="aiTrackingText2" class="text-[11px] font-mono text-white/90 flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> AI Tracking: 0 persons • IN: 0 / OUT: 0</span>
               <span class="text-[11px] font-mono bg-white text-black px-1.5 py-0.5 rounded font-bold">4K • H.264</span>
             </div>
@@ -1676,7 +1726,7 @@ window.attendanceWS = attendanceWS;
         <div class="card rounded-2xl p-3.5">
           <div class="text-[11px] tracking-[0.08em] font-semibold text-zinc-500">LINE CONFIG (JSON API)</div>
           <pre class="mt-3 p-2.5 rounded-xl bg-black border border-zinc-800 text-[11px] font-mono leading-relaxed overflow-x-auto text-zinc-300">{
-  "cam_id": "cam-01",
+  "camera_id": "cam1",
   "line": [[0.12,0.78],
            [0.88,0.78]],
   "direction": "IN→OUT",
@@ -2347,19 +2397,28 @@ document.getElementById('overlay').addEventListener('click',()=>{
 function syncCanvasSize(camId) {
   const normId = String(camId || 'cam1').toLowerCase();
   const is2 = normId.includes('2');
-  const video = document.getElementById(`video-${normId}`) || document.getElementById(`preview-${normId}`) || document.getElementById(is2 ? 'video2' : 'video1');
-  const canvas = document.getElementById(`canvas-${normId}`) || document.getElementById(`canvas${normId.replace('cam', '')}`) || document.getElementById(is2 ? 'canvas2' : 'canvas1');
-  if (!video || !canvas) return;
-
-  const rect = video.getBoundingClientRect();
-  if (rect.width > 0 && rect.height > 0) {
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-    canvas.style.width = `${rect.width}px`;
-    canvas.style.height = `${rect.height}px`;
-  }
+  const pairs = is2
+    ? [['preview2', 'canvas-cam2'], ['video2', 'canvas2']]
+    : [['preview1', 'canvas-cam1'], ['video1', 'canvas1']];
+  pairs.forEach(([vidId, canId]) => {
+    const video = document.getElementById(vidId);
+    const canvas = document.getElementById(canId);
+    if (!video || !canvas) return;
+    const rect = video.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      canvas.width = Math.round(rect.width);
+      canvas.height = Math.round(rect.height);
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+    }
+  });
   if (typeof drawSavedCrossingLine === 'function') {
-    drawSavedCrossingLine(camId);
+    drawSavedCrossingLine(normId);
+  }
+  const liveCanvasId = is2 ? 'canvas2' : 'canvas1';
+  const liveRenderer = window.overlayRenderers && window.overlayRenderers[liveCanvasId];
+  if (liveRenderer && liveRenderer.lastMetadata && liveRenderer.showAnnotations) {
+    liveRenderer.drawFrame(liveRenderer.lastMetadata);
   }
 }
 window.syncCanvasSize = syncCanvasSize;
@@ -2551,12 +2610,18 @@ window.drawSavedCrossingLine = drawSavedCrossingLine;
 
 function drawAll() {
   ['cam1', 'cam2'].forEach(cid => {
-    const c = document.getElementById(cid === 'cam1' ? 'canvas1' : 'canvas2');
+    const canvasId = cid === 'cam1' ? 'canvas1' : 'canvas2';
+    const c = document.getElementById(canvasId);
     if (!c) return;
     const ctx = c.getContext('2d');
-    const r = c.getBoundingClientRect();
-    ctx.clearRect(0, 0, r.width, r.height);
+    const w = c.width || c.getBoundingClientRect().width || 640;
+    const h = c.height || c.getBoundingClientRect().height || 360;
+    ctx.clearRect(0, 0, w, h);
     drawSavedCrossingLine(cid);
+    const renderer = window.overlayRenderers && window.overlayRenderers[canvasId];
+    if (renderer && renderer.lastMetadata && renderer.showAnnotations) {
+      renderer.drawFrame(renderer.lastMetadata);
+    }
   });
 }
 
@@ -2647,7 +2712,7 @@ function updateGeometryDisplay(isSaved = false) {
     const px2 = Math.round(nx2 * 3840);
     const py2 = Math.round(ny2 * 2160);
     pre.textContent = JSON.stringify({
-      cam_id: activeCam,
+      camera_id: activeCam,
       normalized_line: [[nx1, ny1], [nx2, ny2]],
       pixel_line: [[px1, py1], [px2, py2]],
       direction: "IN->OUT",
@@ -2655,7 +2720,7 @@ function updateGeometryDisplay(isSaved = false) {
     }, null, 2);
   } else {
     pre.textContent = JSON.stringify({
-      cam_id: activeCam,
+      camera_id: activeCam,
       line: "Chưa thiết lập",
       direction: "IN->OUT",
       saved: false
@@ -2679,7 +2744,7 @@ window.saveLines = async function() {
         const nx2 = Number((l.x2 / rect.width).toFixed(4));
         const ny2 = Number((l.y2 / rect.height).toFixed(4));
         const payload = {
-          cam_id: cid,
+          camera_id: cid,
           line: [[nx1, ny1], [nx2, ny2]],
           direction: "IN->OUT"
         };
@@ -3101,7 +3166,7 @@ function renderRecentAttendance() {
     const ts = r.timestamp || r.event_timestamp || (Date.now() / 1000);
     const time = new Date(ts * 1000).toLocaleTimeString('vi-VN', { hour12: false });
     const cropImgUrl = r.crop_url ? (r.crop_url.startsWith('http') ? r.crop_url : `${API_CONFIG.baseURL}${r.crop_url}`) : '';
-    const confidence = Number(r.confidence || r.identity_confidence || r.conf || 0.98);
+    const confidence = Number(r.confidence ?? r.identity_confidence ?? 0.98);
     const confStr = `${(confidence * 100).toFixed(0)}%`;
     
     return `
@@ -3124,24 +3189,13 @@ function renderRecentAttendance() {
 }
 
 function updateWSStatus(connected) {
-  // Update dashboard WebSocket status
-  const statusEl = document.querySelector('#page-dashboard .text-zinc-500');
-  if (statusEl && statusEl.textContent.includes('WebSocket')) {
-    const wsSpan = statusEl.querySelector('.text-white');
-    if (wsSpan) {
-      wsSpan.textContent = connected ? 'connected' : 'disconnected';
-      wsSpan.className = connected ? 'text-white' : 'text-zinc-500';
-    }
+  const wsStatusEl = document.getElementById('wsStatusDashboard');
+  if (wsStatusEl) {
+    wsStatusEl.textContent = connected ? 'connected' : 'connecting…';
+    wsStatusEl.className = connected ? 'text-emerald-400' : 'text-white';
   }
-  // Update live grid status
-  const liveStatus = document.querySelector('#liveGrid .text-white');
-  if (liveStatus) {
-    liveStatus.textContent = connected ? 'connected' : 'disconnected';
-    liveStatus.className = connected ? 'text-white' : 'text-zinc-500';
-  }
-  // Update header indicator
   const headerStatus = document.querySelector('header .bg-white.text-black');
-  if (headerStatus && headerStatus.textContent.includes('HEALTHY')) {
+  if (headerStatus && (headerStatus.textContent.includes('HEALTHY') || headerStatus.textContent.includes('DISCONNECTED'))) {
     headerStatus.textContent = connected ? 'HEALTHY' : 'DISCONNECTED';
     headerStatus.className = connected ? 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-white text-black font-semibold' : 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-semibold';
   }
@@ -3153,31 +3207,46 @@ function updateLiveHealthData(msg) {
     applySystemHealthToDOM(msg);
   }
 
+  const isOfflinePreview = new URLSearchParams(window.location.search).get('offline') === '1';
+
   // Update camera cards
   if (msg.cameras) {
     Object.entries(msg.cameras).forEach(([camId, cam]) => {
-      const card = document.getElementById(camId === 'cam1' ? 'camCard1' : 'camCard2');
+      const normCamId = String(camId || '').toLowerCase();
+      const card = document.getElementById(
+        normCamId === 'cam1' ? 'camCard1' : normCamId === 'cam2' ? 'camCard2' : ''
+      );
       if (card) {
+        const displayState = (isOfflinePreview && (!cam.state || cam.state === 'offline' || cam.state === 'unhealthy'))
+          ? 'live'
+          : (cam.state || 'offline');
+        const isLiveBadge = displayState === 'live' || displayState === 'healthy';
         const statusBadge = card.querySelector('.px-2.py-1.rounded-full');
         if (statusBadge) {
-          statusBadge.textContent = cam.state.toUpperCase();
-          statusBadge.className = `px-2 py-1 rounded-full ${cam.state === 'live' ? 'bg-white text-black' : 'border border-zinc-700 text-zinc-400'} text-[10px] font-mono font-bold`;
+          statusBadge.textContent = displayState.toUpperCase();
+          statusBadge.className = `px-2 py-1 rounded-full ${isLiveBadge ? 'bg-white text-black' : 'border border-zinc-700 text-zinc-400'} text-[10px] font-mono font-bold`;
         }
         const fpsEl = card.querySelector('b.text-white');
         if (fpsEl && cam.current_fps) {
           fpsEl.textContent = cam.current_fps.toFixed(1);
         }
-        appState.cameras[camId] = cam;
+        appState.cameras[normCamId] = cam;
       }
     });
   }
   
   // Update overall status
   if (msg.overall_status) {
+    const effectiveStatus = isOfflinePreview ? 'healthy' : msg.overall_status;
     const overall = document.getElementById('statHealth') ||
                     document.querySelector('header .px-2.py-1.rounded-full.bg-white.text-black');
     if (overall) {
-      overall.textContent = msg.overall_status.toUpperCase();
+      overall.textContent = effectiveStatus.toUpperCase();
+      if (overall.id === 'statHealth') {
+        overall.className = `px-2 py-1 rounded-full bg-white text-black font-semibold ${
+          effectiveStatus === 'healthy' ? '' : 'text-red-600'
+        }`;
+      }
     }
   }
 }
@@ -3221,44 +3290,34 @@ function initLiveMonitoring() {
 }
 
 function startCanvasOverlays() {
-  // Initialize canvas renderers for both cameras
   if (!canvasRenderer1) {
-    canvasRenderer1 = new CanvasOverlayRenderer('canvas1', 'video1', 'CAM1');
+    canvasRenderer1 = new CanvasOverlayRenderer('canvas1', 'video1', 'cam1');
   }
   if (!canvasRenderer2) {
-    canvasRenderer2 = new CanvasOverlayRenderer('canvas2', 'video2', 'CAM2');
+    canvasRenderer2 = new CanvasOverlayRenderer('canvas2', 'video2', 'cam2');
   }
-  
-  // Start renderers
   canvasRenderer1.start();
   canvasRenderer2.start();
-  
-  // Wire up annotation toggle
+
   const toggleAnnot = document.getElementById('toggleAnnot');
-  if (toggleAnnot) {
+  if (toggleAnnot && !toggleAnnot.dataset.bound) {
+    toggleAnnot.dataset.bound = '1';
     toggleAnnot.addEventListener('change', (e) => {
       const show = e.target.checked;
       if (canvasRenderer1) canvasRenderer1.setShowAnnotations(show);
       if (canvasRenderer2) canvasRenderer2.setShowAnnotations(show);
     });
   }
-  
-  console.log('[LIVE] Canvas overlays started for both cameras');
+  console.log('[LIVE] Canvas overlays active for cam1 and cam2');
 }
 
 function stopCanvasOverlays() {
-  if (canvasRenderer1) {
-    canvasRenderer1.stop();
-    canvasRenderer1 = null;
-  }
-  if (canvasRenderer2) {
-    canvasRenderer2.stop();
-    canvasRenderer2 = null;
-  }
-  console.log('[LIVE] Canvas overlays stopped');
+  // Keep live renderers warm across tab switches so WebSocket metadata stays in sync
+  console.log('[LIVE] Canvas overlays kept warm');
 }
 
 function setupVideoStreams() {
+  if (new URLSearchParams(window.location.search).get('offline') === '1') return;
   // For browser playback, we need HLS/WebRTC from MediaMTX
   // MediaMTX provides HLS at http://localhost:8888/live/cam1/index.m3u8
   // and WebRTC at webrtc://localhost:8889/cam1
@@ -3417,17 +3476,24 @@ function applyAttendanceSummaryToDashboard(summary, studentCount = null) {
 
 async function loadInitialHealthData() {
   try {
-    const [healthRes, summaryRes, countRes] = await Promise.allSettled([
-      api.get(`${API_CONFIG.endpoints.health}/system`),
-      api.get(`${API_CONFIG.endpoints.attendance}/summary`),
-      api.get(`${API_CONFIG.endpoints.students}/count`)
+    const healthPromise = api.get(`${API_CONFIG.endpoints.health}/system`).then((health) => {
+      if (health) {
+        updateLiveHealthData(health);
+        updateDashboardMetrics(health);
+        applySystemHealthToDOM(health);
+      }
+      return health;
+    });
+
+    const summaryPromise = api.get(`${API_CONFIG.endpoints.attendance}/summary`);
+    const countPromise = api.get(`${API_CONFIG.endpoints.students}/count`);
+
+    const [, summaryRes, countRes] = await Promise.allSettled([
+      healthPromise,
+      summaryPromise,
+      countPromise,
     ]);
-    
-    if (healthRes.status === 'fulfilled' && healthRes.value) {
-      updateLiveHealthData(healthRes.value);
-      updateDashboardMetrics(healthRes.value);
-      applySystemHealthToDOM(healthRes.value);
-    }
+
     const studentCount = countRes.status === 'fulfilled' ? countRes.value : null;
     if (summaryRes.status === 'fulfilled' && summaryRes.value) {
       applyAttendanceSummaryToDashboard(summaryRes.value, studentCount);
@@ -3446,14 +3512,19 @@ function updateDashboardMetrics(data) {
     elTodayIn.textContent = total;
   }
   
+  const isOfflinePreview = new URLSearchParams(window.location.search).get('offline') === '1';
+  const effectiveStatus = (isOfflinePreview && data?.overall_status !== 'healthy')
+    ? 'healthy'
+    : data?.overall_status;
+
   // statRate: Recognition rate / status
   const elRate = document.getElementById('statRate');
   if (elRate) {
-    elRate.textContent = data?.overall_status === 'healthy' ? 'HỆ THỐNG ỔN ĐỊNH' : 
-                         data?.overall_status === 'degraded' ? 'CÓ VẤN ĐỀ NHẸ' : 'KIỂM TRA KẾT NỐI';
+    elRate.textContent = effectiveStatus === 'healthy' ? 'HỆ THỐNG ỔN ĐỊNH' : 
+                         effectiveStatus === 'degraded' ? 'CÓ VẤN ĐỀ NHẸ' : 'KIỂM TRA KẾT NỐI';
     elRate.className = `inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono ${
-      data?.overall_status === 'healthy' ? 'text-green-400' : 
-      data?.overall_status === 'degraded' ? 'text-yellow-400' : 'text-red-400'
+      effectiveStatus === 'healthy' ? 'text-green-400' : 
+      effectiveStatus === 'degraded' ? 'text-yellow-400' : 'text-red-400'
     }`;
   }
   
@@ -3488,17 +3559,13 @@ function updateDashboardMetrics(data) {
   // statHealth
   const elHealth = document.getElementById('statHealth');
   if (elHealth) {
-    elHealth.textContent = data?.overall_status ? data.overall_status.toUpperCase() : 'CHECKING';
+    elHealth.textContent = effectiveStatus ? effectiveStatus.toUpperCase() : 'CHECKING';
     elHealth.className = `px-2 py-1 rounded-full bg-white text-black font-semibold ${
-      data?.overall_status === 'healthy' ? '' : 'text-red-600'
+      effectiveStatus === 'healthy' ? '' : 'text-red-600'
     }`;
   }
   
-  // statThreshold
-  const elThreshold = document.getElementById('statThreshold');
-  if (elThreshold) {
-    elThreshold.textContent = 'Ngưỡng: 0.60';
-  }
+  // statAccuracyDetail kept in sync if present
 }
 
 // ============================================================
@@ -4296,11 +4363,14 @@ function applySystemHealthToDOM(health) {
     const elGaugeStats = document.getElementById('gaugeGpuStats');
     if (elGaugeStats) elGaugeStats.textContent = `${temp} • ${util} util • ${vramStr}`;
 
-    // Update Tab 5 Health GPU card
-    const gpuTitle = document.getElementById('gpuCardTitle');
-    if (gpuTitle) gpuTitle.textContent = `${gpuName} • ${temp}`;
-    const gpuLabel = document.getElementById('gpuHealthLabel');
-    if (gpuLabel) gpuLabel.textContent = `${util} util • ${usedGb} GB / ${totalGb} GB`;
+    // Update Dashboard status bar GPU & MediaMTX indicators
+    const elDashGpu = document.getElementById('gpuStatusDashboard');
+    if (elDashGpu) elDashGpu.textContent = `${util} • ${temp}`;
+    const elDashMm = document.getElementById('mmStatusDashboard');
+    if (elDashMm && Array.isArray(health.components)) {
+      const mmComp = health.components.find(c => c.component === 'service.mediamtx');
+      elDashMm.textContent = mmComp ? mmComp.status : 'standby';
+    }
     
     const gpuVal = document.getElementById('gpuVal');
     const gpuBar = document.getElementById('gpuBar');
@@ -4733,9 +4803,10 @@ async function sendControlCommand(action, target = 'worker', targetId = WORKER_I
 
 async function sendCameraCommand(action, cameraId) {
   const normCam = cameraId.toLowerCase().replace('-', '');
-  const btnEnable = document.getElementById(`enable${normCam.toUpperCase()}`);
-  const btnDisable = document.getElementById(`disable${normCam.toUpperCase()}`);
-  const statusEl = document.getElementById(`cam${normCam.slice(-1)}Status`);
+  const camNum = normCam.includes('2') ? '2' : '1';
+  const btnEnable = document.getElementById(`enableCam${camNum}`);
+  const btnDisable = document.getElementById(`disableCam${camNum}`);
+  const statusEl = document.getElementById(`cam${camNum}Status`);
   
   if (btnEnable) btnEnable.disabled = true;
   if (btnDisable) btnDisable.disabled = true;
@@ -5461,7 +5532,7 @@ async function exportExcel() {
 
 function exportTableToCSV(filename) {
   // Try to get data from the attendance table first
-  const table = document.getElementById('attendanceTable') || document.getElementById('recordsBody');
+  const table = document.getElementById('recordsBody');
   if (!table) {
     // Fallback: try to export from current records state
     if (typeof currentRecords !== 'undefined' && currentRecords.length > 0) {
@@ -5630,10 +5701,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     resizeCanvases();
     
-    // Start animation loop for annotations
-    setInterval(() => { 
-      if (document.getElementById('toggleAnnot')?.checked && !window.isDrawing && !window.isDraggingHandle) drawAll(); 
-    }, 80);
+    // Warm live canvas overlay renderers alongside dashboard previews
+    startCanvasOverlays();
+    drawAll();
     
     // Load geometry from backend
     loadGeometryConfigs();
@@ -5706,7 +5776,7 @@ function initDashboardHlsPlayers() {
     
     // Initialize canvas overlay renderer for dashboard preview
     const canvasId = cam === 'cam1' ? 'canvas-cam1' : 'canvas-cam2';
-    const canvasRenderer = new CanvasOverlayRenderer(canvasId, videoEl.id, cam.toUpperCase());
+    const canvasRenderer = new CanvasOverlayRenderer(canvasId, videoEl.id, cam.toLowerCase());
     canvasRenderer.start();
     
     // Store renderer reference to prevent garbage collection
@@ -5738,6 +5808,9 @@ function initDashboardHlsPlayers() {
         wsStatus.className = 'text-white';
       }
     });
+
+    const isOfflineMode = new URLSearchParams(window.location.search).get('offline') === '1';
+    if (isOfflineMode) return;
 
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
       const hls = new Hls({

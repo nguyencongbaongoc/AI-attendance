@@ -21,7 +21,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.config.settings import load_settings
-from app.runtime import collect_runtime_snapshot
+from app.runtime import collect_runtime_snapshot, get_cached_runtime_snapshot
 from app.streaming.health_events import HealthEvent, HealthEventType
 from app.streaming.shared_health import get_shared_health_monitor
 from app.attendance.policy_engine.parent_registry import create_parent_registry
@@ -350,10 +350,12 @@ class ConnectionManager:
                 "inference_active": snap.inference_active if snap else False,
             }
         
-        # Get GPU/runtime status
-        runtime_snapshot = collect_runtime_snapshot()
+        # Get GPU/runtime status off the asyncio event loop
         from app.api.health import get_hardware_telemetry
-        telem = get_hardware_telemetry()
+        runtime_snapshot, telem = await asyncio.gather(
+            asyncio.to_thread(get_cached_runtime_snapshot),
+            asyncio.to_thread(get_hardware_telemetry),
+        )
         gpu = {
             "gpu_name": runtime_snapshot.nvidia_gpu_name or "NVIDIA GeForce GTX 1660 Ti",
             "driver_version": runtime_snapshot.nvidia_driver_version or "610.47",

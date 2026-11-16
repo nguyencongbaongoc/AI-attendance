@@ -401,6 +401,11 @@ def create_app() -> FastAPI:
         
         return HTMLResponse(content=injected_html)
 
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        """Return empty 204 for browser favicon requests to prevent 404 console errors."""
+        return Response(status_code=204)
+
     @app.get("/api/v1/health/live")
     async def liveness():
         """Liveness probe."""

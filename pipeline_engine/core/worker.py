@@ -84,7 +84,7 @@ class WorkerConfig:
     worker_version: str = "1.0.0"
     
     # Backend connection
-    backend_base_url: str = "http://localhost:19146"
+    backend_base_url: str = "http://localhost:8000"
     ai_worker_api_key: str = ""
     ai_control_api_key: str = ""
     
@@ -287,7 +287,7 @@ class AIWorker:
             self._metrics.last_error = str(e)
             async with self._state_lock:
                 self._set_state(WorkerState.FAILED)
-            await self._cleanup_on_failure()
+            self._cleanup_on_failure()
             return False
             
     async def stop(self, timeout: float = None) -> None:
@@ -453,14 +453,18 @@ class AIWorker:
             logger.info("Registered attendance event callback")
             
     def _on_attendance_event(self, event: CrossingEvent) -> None:
-        """Handle attendance event from AttendanceEngine."""
+        """Handle attendance event from AttendanceEngine (thread-safe)."""
         try:
             # Convert CrossingEvent to CrossingEventRequest format
             request = self._convert_crossing_event(event)
             
             # Queue for delivery (non-blocking)
             if self.event_client:
-                asyncio.create_task(self.event_client.submit_event(request))
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(self.event_client.submit_event(request))
+                except RuntimeError:
+                    self.event_client.submit_event_sync(request)
                 
             # Update metrics
             self._metrics.total_attendance_events += 1
@@ -800,8 +804,10 @@ class AIWorker:
             
     def get_status_summary(self) -> str:
         """Get human-readable status summary."""
+        state_val = getattr(self._metrics, "state", self._state)
+        state_str = state_val.value.upper() if hasattr(state_val, "value") else str(state_val).upper()
         return (
-            f"AI Worker: {self._metrics.state.value.upper()} "
+            f"AI Worker: {state_str} "
             f"| Uptime: {self._metrics.uptime_seconds:.0f}s "
             f"| Cameras: {self._metrics.cameras_healthy}/{self._metrics.cameras_total} "
             f"| Frames: {self._metrics.total_frames_processed} "

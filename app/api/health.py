@@ -6,6 +6,7 @@ REST endpoints for system health, camera health, GPU status, and operational met
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
@@ -16,7 +17,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.config.settings import load_settings
-from app.runtime import collect_runtime_snapshot
+from app.runtime import collect_runtime_snapshot, get_cached_runtime_snapshot
 from app.streaming.shared_health import get_shared_health_monitor
 from app.attendance.policy_engine.parent_registry import create_parent_registry
 from app.attendance.policy_engine.telegram_bot import (
@@ -196,9 +197,11 @@ async def get_system_health():
             inference_active=snap.inference_active if snap else False,
         )
     
-    # Get GPU/runtime status
-    runtime_snapshot = collect_runtime_snapshot()
-    gpu_stats, cpu_pct, ram_pct, ram_used_mb, ram_total_mb = _get_live_hardware_stats()
+    # Get GPU/runtime status off the asyncio event loop using cached snapshot
+    runtime_snapshot, (gpu_stats, cpu_pct, ram_pct, ram_used_mb, ram_total_mb) = await asyncio.gather(
+        asyncio.to_thread(get_cached_runtime_snapshot),
+        asyncio.to_thread(_get_live_hardware_stats),
+    )
     gpu = GPUStatusResponse(
         gpu_name=gpu_stats["gpu_name"] or runtime_snapshot.nvidia_gpu_name or "NVIDIA GeForce GTX 1660 Ti",
         driver_version=runtime_snapshot.nvidia_driver_version or "610.47",
@@ -437,8 +440,10 @@ async def get_camera_health_by_id(camera_id: str):
 @router.get("/gpu", response_model=GPUStatusResponse)
 async def get_gpu_status():
     """Get GPU/CUDA/NVDEC status."""
-    runtime_snapshot = collect_runtime_snapshot()
-    gpu_stats, _, _, _, _ = _get_live_hardware_stats()
+    runtime_snapshot, (gpu_stats, _, _, _, _) = await asyncio.gather(
+        asyncio.to_thread(get_cached_runtime_snapshot),
+        asyncio.to_thread(_get_live_hardware_stats),
+    )
     
     return GPUStatusResponse(
         gpu_name=gpu_stats["gpu_name"] or runtime_snapshot.nvidia_gpu_name or "NVIDIA GeForce GTX 1660 Ti",

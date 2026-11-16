@@ -59,7 +59,7 @@ class StorageConfig:
     database_path: Path = field(default_factory=_get_attendance_db_path)
     enable_wal: bool = True
     foreign_keys: bool = True
-    busy_timeout_ms: int = 5000
+    busy_timeout_ms: int = 30000
 
 
 class AttendanceStorage:
@@ -181,6 +181,7 @@ class AttendanceStorage:
     def __init__(self, config: Optional[StorageConfig] = None):
         self.config = config or StorageConfig()
         self._local = threading.local()
+        self._write_lock = threading.RLock()
         self._init_database()
     
     def _get_connection(self) -> sqlite3.Connection:
@@ -276,15 +277,25 @@ class AttendanceStorage:
         Returns True if inserted, False if duplicate (idempotent).
         Raises ValueError if record is invalid.
         """
-        # Validate record
         error = validate_attendance_record(record)
         if error:
             raise ValueError(f"Invalid attendance record: {error}")
-        
+
+        import time
+        with self._write_lock:
+            for attempt in range(5):
+                try:
+                    return self._insert_once(record)
+                except sqlite3.OperationalError as e:
+                    if "locked" in str(e).lower() and attempt < 4:
+                        time.sleep(0.02 * (attempt + 1))
+                        continue
+                    raise
+
+    def _insert_once(self, record: AttendanceRecord) -> bool:
         conn = self._get_connection()
         with self._transaction(conn) as cursor:
             try:
-                # DEBUG: Build parameter tuple
                 params = (
                     record.attendance_record_id,
                     record.identity_certainty.value if hasattr(record.identity_certainty, 'value') else record.identity_certainty,
@@ -302,7 +313,7 @@ class AttendanceStorage:
                     record.direction.value if hasattr(record.direction, 'value') else record.direction,
                     record.event_timestamp,
                     record.event_frame_index,
-                    record.camera_id,
+                    record.camera_id.lower().strip(),
                     record.local_track_id,
                     record.global_observation_id,
                     record.source_raw_event_id,
@@ -325,16 +336,10 @@ class AttendanceStorage:
                     record.attendance_schema_version,
                     record.created_at,
                     record.persisted_at,
-                    # Phase 17: Evidence storage URIs
                     record.snapshot_face_url,
                     record.snapshot_scene_url,
                     record.video_clip_url,
                 )
-                # DEBUG: Log parameter count
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.debug(f"Inserting record with {len(params)} parameters")
-                
                 cursor.execute("""
                     INSERT INTO attendance_records (
                         attendance_record_id,
@@ -376,39 +381,47 @@ class AttendanceStorage:
                         attendance_schema_version,
                         created_at,
                         persisted_at,
-                        -- Phase 17: Evidence storage URIs
                         snapshot_face_url,
                         snapshot_scene_url,
                         video_clip_url
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, params)
-                logger.debug(f"Inserted {len(params)} values successfully")
                 return True
             except sqlite3.IntegrityError as e:
                 if "UNIQUE constraint failed: attendance_records.source_resolution_id" in str(e):
-                    # Duplicate source_resolution_id - idempotent
                     return False
                 elif "UNIQUE constraint failed: attendance_records.attendance_record_id" in str(e):
-                    # Duplicate attendance_record_id - also idempotent
                     return False
                 raise
-    
+
     def insert_many(self, records: List[AttendanceRecord]) -> Tuple[int, int]:
         """
         Insert multiple attendance records.
         
         Returns (inserted_count, duplicate_count).
         """
+        import time
+        with self._write_lock:
+            for attempt in range(5):
+                try:
+                    return self._insert_many_once(records)
+                except sqlite3.OperationalError as e:
+                    if "locked" in str(e).lower() and attempt < 4:
+                        time.sleep(0.02 * (attempt + 1))
+                        continue
+                    raise
+
+    def _insert_many_once(self, records: List[AttendanceRecord]) -> Tuple[int, int]:
         inserted = 0
         duplicates = 0
-        
+
         conn = self._get_connection()
         with self._transaction(conn) as cursor:
             for record in records:
                 error = validate_attendance_record(record)
                 if error:
                     raise ValueError(f"Invalid attendance record: {error}")
-                
+
                 try:
                     cursor.execute("""
                         INSERT INTO attendance_records (
@@ -450,8 +463,11 @@ class AttendanceStorage:
                             enrollment_version,
                             attendance_schema_version,
                             created_at,
-                            persisted_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            persisted_at,
+                            snapshot_face_url,
+                            snapshot_scene_url,
+                            video_clip_url
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
                         record.attendance_record_id,
                         record.identity_certainty.value if hasattr(record.identity_certainty, 'value') else record.identity_certainty,
@@ -469,7 +485,7 @@ class AttendanceStorage:
                         record.direction.value if hasattr(record.direction, 'value') else record.direction,
                         record.event_timestamp,
                         record.event_frame_index,
-                        record.camera_id,
+                        record.camera_id.lower().strip(),
                         record.local_track_id,
                         record.global_observation_id,
                         record.source_raw_event_id,
@@ -489,13 +505,12 @@ class AttendanceStorage:
                         record.processing_timestamp,
                         record.model_version,
                         record.enrollment_version,
-record.attendance_schema_version,
+                        record.attendance_schema_version,
                         record.created_at,
                         record.persisted_at,
-                        # Phase 17: Evidence storage URIs
                         record.snapshot_face_url,
                         record.snapshot_scene_url,
-                        record.video_clip_url
+                        record.video_clip_url,
                     ))
                     inserted += 1
                 except sqlite3.IntegrityError as e:
@@ -503,7 +518,7 @@ record.attendance_schema_version,
                         duplicates += 1
                     else:
                         raise
-        
+
         return inserted, duplicates
     
     def get_by_id(self, attendance_record_id: str) -> Optional[AttendanceRecord]:

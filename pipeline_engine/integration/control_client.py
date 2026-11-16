@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ControlClientConfig:
     """Configuration for control client."""
-    backend_base_url: str = "http://localhost:19146"
+    backend_base_url: str = "http://localhost:8000"
     worker_id: str = "pipeline_engine_1"
     api_key: Optional[str] = None
     poll_interval: float = 2.0
@@ -441,8 +441,8 @@ class PipelineEngineControlServer:
                     cameras[cam_id] = {
                         "state": cam_state.value if hasattr(cam_state, 'value') else str(cam_state),
                         "tracks_active": metrics.tracks_active if metrics else 0,
-                        "decode_fps": metrics.decode_fps if metrics else 0.0,
-                        "inference_fps": metrics.inference_fps if metrics else 0.0,
+                        "decode_fps": getattr(metrics, "decoded_fps", getattr(metrics, "decode_fps", 0.0)) if metrics else 0.0,
+                        "inference_fps": getattr(metrics, "ai_fps", getattr(metrics, "inference_fps", 0.0)) if metrics else 0.0,
                     }
                 status_details["cameras"] = cameras
             

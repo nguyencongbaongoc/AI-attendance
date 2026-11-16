@@ -17,7 +17,7 @@ import yaml
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 from fastapi import APIRouter, HTTPException, Query, status
 
 from pipeline_engine.ingestion.camera_manager import get_camera_manager
@@ -29,9 +29,17 @@ router = APIRouter(tags=["cameras"])
 
 class LineConfigRequest(BaseModel):
     """Payload for updating camera crossing line."""
-    cam_id: Optional[str] = Field(default=None, description="Camera ID (e.g. cam1, cam2)")
+    camera_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("camera_id", "cam_id"),
+        description="Camera ID (e.g. cam1, cam2)",
+    )
     line: List[List[float]] = Field(..., description="[[x1, y1], [x2, y2]] normalized 0..1 or pixel coords")
     direction: str = Field(default="IN->OUT", description="Crossing direction semantics: IN->OUT, OUT->IN, side_a_to_b_in")
+
+    @property
+    def cam_id(self) -> Optional[str]:
+        return self.camera_id
 
 
 def _sync_line_to_pipeline_yaml(cam_id: str, p1: tuple[int, int], p2: tuple[int, int], direction: str) -> bool:
@@ -110,37 +118,38 @@ def _process_line_save(cam_id: str, req: LineConfigRequest) -> Dict[str, Any]:
 
     # 2. Persist updated line coordinates into pipeline.yaml
     yaml_saved = _sync_line_to_pipeline_yaml(cam_id, (px1, py1), (px2, py2), req.direction)
+    norm_cam_id = cam_id.lower().strip()
 
     return {
         "status": "success",
-        "cam_id": cam_id,
+        "camera_id": norm_cam_id,
         "line": [[px1, py1], [px2, py2]],
         "pixel_line": [[px1, py1], [px2, py2]],
         "normalized_line": [[round(px1 / native_w, 4), round(py1 / native_h, 4)], [round(px2 / native_w, 4), round(py2 / native_h, 4)]],
         "direction": req.direction,
         "live_engine_updated": cm_updated,
         "yaml_persisted": yaml_saved,
-        "message": f"Crossing line for {cam_id} successfully updated and persisted."
+        "message": f"Crossing line for {norm_cam_id} successfully updated and persisted."
     }
 
 
-@router.post("/api/v1/cameras/{cam_id}/line")
-async def save_camera_line(cam_id: str, req: LineConfigRequest):
+@router.post("/api/v1/cameras/{camera_id}/line")
+async def save_camera_line(camera_id: str, req: LineConfigRequest):
     """Update crossing line for a specific camera."""
-    return _process_line_save(cam_id, req)
+    return _process_line_save(camera_id.lower().strip(), req)
 
 
 @router.post("/api/v1/line")
 async def save_line_alias(req: LineConfigRequest):
     """Alias endpoint for updating crossing line."""
-    cam_id = req.cam_id or "cam1"
+    cam_id = (req.camera_id or "cam1").lower().strip()
     return _process_line_save(cam_id, req)
 
 
-@router.get("/api/v1/cameras/{cam_id}/line")
-async def get_camera_line(cam_id: str):
+@router.get("/api/v1/cameras/{camera_id}/line")
+async def get_camera_line(camera_id: str):
     """Retrieve current crossing line for a camera."""
-    norm_id = cam_id.lower().replace("-", "").strip()
+    norm_id = camera_id.lower().replace("-", "").strip()
     yaml_path = Path("pipeline_engine/config/pipeline.yaml")
     if yaml_path.exists():
         try:
@@ -154,7 +163,7 @@ async def get_camera_line(cam_id: str):
                     p2 = geom.get("line_end", [3840, 1080])
                     direction = geom.get("direction_semantics", "side_a_to_b_in")
                     return {
-                        "cam_id": cid,
+                        "camera_id": cid.lower().strip(),
                         "line": [p1, p2],
                         "normalized_line": [[p1[0] / 3840, p1[1] / 2160], [p2[0] / 3840, p2[1] / 2160]],
                         "direction": "IN->OUT" if "a_to_b" in direction else "OUT->IN"
@@ -164,7 +173,7 @@ async def get_camera_line(cam_id: str):
 
     # Default fallback
     return {
-        "cam_id": cam_id,
+        "camera_id": camera_id.lower().strip(),
         "line": [[0, 1080], [3840, 1080]],
         "normalized_line": [[0.0, 0.5], [1.0, 0.5]],
         "direction": "IN->OUT"
@@ -172,9 +181,12 @@ async def get_camera_line(cam_id: str):
 
 
 @router.get("/api/v1/line")
-async def get_line_alias(cam_id: str = "cam1"):
+async def get_line_alias(
+    camera_id: str = Query(default="cam1", alias="camera_id"),
+    cam_id: Optional[str] = Query(default=None, alias="cam_id"),
+):
     """Alias endpoint for retrieving crossing line."""
-    return await get_camera_line(cam_id)
+    return await get_camera_line((cam_id or camera_id).lower().strip())
 
 
 @router.get("/api/v1/recordings")

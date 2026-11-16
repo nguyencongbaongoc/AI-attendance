@@ -237,6 +237,7 @@ class StageSynchronizer:
     
     def __init__(self, stage_names: List[str], cuda_sync: Optional[CUDASyncManager] = None):
         self.stage_names = stage_names
+        self._stage_names = stage_names
         self.cuda_sync = cuda_sync
         
         # Thread synchronization
