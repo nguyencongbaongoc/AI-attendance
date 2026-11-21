@@ -1996,6 +1996,7 @@ window.attendanceWS = attendanceWS;
         <select id="recCam" onchange="applyRecordsFilter()" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả camera</option><option value="cam1">CAM-01</option><option value="cam2">CAM-02</option></select>
         <select id="recClass" onchange="applyRecordsFilter()" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả lớp</option></select>
         <select id="recType" onchange="applyRecordsFilter()" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">IN / OUT</option><option value="in">IN</option><option value="out">OUT</option></select>
+        <select id="recStatus" onchange="applyRecordsFilter()" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả trạng thái</option><option value="PRESENT">PRESENT</option><option value="LATE">LATE</option><option value="ABSENT">ABSENT</option></select>
         <input id="recDate" onchange="applyRecordsFilter()" type="date" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]">
         <span id="recCount" class="ml-auto text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-800">0 bản ghi</span>
       </div>
@@ -2382,6 +2383,17 @@ function switchPage(p){
     resizeCanvases();
     // Start canvas overlays when entering live page
     startCanvasOverlays();
+    let needsHls = false;
+    ['video1', 'video2'].forEach(vid => {
+      const v = document.getElementById(vid);
+      if (v) {
+        if (v.tagName === 'IMG' || v.readyState === 0) needsHls = true;
+        if (v.tagName === 'VIDEO' && v.paused) v.play().catch(() => {});
+      }
+    });
+    if (needsHls && typeof setupVideoStreams === 'function') {
+      setupVideoStreams();
+    }
   }
 }
 document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click',()=> switchPage(b.dataset.page)));
@@ -4604,23 +4616,22 @@ function applyRecordsFilter() {
   const cam = document.getElementById('recCam')?.value;
   const classVal = document.getElementById('recClass')?.value;
   const type = document.getElementById('recType')?.value;
+  const statusVal = document.getElementById('recStatus')?.value;
   const date = document.getElementById('recDate')?.value;
   
   if (search) params.identity_candidate = search;
   if (cam) params.camera_id = cam;
   if (classVal) params.class_id = classVal;
   if (type) params.direction = type.toLowerCase();
+  if (statusVal) params.status = statusVal;
   if (date) {
-    const start = new Date(date).getTime() / 1000;
-    const end = start + 86400;
-    params.start_time = start;
-    params.end_time = end;
+    params.date = date;
   }
   
   loadAttendanceRecords(params);
 }
 
-['recCam', 'recClass', 'recType', 'recDate'].forEach(id => {
+['recCam', 'recClass', 'recType', 'recStatus', 'recDate'].forEach(id => {
   document.getElementById(id)?.addEventListener('change', applyRecordsFilter);
 });
 document.getElementById('recSearch')?.addEventListener('input', debounce(applyRecordsFilter, 300));
@@ -5486,43 +5497,41 @@ function closeEvidenceModal() {
 // ============================================================
 async function exportExcel() {
   try {
-    showToast('Đang tạo báo cáo Excel...', 'success');
-    
-    const response = await fetch(`${API_CONFIG.endpoints.excel}/export/daily`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': API_CONFIG.getApiKey(),
-      },
-      body: JSON.stringify({
-        date: new Date().toISOString().split('T')[0],
-        timezone: 'Asia/Bangkok',
-        include_events_sheet: true,
-        include_provenance_sheet: true,
-        include_summary_sheet: true
-      })
-    });
-    
+    showToast('Đang tạo báo cáo Excel (.xlsx)...', 'success');
+
+    const query = new URLSearchParams({ format: 'xlsx' });
+    const search = document.getElementById('recSearch')?.value?.trim();
+    const cam = document.getElementById('recCam')?.value;
+    const classVal = document.getElementById('recClass')?.value;
+    const type = document.getElementById('recType')?.value;
+    const statusVal = document.getElementById('recStatus')?.value;
+    const date = document.getElementById('recDate')?.value;
+
+    if (search) query.set('identity_candidate', search);
+    if (cam) query.set('camera_id', cam);
+    if (classVal) query.set('class_id', classVal);
+    if (type) query.set('direction', type.toLowerCase());
+    if (statusVal) query.set('status', statusVal);
+    if (date) query.set('date', date);
+
+    const response = await fetch(`${API_CONFIG.endpoints.attendance}/export?${query.toString()}`);
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Export failed' }));
       throw new Error(error.detail || 'Export failed');
     }
-    
-    const result = await response.json();
-    
-    // Download the file
-    const downloadResponse = await fetch(`${API_CONFIG.endpoints.excel}/export/${result.export_id}/download`);
-    if (!downloadResponse.ok) throw new Error('Download failed');
-    
-    const blob = await downloadResponse.blob();
+
+    const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `attendance_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const dateTag = date || new Date().toISOString().split('T')[0];
+    a.download = `diem_danh_${dateTag}.xlsx`;
+    document.body.appendChild(a);
     a.click();
+    a.remove();
     URL.revokeObjectURL(url);
-    
-    showToast(`✓ Đã xuất báo cáo: ${result.sheets_created.join(', ')} (${result.record_count} bản ghi)`, 'success');
+
+    showToast(`✓ Đã xuất file Excel: diem_danh_${dateTag}.xlsx`, 'success');
   } catch (error) {
     console.warn('Backend export failed, falling back to client CSV export:', error);
     showToast('Backend export không khả dụng, đang xuất CSV cục bộ...', 'warning');

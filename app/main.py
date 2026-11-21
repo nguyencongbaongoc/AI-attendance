@@ -44,10 +44,11 @@ from app.config.settings import load_settings
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+# Configure centralized rotating UTF-8 logging
+from app.logging.logger import setup_logging
+setup_logging(
+    log_level=os.environ.get("LOG_LEVEL", "INFO"),
+    log_file=Path(os.environ.get("LOG_FILE", "logs/backend.log")),
 )
 logger = logging.getLogger(__name__)
 
@@ -121,8 +122,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if not self.settings.security.rate_limit_enabled:
             return await call_next(request)
         
-        # Skip for health monitoring (infrastructure endpoints)
-        if request.url.path.startswith("/api/v1/health"):
+        # Skip for health monitoring and high-frequency internal worker IPC endpoints
+        if (
+            request.url.path.startswith("/api/v1/health")
+            or request.url.path == "/api/v1/stream/metadata/ingest"
+            or request.url.path.startswith("/api/v1/ai/control/pending")
+        ):
             return await call_next(request)
         
         client_key = self._get_client_key(request)

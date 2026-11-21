@@ -7,11 +7,14 @@ Integrates with existing AttendanceRepository and AttendanceEngine.
 
 from __future__ import annotations
 
+import csv
+import io
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.attendance.contract import AttendanceRecord, IdentityCertainty
@@ -189,10 +192,13 @@ async def get_attendance_records(
     track_id: Optional[str] = Query(None),
     global_observation_id: Optional[str] = Query(None),
     direction: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     identity_certainty: Optional[str] = Query(None),
     identity_candidate: Optional[str] = Query(None),
     class_id: Optional[str] = Query(None),
     date: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
     start_time: Optional[float] = Query(None),
     end_time: Optional[float] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
@@ -211,7 +217,7 @@ async def get_attendance_records(
     if global_observation_id:
         builder.global_observation(global_observation_id)
     if direction:
-        builder.direction(direction)
+        builder.direction(direction.lower().strip())
     if identity_certainty:
         builder.identity_certainty(identity_certainty)
     if identity_candidate:
@@ -227,8 +233,22 @@ async def get_attendance_records(
                 start_time = d_start
             if end_time is None:
                 end_time = d_end
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug(f"Invalid date filter '{date}': {exc}")
+
+    if start_date and start_time is None:
+        try:
+            dt = datetime.strptime(start_date.replace("-", "").strip(), "%Y%m%d")
+            start_time = dt.replace(hour=0, minute=0, second=0).timestamp()
+        except Exception as exc:
+            logger.debug(f"Invalid start_date filter '{start_date}': {exc}")
+
+    if end_date and end_time is None:
+        try:
+            dt = datetime.strptime(end_date.replace("-", "").strip(), "%Y%m%d")
+            end_time = dt.replace(hour=23, minute=59, second=59).timestamp()
+        except Exception as exc:
+            logger.debug(f"Invalid end_date filter '{end_date}': {exc}")
 
     if start_time is not None:
         builder.since(start_time)
@@ -240,6 +260,7 @@ async def get_attendance_records(
     result = builder.execute_with_metadata()
     
     # Convert records to response format
+    status_filter = status.strip().upper() if status else None
     records_response = []
     for idx, record in enumerate(result.records):
         candidate = record.identity_candidate or "UNKNOWN"
@@ -252,6 +273,17 @@ async def get_attendance_records(
         crop_url = record.snapshot_face_url
         conf = float(record.identity_confidence or 0.0)
         event_type = "IN" if (record.direction.value if hasattr(record.direction, "value") else str(record.direction)).lower() == "in" else "OUT"
+        raw_state = (record.new_state or "").upper()
+        if raw_state in ("INSIDE", "PRESENT", "ON_TIME"):
+            semantic_state = "PRESENT"
+        elif raw_state in ("LATE",):
+            semantic_state = "LATE"
+        elif raw_state in ("OUTSIDE", "ABSENT"):
+            semantic_state = "ABSENT" if event_type == "IN" else "OUT"
+        else:
+            semantic_state = "PRESENT" if event_type == "IN" else "OUT"
+        if status_filter and semantic_state != status_filter and raw_state != status_filter:
+            continue
         
         records_response.append(AttendanceRecordResponse(
             attendance_record_id=record.attendance_record_id,
@@ -455,3 +487,169 @@ async def get_attendance_stats():
     repository = get_repository()
     stats = repository.get_stats()
     return stats
+
+
+@router.get("/export")
+async def export_attendance(
+    format: str = Query("xlsx", pattern="^(xlsx|csv)$"),
+    camera_id: Optional[str] = Query(None),
+    direction: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    identity_candidate: Optional[str] = Query(None),
+    class_id: Optional[str] = Query(None),
+    date: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    start_time: Optional[float] = Query(None),
+    end_time: Optional[float] = Query(None),
+):
+    """Export filtered attendance journal as styled .xlsx or UTF-8 BOM .csv."""
+    query_res = await get_attendance_records(
+        camera_id=camera_id,
+        track_id=None,
+        global_observation_id=None,
+        direction=direction,
+        status=status,
+        identity_certainty=None,
+        identity_candidate=identity_candidate,
+        class_id=class_id,
+        date=date,
+        start_date=start_date,
+        end_date=end_date,
+        start_time=start_time,
+        end_time=end_time,
+        limit=1000,
+        offset=0,
+        order_by="event_timestamp",
+        desc=True,
+    )
+    records = query_res.records
+    date_tag = date or datetime.now().strftime("%Y-%m-%d")
+
+    headers = [
+        "STT",
+        "Mã Học Sinh",
+        "Họ và Tên",
+        "Lớp",
+        "Camera",
+        "Loại (Vào/Ra)",
+        "Thời Gian",
+        "Trạng Thái",
+        "Độ Tin Cậy (%)",
+    ]
+
+    if format.lower() == "csv":
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(headers)
+        for idx, rec in enumerate(records, 1):
+            writer.writerow([
+                idx,
+                rec.person_id,
+                rec.person_name,
+                rec.class_id or "N/A",
+                rec.camera_id,
+                "Vào (IN)" if (rec.event_type or rec.direction).upper() == "IN" else "Ra (OUT)",
+                rec.timestamp_iso,
+                rec.attendance_state,
+                round(float(rec.identity_confidence or 0.0) * 100.0, 1),
+            ])
+        csv_bytes = buf.getvalue().encode("utf-8-sig")
+        return StreamingResponse(
+            io.BytesIO(csv_bytes),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="diem_danh_{date_tag}.csv"'},
+        )
+
+    # Excel (.xlsx) export via openpyxl
+    import openpyxl
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+    wb = openpyxl.Workbook()
+    ws1 = wb.active
+    ws1.title = "Nhat_Ky_Diem_Danh"
+
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="10B981", end_color="10B981", fill_type="solid")
+    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    thin_border = Border(
+        left=Side(style="thin", color="D4D4D8"),
+        right=Side(style="thin", color="D4D4D8"),
+        top=Side(style="thin", color="D4D4D8"),
+        bottom=Side(style="thin", color="D4D4D8"),
+    )
+
+    ws1.append(headers)
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws1.cell(row=1, column=col_idx)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_align
+        cell.border = thin_border
+    ws1.row_dimensions[1].height = 26
+    ws1.freeze_panes = "A2"
+
+    for idx, rec in enumerate(records, 1):
+        dir_label = "Vào (IN)" if (rec.event_type or rec.direction).upper() == "IN" else "Ra (OUT)"
+        row_vals = [
+            idx,
+            rec.person_id,
+            rec.person_name,
+            rec.class_id or "N/A",
+            rec.camera_id,
+            dir_label,
+            rec.timestamp_iso,
+            rec.attendance_state,
+            round(float(rec.identity_confidence or 0.0) * 100.0, 1),
+        ]
+        ws1.append(row_vals)
+        row_num = idx + 1
+        for col_idx in range(1, len(row_vals) + 1):
+            c = ws1.cell(row=row_num, column=col_idx)
+            c.border = thin_border
+            c.alignment = Alignment(
+                horizontal="center" if col_idx in (1, 4, 5, 6, 8, 9) else "left",
+                vertical="center",
+            )
+
+    for col in ws1.columns:
+        max_len = max((len(str(c.value or "")) for c in col), default=10)
+        ws1.column_dimensions[col[0].column_letter].width = min(max(max_len + 4, 12), 42)
+
+    # Sheet 2: Tong_Hop_Si_So
+    ws2 = wb.create_sheet(title="Tong_Hop_Si_So")
+    summary = await get_attendance_summary_endpoint()
+    total_students = summary.total_students or max(summary.total, len({r.person_id for r in records}))
+    present_cnt = summary.present
+    late_cnt = summary.late
+    absent_cnt = max(0, total_students - present_cnt - late_cnt) if total_students > 0 else summary.absent
+    rate_pct = round(((present_cnt + late_cnt) / total_students) * 100.0, 1) if total_students > 0 else 0.0
+
+    sum_headers = ["Tổng số", "Có mặt", "Đi trễ", "Vắng mặt", "Tỷ lệ chuyên cần %"]
+    ws2.append(sum_headers)
+    for col_idx in range(1, len(sum_headers) + 1):
+        cell = ws2.cell(row=1, column=col_idx)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_align
+        cell.border = thin_border
+    ws2.row_dimensions[1].height = 26
+    ws2.freeze_panes = "A2"
+
+    ws2.append([total_students, present_cnt, late_cnt, absent_cnt, rate_pct])
+    for col_idx in range(1, len(sum_headers) + 1):
+        c = ws2.cell(row=2, column=col_idx)
+        c.border = thin_border
+        c.alignment = Alignment(horizontal="center", vertical="center")
+    for col in ws2.columns:
+        max_len = max((len(str(c.value or "")) for c in col), default=12)
+        ws2.column_dimensions[col[0].column_letter].width = max(max_len + 6, 16)
+
+    out_buf = io.BytesIO()
+    wb.save(out_buf)
+    out_buf.seek(0)
+    return StreamingResponse(
+        out_buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="diem_danh_{date_tag}.xlsx"'},
+    )

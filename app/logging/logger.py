@@ -131,6 +131,12 @@ def setup_logging(
     handlers = []
 
     if console:
+        for stream in (sys.stdout, sys.stderr):
+            if stream is not None and hasattr(stream, "reconfigure"):
+                try:
+                    stream.reconfigure(encoding="utf-8", errors="replace")
+                except Exception:
+                    pass
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(numeric_level)
         console_handler.addFilter(SecretFilter())

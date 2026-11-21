@@ -601,12 +601,15 @@ def update_tracks(
                         person_name = meta.get("name", person_id)
                         embedding = face_embedding.embedding.cpu().numpy()
         
-        if body_embedding:
-            body_quality = body_embedding.body_quality
+        matched_body_np = track.body_embedding
+        if body_embedding is not None:
+            body_quality = getattr(body_embedding, "body_quality", 1.0)
             max_body_quality = max(max_body_quality, body_quality)
             
             # Accumulate body embedding
-            body_emb = body_embedding.embedding.cpu()
+            raw_emb = getattr(body_embedding, "embedding", body_embedding)
+            body_emb = raw_emb.detach().cpu() if hasattr(raw_emb, "detach") else (raw_emb.cpu() if hasattr(raw_emb, "cpu") else torch.as_tensor(raw_emb))
+            matched_body_np = body_emb.numpy()
             body_embeddings_history.append(body_emb)
             # Keep only last 50 embeddings
             if len(body_embeddings_history) > 50:
@@ -651,7 +654,7 @@ def update_tracks(
             face_quality=face_quality,
             face_model_id=face_model_id,
             face_model_sha256=face_model_sha256,
-            body_embedding=body_embedding,
+            body_embedding=matched_body_np,
             body_quality=body_quality,
             body_model_id=body_model_id,
             body_model_sha256=body_model_sha256,
@@ -768,7 +771,7 @@ def update_tracks(
         
         if face_detection and face_detection.detection_id in face_embeddings and recognizer:
             face_embedding = face_embeddings[face_detection.detection_id]
-            face_quality = 1.0  # TODO: Calculate actual quality
+            face_quality = float(getattr(face_embedding, "face_quality", getattr(face_detection, "confidence", 1.0)))
             matches = recognizer.identify(face_embedding.embedding, top_k=1)
             if matches:
                 person_id, similarity = matches[0]
@@ -780,12 +783,24 @@ def update_tracks(
                     embedding = face_embedding.embedding.cpu().numpy()
         
         # Get body embedding if available (keyed by person detection_id or face fallback)
+        raw_body = None
+        body_emb_tensor = None
         if detection.detection_id in body_embeddings:
-            body_embedding = body_embeddings[detection.detection_id]
-            body_quality = getattr(body_embedding, "body_quality", 1.0)
+            raw_body = body_embeddings[detection.detection_id]
         elif face_detection and face_detection.detection_id in body_embeddings:
-            body_embedding = body_embeddings[face_detection.detection_id]
-            body_quality = getattr(body_embedding, "body_quality", 1.0)
+            raw_body = body_embeddings[face_detection.detection_id]
+        if raw_body is not None:
+            body_quality = getattr(raw_body, "body_quality", 1.0)
+            emb_val = getattr(raw_body, "embedding", raw_body)
+            if hasattr(emb_val, "detach"):
+                body_emb_tensor = emb_val.detach().cpu()
+                body_embedding = body_emb_tensor.numpy()
+            elif hasattr(emb_val, "cpu"):
+                body_emb_tensor = emb_val.cpu()
+                body_embedding = body_emb_tensor.numpy()
+            else:
+                body_embedding = emb_val
+                body_emb_tensor = torch.as_tensor(emb_val)
 
         # Generate unique monotonic track ID (must account for new_tracks created in same frame)
         max_existing_id = max(
@@ -829,9 +844,9 @@ def update_tracks(
             face_provenance=face_detection.detection_id if face_detection else None,
             # NEW: Embedding accumulation (P2.4)
             face_embeddings_history=[face_embedding.embedding.cpu()] if face_embedding is not None else [],
-            body_embeddings_history=[body_embedding.embedding.cpu()] if body_embedding is not None else [],
+            body_embeddings_history=[body_emb_tensor] if body_emb_tensor is not None else [],
             avg_face_embedding=face_embedding.embedding.cpu() if face_embedding is not None else None,
-            avg_body_embedding=body_embedding.embedding.cpu() if body_embedding is not None else None,
+            avg_body_embedding=body_emb_tensor,
             max_face_quality=face_quality,
             max_body_quality=body_quality,
             embedding_count=1 if face_embedding is not None else 0,

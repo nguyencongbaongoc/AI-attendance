@@ -597,16 +597,24 @@ class GlobalIdentityService:
     def _update_aggregate_embedding(
         self,
         current: Optional[np.ndarray],
-        new: np.ndarray,
+        new: Any,
         quality: float,
     ) -> np.ndarray:
         """Update aggregate embedding with quality-weighted average."""
+        emb = getattr(new, "embedding", new)
+        if hasattr(emb, "detach"):
+            emb = emb.detach().cpu().numpy()
+        elif hasattr(emb, "cpu"):
+            emb = emb.cpu().numpy()
+        elif not isinstance(emb, np.ndarray):
+            emb = np.asarray(emb, dtype=np.float32)
+
         if current is None:
-            return new.copy()
+            return emb.copy()
         
         # Quality-weighted average
         total_quality = 1.0 + quality
-        return (current + new * quality) / total_quality
+        return (current + emb * quality) / total_quality
 
     def _create_conflict(
         self,

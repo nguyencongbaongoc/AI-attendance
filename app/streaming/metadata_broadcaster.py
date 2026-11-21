@@ -264,6 +264,8 @@ class MetadataBroadcaster:
         If client queue is full, drops the frame (backpressure) - never blocks AI pipeline.
         """
         cid = camera_id.lower().strip()
+        if not self.active_connections.get(cid):
+            return
         queue = self._get_or_create_queue(cid)
         
         data_payload = metadata.to_dict() if hasattr(metadata, 'to_dict') else metadata
@@ -276,13 +278,14 @@ class MetadataBroadcaster:
         }
         self._event_sequence += 1
         
-        # Non-blocking put - drop if full
+        # Non-blocking latest-only put - keep queue shallow for <20ms IPC latency
         try:
+            while queue.qsize() >= 4:
+                queue.get_nowait()
+                queue.task_done()
             queue.put_nowait(message)
-        except asyncio.QueueFull:
-            # Drop frame - this is the backpressure mechanism
+        except (asyncio.QueueFull, asyncio.QueueEmpty):
             logger.debug(f"[META_BC] Frame dropped for {cid} (queue full) - backpressure active")
-            pass
 
     def broadcast_sync(self, camera_id: str, payload: Any):
         """Thread-safe synchronous broadcast method for worker threads."""

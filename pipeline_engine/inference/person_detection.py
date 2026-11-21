@@ -231,15 +231,16 @@ class YOLOPersonDetector:
         Returns:
             Tuple of (preprocessed_tensor, padding_info)
         """
-        # Convert NV12 to BGR on GPU
+        # Convert NV12 to BGR on GPU, then BGR -> RGB for Ultralytics YOLO
         y_tensor, uv_tensor = frame.get_tensors()
         bgr_tensor = nv12_to_bgr_cuda(y_tensor, uv_tensor)  # (H, W, 3) uint8
+        rgb_tensor = bgr_tensor[:, :, [2, 1, 0]]
         
         # Convert to float and normalize: (H, W, 3) -> (1, 3, H, W) float32 [0,1]
-        bgr_float = bgr_tensor.permute(2, 0, 1).unsqueeze(0).float() / 255.0
+        rgb_float = rgb_tensor.permute(2, 0, 1).unsqueeze(0).float() / 255.0
         
         # Letterbox resize
-        resized, padding_info = letterbox_resize_cuda(bgr_float, (self.input_w, self.input_h))
+        resized, padding_info = letterbox_resize_cuda(rgb_float, (self.input_w, self.input_h))
         
         return resized.contiguous(), padding_info
     
@@ -448,35 +449,25 @@ class YOLOPersonDetector:
                 class_probs = class_scores_raw
                 logger.debug("[YOLO_PARSE] Class scores already in [0,1] range (no sigmoid applied)")
             
-            for i in range(num_boxes):
-                # Get box coordinates [cx, cy, w, h] in model input space [0..640]
-                cx = float(box_coords[0, i, 0])
-                cy = float(box_coords[0, i, 1])
-                w = float(box_coords[0, i, 2])
-                h = float(box_coords[0, i, 3])
-                
+            # Vectorized GPU filtering: find only candidate boxes above threshold for person class
+            max_scores, max_cls = torch.max(class_probs[0], dim=-1)
+            mask = (max_scores >= self.yolo_config.confidence_threshold) & (max_cls == self.yolo_config.person_class_id)
+            indices = torch.nonzero(mask, as_tuple=False).squeeze(-1)
+            if indices.numel() == 0:
+                return detections
+
+            cand_boxes = box_coords[0, indices].detach().cpu().tolist()
+            cand_scores = max_scores[indices].detach().cpu().tolist()
+
+            for (cx, cy, w, h), confidence in zip(cand_boxes, cand_scores):
+                class_id = self.yolo_config.person_class_id
+
                 # Convert center format to corners in model input space
                 x1 = cx - w / 2
                 y1 = cy - h / 2
                 x2 = cx + w / 2
                 y2 = cy + h / 2
-                
-                # Get class probabilities
-                class_scores = class_probs[0, i]
-                
-                class_id = int(torch.argmax(class_scores))
-                class_conf = float(class_scores[class_id])
-                
-                # YOLOv8/v11 uses class confidence directly (no separate object confidence)
-                confidence = class_conf
-                
-                if confidence < self.yolo_config.confidence_threshold:
-                    continue
-                
-                # Only keep person class (class_id == 0)
-                if class_id != self.yolo_config.person_class_id:
-                    continue
-                
+
                 # Check if in valid region (remove padding)
                 if x1 < valid_x1 or x2 > valid_x2 or y1 < valid_y1 or y2 > valid_y2:
                     continue

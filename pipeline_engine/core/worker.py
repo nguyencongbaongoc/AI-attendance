@@ -490,10 +490,11 @@ class AIWorker:
             camera = self.engine.camera_manager._cameras.get(event.camera_id)
             if camera:
                 rtsp_source = camera.get("rtsp_source")
-                if rtsp_source and hasattr(rtsp_source, '_stream') and rtsp_source._stream:
+                if rtsp_source and hasattr(rtsp_source, '_stream') and rtsp_source._stream and rtsp_source._stream.time_base:
+                    tb = rtsp_source._stream.time_base
                     time_base = TimeBase(
-                        num=rtsp_source._stream.time_base.num if rtsp_source._stream.time_base else 1,
-                        den=rtsp_source._stream.time_base.den if rtsp_source._stream.time_base else 90000
+                        num=int(getattr(tb, "num", getattr(tb, "numerator", 1))),
+                        den=int(getattr(tb, "den", getattr(tb, "denominator", 90000))),
                     )
                 # Stream epoch tracked by health client
                 stream_epoch = self.health_client._stream_epochs.get(event.camera_id, 0) if self.health_client else 0
@@ -513,7 +514,7 @@ class AIWorker:
             person_name=event.person_name,
             identity_confidence=event.identity_confidence,
             stream_epoch=stream_epoch,
-            pts=pts,  # TODO: Get actual PTS from frame
+            pts=getattr(event, "pts", pts),
             time_base=time_base,
             capture_timestamp=capture_timestamp,
             processing_timestamp=processing_timestamp,
@@ -594,6 +595,13 @@ class AIWorker:
         if self.engine and self.engine.metrics.last_error:
             errors.append(self.engine.metrics.last_error)
             
+        dropped_frames = 0
+        if self.engine and self.engine.camera_manager:
+            dropped_frames = sum(
+                getattr(m, "frames_dropped", 0)
+                for m in self.engine.camera_manager.get_all_metrics().values()
+            )
+            
         health_data = {
             "worker_id": self.config.worker_id,
             "worker_version": self.config.worker_version,
@@ -605,7 +613,7 @@ class AIWorker:
             "gpu_provider": "CUDAExecutionProvider",
             "queue_depth": self.event_client._queue.qsize() if self.event_client else 0,
             "processing_latency_ms": self._metrics.avg_latency_ms,
-            "dropped_frames": 0,  # TODO: track from camera manager
+            "dropped_frames": dropped_frames,
             "stream_epochs": stream_epochs,
             "errors": errors,
         }
@@ -843,10 +851,11 @@ async def shutdown_worker() -> None:
 
 
 if __name__ == "__main__":
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    # Configure centralized rotating UTF-8 logging
+    from app.logging.logger import setup_logging
+    setup_logging(
+        log_level=os.environ.get("LOG_LEVEL", "INFO"),
+        log_file=Path(os.environ.get("LOG_FILE", "logs/worker.log")),
     )
     
     # Create and run worker

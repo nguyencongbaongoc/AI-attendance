@@ -329,11 +329,35 @@ class NVDECDecoder:
             self._first_decode_error_time = None
             self._consecutive_decode_errors = 0
             
+            # Initialize bitstream filter so H.264/HEVC packets are Annex-B for PyNvVideoCodec
+            bsf = None
+            codec_name = (self.config.codec or "h264").lower()
+            bsf_name = "hevc_mp4toannexb" if "hevc" in codec_name or "265" in codec_name else "h264_mp4toannexb"
+            try:
+                bsf = av.BitStreamFilterContext(bsf_name, self._stream)
+            except Exception as bsf_err:
+                logger.debug(f"NVDECDecoder({self.camera_id}): BitStreamFilter {bsf_name} skipped: {bsf_err}")
+
+            # Feed Annex-B extradata (SPS/PPS from SDP sprop-parameter-sets) to NVDEC once
+            extradata = getattr(self._codec_context, "extradata", None) if self._codec_context else None
+            if extradata and (extradata.startswith(b"\x00\x00\x00\x01") or extradata.startswith(b"\x00\x00\x01")):
+                try:
+                    extra_buf = (ctypes.c_ubyte * len(extradata)).from_buffer_copy(extradata)
+                    extra_pkt = nvc.PacketData()
+                    extra_pkt.bsl = len(extradata)
+                    extra_pkt.bsl_data = ctypes.addressof(extra_buf)
+                    extra_pkt.is_video = 1
+                    decode_fn = getattr(self._decoder, "Decode", None) or getattr(self._decoder, "decode", None)
+                    decode_fn(extra_pkt)
+                    logger.info(f"NVDECDecoder({self.camera_id}): Fed {len(extradata)}B Annex-B SPS/PPS extradata to NVDEC")
+                except Exception as extra_err:
+                    logger.warning(f"NVDECDecoder({self.camera_id}): Failed to feed extradata: {extra_err}")
+
             # Use PyAV container for demuxing (RTSP/RTMP)
             demux_iter = iter(self._container.demux(self._stream))
             while not self._stop_event.is_set():
                 try:
-                    packet = next(demux_iter)
+                    raw_packet = next(demux_iter)
                 except StopIteration:
                     break
                 except Exception as e:
@@ -358,218 +382,226 @@ class NVDECDecoder:
                 if self._stop_event.is_set():
                     break
 
-                # If waiting for IDR keyframe after decode error or corrupted packet
-                if self._waiting_for_keyframe:
-                    if not packet.is_keyframe:
-                        self._metrics.frames_dropped += 1
-                        continue
-                    else:
-                        logger.info(f"NVDECDecoder({self.camera_id}): IDR Keyframe received, recovering decode stream")
-                        self._waiting_for_keyframe = False
-
-                if packet.is_corrupt:
-                    self._metrics.frames_dropped += 1
-                    self._waiting_for_keyframe = True
+                if raw_packet.size <= 0:
                     continue
 
-                decode_start = time.perf_counter()
-
-                # Create PyNvVideoCodec PacketData from PyAV packet
-                pnv_packet = nvc.PacketData()
-                pnv_packet.bsl = packet.size
-                pnv_packet.bsl_data = packet.buffer_ptr
-                pnv_packet.pts = packet.pts if packet.pts is not None else 0
-                pnv_packet.dts = packet.dts if packet.dts is not None else 0
-                pnv_packet.duration = packet.duration if packet.duration is not None else 0
-                pnv_packet.decode_flag = 0
-                pnv_packet.key = 1 if packet.is_keyframe else 0
-                pnv_packet.is_video = 1
-                pnv_packet.stream_index = 0
-
-                # Decode packet with PyNvVideoCodec
-                try:
-                    decode_fn = getattr(self._decoder, "Decode", None) or getattr(self._decoder, "decode", None)
-                    decoded_frames = decode_fn(pnv_packet)
-                    # Successful decode resets error streak
-                    self._first_decode_error_time = None
-                    self._consecutive_decode_errors = 0
-                except Exception as e:
-                    now = time.time()
-                    self._metrics.decode_errors += 1
-                    self._metrics.frames_dropped += 1
-                    self._consecutive_decode_errors += 1
-                    if self._first_decode_error_time is None:
-                        self._first_decode_error_time = now
-
-                    error_duration = now - self._first_decode_error_time
-                    self._waiting_for_keyframe = True
-
-                    # Only degrade and exit reader loop if errors persist > 3 consecutive seconds
-                    if error_duration > 3.0:
-                        logger.error(
-                            f"NVDECDecoder({self.camera_id}): Decode errors persisted for {error_duration:.1f}s (> 3s threshold): {e}"
-                        )
-                        self._metrics.last_error = str(e)
-                        self._set_state(DecoderState.ERROR)
-                        break
-                    else:
-                        logger.warning(
-                            f"NVDECDecoder({self.camera_id}): Transient decode error ({error_duration:.2f}s elapsed), "
-                            f"dropping frame and waiting for next IDR keyframe: {e}"
-                        )
-                        continue
-                
-                # Process decoded frames
-                for decoded_frame in decoded_frames:
+                packets_to_decode = bsf.filter(raw_packet) if bsf is not None else [raw_packet]
+                for packet in packets_to_decode:
                     if self._stop_event.is_set():
                         break
-                    
-                    # Get frame timestamp
-                    timestamp = time.time()
-                    pts = decoded_frame.getPTS()
-                    
-                    # Get frame dimensions from shape
-                    shape = decoded_frame.shape
-                    if len(shape) == 2:
-                        height = shape[0] * 2 // 3  # NV12 is 1.5x height
-                        width = shape[1]
-                    else:
-                        width = self._width
-                        height = self._height
-                    
-                    # Verify NV12 format
-                    pixel_format = str(decoded_frame.format)
-                    if "NV12" not in pixel_format.upper():
-                        logger.warning(f"NVDECDecoder({self.camera_id}): Unexpected pixel format: {pixel_format}, assuming NV12")
-                    
-                    # Get CAI memory views (zero-copy)
-                    try:
-                        cai_views = decoded_frame.cuda()
-                    except Exception as e:
-                        logger.error(f"NVDECDecoder({self.camera_id}): CAI export failed: {e}")
-                        try:
-                            self._decoder.UnlockFrame(0)
-                        except Exception:
-                            pass
-                        continue
-                    
-                    if len(cai_views) < 2:
-                        logger.error(f"NVDECDecoder({self.camera_id}): Expected 2 CAI views (Y, UV), got {len(cai_views)}")
-                        try:
-                            self._decoder.UnlockFrame(0)
-                        except Exception:
-                            pass
-                        continue
-                    
-                    y_view = cai_views[0]
-                    uv_view = cai_views[1]
-                    
-                    # Convert CAI views to PyTorch CUDA tensors (zero-copy)
-                    try:
-                        y_tensor = torch.as_tensor(y_view, device='cuda')
-                        uv_tensor = torch.as_tensor(uv_view, device='cuda')
-                    except Exception as e:
-                        logger.error(f"NVDECDecoder({self.camera_id}): PyTorch tensor creation failed: {e}")
-                        try:
-                            self._decoder.UnlockFrame(0)
-                        except Exception:
-                            pass
-                        continue
-                    
-                    # Squeeze Y if needed (H, W, 1) -> (H, W)
-                    if y_tensor.dim() == 3 and y_tensor.shape[2] == 1:
-                        y_tensor = y_tensor.squeeze(2)
-                    
-                    # Validate tensors
-                    assert y_tensor.is_cuda, f"y_tensor must be on CUDA, got {y_tensor.device}"
-                    assert uv_tensor.is_cuda, f"uv_tensor must be on CUDA, got {uv_tensor.device}"
-                    assert y_tensor.dtype == torch.uint8, f"y_tensor must be uint8, got {y_tensor.dtype}"
-                    assert uv_tensor.dtype == torch.uint8, f"uv_tensor must be uint8, got {uv_tensor.dtype}"
-                    
-                    # Acquire frame from pool or create new
-                    if self._frame_pool:
-                        try:
-                            gpu_frame = self._frame_pool.acquire(
-                                frame_id=self._frame_id,
-                                timestamp=timestamp,
-                                pts=pts if pts is not None else self._frame_id,
-                            )
-                            # Copy to pooled frame (zero-copy via tensor assignment)
-                            gpu_frame.y_tensor.copy_(y_tensor)
-                            gpu_frame.uv_tensor.copy_(uv_tensor)
-                            gpu_frame.pts = pts if pts is not None else self._frame_id
-                            gpu_frame.dts = pts if pts is not None else self._frame_id
-                            gpu_frame.time_base = self._time_base
-                            gpu_frame.width = width
-                            gpu_frame.height = height
-                            gpu_frame.actual_width = width
-                            gpu_frame.actual_height = height
-                        except RuntimeError:
+
+                    # If waiting for IDR keyframe after decode error or corrupted packet
+                    if self._waiting_for_keyframe:
+                        if not packet.is_keyframe:
                             self._metrics.frames_dropped += 1
-                            # Unlock frame
+                            continue
+                        else:
+                            logger.info(f"NVDECDecoder({self.camera_id}): IDR Keyframe received, recovering decode stream")
+                            self._waiting_for_keyframe = False
+
+                    if packet.is_corrupt:
+                        self._metrics.frames_dropped += 1
+                        self._waiting_for_keyframe = True
+                        continue
+
+                    decode_start = time.perf_counter()
+
+                    # Create PyNvVideoCodec PacketData from PyAV packet
+                    pnv_packet = nvc.PacketData()
+                    pnv_packet.bsl = packet.size
+                    pnv_packet.bsl_data = packet.buffer_ptr
+                    pnv_packet.pts = packet.pts if packet.pts is not None else 0
+                    pnv_packet.dts = packet.dts if packet.dts is not None else 0
+                    pnv_packet.duration = packet.duration if packet.duration is not None else 0
+                    pnv_packet.decode_flag = 0
+                    pnv_packet.key = 1 if packet.is_keyframe else 0
+                    pnv_packet.is_video = 1
+                    pnv_packet.stream_index = 0
+
+                    # Decode packet with PyNvVideoCodec
+                    try:
+                        decode_fn = getattr(self._decoder, "Decode", None) or getattr(self._decoder, "decode", None)
+                        decoded_frames = decode_fn(pnv_packet)
+                        # Successful decode resets error streak
+                        self._first_decode_error_time = None
+                        self._consecutive_decode_errors = 0
+                    except Exception as e:
+                        now = time.time()
+                        self._metrics.decode_errors += 1
+                        self._metrics.frames_dropped += 1
+                        self._consecutive_decode_errors += 1
+                        if self._first_decode_error_time is None:
+                            self._first_decode_error_time = now
+
+                        error_duration = now - self._first_decode_error_time
+                        self._waiting_for_keyframe = True
+
+                        # Only degrade and exit reader loop if errors persist > 3 consecutive seconds
+                        if error_duration > 3.0:
+                            logger.error(
+                                f"NVDECDecoder({self.camera_id}): Decode errors persisted for {error_duration:.1f}s (> 3s threshold): {e}"
+                            )
+                            self._metrics.last_error = str(e)
+                            self._set_state(DecoderState.ERROR)
+                            break
+                        else:
+                            logger.warning(
+                                f"NVDECDecoder({self.camera_id}): Transient decode error ({error_duration:.2f}s elapsed), "
+                                f"dropping frame and waiting for next IDR keyframe: {e}"
+                            )
+                            continue
+                    
+                    # Process decoded frames
+                    for decoded_frame in decoded_frames:
+                        if self._stop_event.is_set():
+                            break
+                    
+                        # Get frame timestamp
+                        timestamp = time.time()
+                        pts = decoded_frame.getPTS()
+                    
+                        # Get frame dimensions from shape
+                        shape = decoded_frame.shape
+                        if len(shape) == 2:
+                            height = shape[0] * 2 // 3  # NV12 is 1.5x height
+                            width = shape[1]
+                        else:
+                            width = self._width
+                            height = self._height
+                    
+                        # Verify NV12 format
+                        pixel_format = str(decoded_frame.format)
+                        if "NV12" not in pixel_format.upper():
+                            logger.warning(f"NVDECDecoder({self.camera_id}): Unexpected pixel format: {pixel_format}, assuming NV12")
+                    
+                        # Get CAI memory views (zero-copy)
+                        try:
+                            cai_views = decoded_frame.cuda()
+                        except Exception as e:
+                            logger.error(f"NVDECDecoder({self.camera_id}): CAI export failed: {e}")
                             try:
                                 self._decoder.UnlockFrame(0)
                             except Exception:
                                 pass
                             continue
-                    else:
-                        # Create GPUFrame directly
-                        gpu_frame = GPUFrame(
-                            camera_id=self.camera_id,
-                            frame_id=self._frame_id,
-                            source_provenance="rtsp",
-                            timestamp=timestamp,
-                            pts=pts if pts is not None else self._frame_id,
-                            dts=pts if pts is not None else self._frame_id,
-                            time_base=self._time_base,
-                            width=width,
-                            height=height,
-                            actual_width=width,
-                            actual_height=height,
-                            pixel_format=PixelFormat.NV12,
-                            y_tensor=y_tensor,
-                            uv_tensor=uv_tensor,
-                            memory_owner=FrameOwnership.DECODER,
-                        )
                     
-                    # Record decode time
-                    decode_ms = (time.perf_counter() - decode_start) * 1000
-                    gpu_frame.decode_time_ms = decode_ms
+                        if len(cai_views) < 2:
+                            logger.error(f"NVDECDecoder({self.camera_id}): Expected 2 CAI views (Y, UV), got {len(cai_views)}")
+                            try:
+                                self._decoder.UnlockFrame(0)
+                            except Exception:
+                                pass
+                            continue
                     
-                    # Queue frame
-                    try:
-                        self._frame_queue.put_nowait(gpu_frame)
-                    except Full:
-                        self._metrics.queue_full_drops += 1
-                        # Drop oldest
+                        y_view = cai_views[0]
+                        uv_view = cai_views[1]
+                    
+                        # Convert CAI views to PyTorch CUDA tensors (zero-copy)
                         try:
-                            old_frame = self._frame_queue.get_nowait()
-                            if self._frame_pool:
-                                self._frame_pool.return_to_pool(old_frame)
-                        except Empty:
-                            pass
+                            y_tensor = torch.as_tensor(y_view, device='cuda')
+                            uv_tensor = torch.as_tensor(uv_view, device='cuda')
+                        except Exception as e:
+                            logger.error(f"NVDECDecoder({self.camera_id}): PyTorch tensor creation failed: {e}")
+                            try:
+                                self._decoder.UnlockFrame(0)
+                            except Exception:
+                                pass
+                            continue
+                    
+                        # Squeeze Y if needed (H, W, 1) -> (H, W)
+                        if y_tensor.dim() == 3 and y_tensor.shape[2] == 1:
+                            y_tensor = y_tensor.squeeze(2)
+                    
+                        # Validate tensors
+                        assert y_tensor.is_cuda, f"y_tensor must be on CUDA, got {y_tensor.device}"
+                        assert uv_tensor.is_cuda, f"uv_tensor must be on CUDA, got {uv_tensor.device}"
+                        assert y_tensor.dtype == torch.uint8, f"y_tensor must be uint8, got {y_tensor.dtype}"
+                        assert uv_tensor.dtype == torch.uint8, f"uv_tensor must be uint8, got {uv_tensor.dtype}"
+                    
+                        # Acquire frame from pool or create new
+                        if self._frame_pool:
+                            try:
+                                gpu_frame = self._frame_pool.acquire(
+                                    frame_id=self._frame_id,
+                                    timestamp=timestamp,
+                                    pts=pts if pts is not None else self._frame_id,
+                                )
+                                # Copy to pooled frame (zero-copy via tensor assignment)
+                                gpu_frame.y_tensor.copy_(y_tensor)
+                                gpu_frame.uv_tensor.copy_(uv_tensor)
+                                gpu_frame.pts = pts if pts is not None else self._frame_id
+                                gpu_frame.dts = pts if pts is not None else self._frame_id
+                                gpu_frame.time_base = self._time_base
+                                gpu_frame.width = width
+                                gpu_frame.height = height
+                                gpu_frame.actual_width = width
+                                gpu_frame.actual_height = height
+                            except RuntimeError:
+                                self._metrics.frames_dropped += 1
+                                # Unlock frame
+                                try:
+                                    self._decoder.UnlockFrame(0)
+                                except Exception:
+                                    pass
+                                continue
+                        else:
+                            # Create GPUFrame directly
+                            gpu_frame = GPUFrame(
+                                camera_id=self.camera_id,
+                                frame_id=self._frame_id,
+                                source_provenance="rtsp",
+                                timestamp=timestamp,
+                                pts=pts if pts is not None else self._frame_id,
+                                dts=pts if pts is not None else self._frame_id,
+                                time_base=self._time_base,
+                                width=width,
+                                height=height,
+                                actual_width=width,
+                                actual_height=height,
+                                pixel_format=PixelFormat.NV12,
+                                y_tensor=y_tensor,
+                                uv_tensor=uv_tensor,
+                                memory_owner=FrameOwnership.DECODER,
+                            )
+                    
+                        # Record decode time
+                        decode_ms = (time.perf_counter() - decode_start) * 1000
+                        gpu_frame.decode_time_ms = decode_ms
+                    
+                        # Queue frame
                         try:
                             self._frame_queue.put_nowait(gpu_frame)
                         except Full:
-                            if self._frame_pool:
-                                self._frame_pool.return_to_pool(gpu_frame)
-                            self._metrics.frames_dropped += 1
+                            self._metrics.queue_full_drops += 1
+                            # Drop oldest
+                            try:
+                                old_frame = self._frame_queue.get_nowait()
+                                if self._frame_pool:
+                                    self._frame_pool.return_to_pool(old_frame)
+                            except Empty:
+                                pass
+                            try:
+                                self._frame_queue.put_nowait(gpu_frame)
+                            except Full:
+                                if self._frame_pool:
+                                    self._frame_pool.return_to_pool(gpu_frame)
+                                self._metrics.frames_dropped += 1
                     
-                    self._frame_id += 1
-                    self._metrics.frames_decoded += 1
+                        self._frame_id += 1
+                        self._metrics.frames_decoded += 1
                     
-                    # Track decode time
-                    self._decode_times.append(decode_ms)
-                    if len(self._decode_times) > self._max_decode_samples:
-                        self._decode_times.pop(0)
-                    self._metrics.avg_decode_ms = sum(self._decode_times) / len(self._decode_times)
-                    self._metrics.last_decode_time = time.time()
+                        # Track decode time
+                        self._decode_times.append(decode_ms)
+                        if len(self._decode_times) > self._max_decode_samples:
+                            self._decode_times.pop(0)
+                        self._metrics.avg_decode_ms = sum(self._decode_times) / len(self._decode_times)
+                        self._metrics.last_decode_time = time.time()
                     
-                    # Unlock frame after creating tensor references
-                    try:
-                        self._decoder.UnlockFrame(0)
-                    except Exception as e:
-                        logger.debug(f"NVDECDecoder({self.camera_id}): UnlockFrame error: {e}")
+                        # Unlock frame after creating tensor references
+                        try:
+                            self._decoder.UnlockFrame(0)
+                        except Exception as e:
+                            logger.debug(f"NVDECDecoder({self.camera_id}): UnlockFrame error: {e}")
                         
         except av.error.FFmpegError as e:
             logger.error(f"NVDECDecoder({self.camera_id}): FFmpeg demux error: {e}")

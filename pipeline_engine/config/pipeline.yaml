@@ -12,7 +12,7 @@ gpu:
   required: true
   allow_cpu_mode: false
   vram_budget_mb: 5120
-  frame_pool_size: 32
+  frame_pool_size: 16
   encoder_buffer_mb: 256
   inference_workspace_mb: 512
   cuda_stream_per_camera: true

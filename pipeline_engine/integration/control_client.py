@@ -365,16 +365,26 @@ class PipelineEngineControlServer:
                     error="Camera manager not initialized",
                 )
                 
-            # TODO: Implement actual camera enable logic
-            # For now, acknowledge
+            if not camera_id or camera_id not in self.engine.camera_manager.get_camera_list():
+                return ControlResponse(
+                    success=False,
+                    action=Action.ENABLE_CAMERA,
+                    worker_id=self.config.worker_id,
+                    status=ControlResult.FAILED,
+                    request_id=request.request_id,
+                    timestamp=time.time(),
+                    error=f"Unknown camera_id: {camera_id}",
+                )
+            started = self.engine.camera_manager.start_camera(camera_id)
             return ControlResponse(
-                success=True,
+                success=started,
                 action=Action.ENABLE_CAMERA,
                 worker_id=self.config.worker_id,
-                status=ControlResult.ACCEPTED,
+                status=ControlResult.COMPLETED if started else ControlResult.FAILED,
                 request_id=request.request_id,
                 timestamp=time.time(),
-                details={"camera_id": camera_id, "note": "Enable requested"},
+                details={"camera_id": camera_id, "enabled": started},
+                error=None if started else f"Failed to start camera {camera_id}",
             )
         except Exception as e:
             return ControlResponse(
@@ -403,16 +413,25 @@ class PipelineEngineControlServer:
                     error="Camera manager not initialized",
                 )
                 
-            # TODO: Implement actual camera disable logic
-            # For now, acknowledge
+            if not camera_id or camera_id not in self.engine.camera_manager.get_camera_list():
+                return ControlResponse(
+                    success=False,
+                    action=Action.DISABLE_CAMERA,
+                    worker_id=self.config.worker_id,
+                    status=ControlResult.FAILED,
+                    request_id=request.request_id,
+                    timestamp=time.time(),
+                    error=f"Unknown camera_id: {camera_id}",
+                )
+            self.engine.camera_manager.stop_camera(camera_id)
             return ControlResponse(
                 success=True,
                 action=Action.DISABLE_CAMERA,
                 worker_id=self.config.worker_id,
-                status=ControlResult.ACCEPTED,
+                status=ControlResult.COMPLETED,
                 request_id=request.request_id,
                 timestamp=time.time(),
-                details={"camera_id": camera_id, "note": "Disable requested"},
+                details={"camera_id": camera_id, "disabled": True},
             )
         except Exception as e:
             return ControlResponse(

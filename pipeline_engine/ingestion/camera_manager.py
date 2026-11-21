@@ -628,7 +628,7 @@ class CameraManager:
                 
                 # ========== STAGE 1: DECODE (Latest-Only Frame Drop Policy) ==========
                 decode_start = time.perf_counter()
-                gpu_frame = self._drain_to_latest_frame(decoder, max_age_ms=35.0)
+                gpu_frame = self._drain_to_latest_frame(decoder, max_age_ms=200.0)
                 decode_ms = (time.perf_counter() - decode_start) * 1000
                 
                 if gpu_frame is None:
@@ -670,7 +670,11 @@ class CameraManager:
                             res_mb = torch.cuda.memory_reserved(device_id) / (1024 * 1024)
                             tot_mb = torch.cuda.get_device_properties(device_id).total_memory / (1024 * 1024)
                             util_pct = (res_mb / tot_mb) * 100.0 if tot_mb > 0 else 0.0
-                            
+
+                            # Trim PyTorch caching allocator before reserved VRAM approaches 2.6 GB
+                            if res_mb >= 2500.0:
+                                torch.cuda.empty_cache()
+
                             # Warning Threshold (80% / ~4.8 GB): empty_cache + gc.collect + cap batch size to 8
                             if util_pct >= 80.0:
                                 import gc
@@ -947,8 +951,8 @@ class CameraManager:
                             camera["metrics"].vram_used = reserved
                             camera["metrics"].vram_total = total
                             camera["metrics"].gpu_utilization = (reserved / total) * 100
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.debug(f"CameraManager({camera_id}): GPU telemetry read failed: {exc}")
                 
                 # Periodic metrics update
                 if time.time() - camera["last_metrics_update"] > 5.0:
@@ -1133,10 +1137,13 @@ class CameraManager:
     # ========== ASYNC METADATA DISPATCH (NON-BLOCKING) ==========
     
     def _enqueue_metadata(self, payload: dict) -> None:
-        """Put metadata payload into asyncio queue on the event loop thread."""
+        """Put metadata payload into asyncio queue on the event loop thread (latest-only bounded)."""
         try:
+            while self._metadata_queue.qsize() >= 4:
+                self._metadata_queue.get_nowait()
+                self._metadata_queue.task_done()
             self._metadata_queue.put_nowait(payload)
-        except asyncio.QueueFull:
+        except (asyncio.QueueFull, asyncio.QueueEmpty):
             pass
 
     def _dispatch_metadata(self, payload: dict) -> None:
@@ -1157,14 +1164,15 @@ class CameraManager:
         while self._running:
             try:
                 payload = await self._metadata_queue.get()
+                payload["timestamp"] = time.time()
                 try:
                     await session.post(
                         "http://127.0.0.1:8000/api/v1/stream/metadata/ingest",
                         json=payload,
                         timeout=aiohttp.ClientTimeout(total=0.04)
                     )
-                except Exception:
-                    pass  # Silent drop - never blocks
+                except Exception as exc:
+                    logger.debug(f"CameraManager: metadata ingest failed: {exc}")
                 finally:
                     self._metadata_queue.task_done()
             except Exception:

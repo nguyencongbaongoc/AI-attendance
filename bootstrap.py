@@ -29,10 +29,11 @@ from app.storage import (
     stop_storage_services,
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+# Configure centralized rotating UTF-8 logging
+from app.logging.logger import setup_logging
+setup_logging(
+    log_level=os.environ.get("LOG_LEVEL", "INFO"),
+    log_file=Path(os.environ.get("LOG_FILE", "logs/bootstrap.log")),
 )
 logger = logging.getLogger("bootstrap")
 
