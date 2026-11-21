@@ -249,48 +249,49 @@ class ArcFaceRecognizer:
                 raise ValueError(f"Embeddings shape {embeddings.shape} != (N, {self.arcface_config.embedding_dim})")
             
             # Convert to GPU tensors
-            self._enrollment_embeddings.clear()
-            self._enrollment_metadata.clear()
-            
-            for i in range(embeddings.shape[0]):
-                person_id = f"person_{i:04d}"  # Will be overridden by metadata
-                emb_tensor = torch.from_numpy(embeddings[i]).to(self.device).float()
-                # Ensure L2 normalized
-                norm = torch.norm(emb_tensor)
-                if norm > 0:
-                    emb_tensor = emb_tensor / norm
-                self._enrollment_embeddings[person_id] = emb_tensor
-                self._enrollment_metadata[person_id] = {"index": i}
-            
-            # Load metadata if available
-            if metadata_path:
-                import json
-                with open(metadata_path, 'r') as f:
-                    metadata = json.load(f)
+            with self._lock:
+                self._enrollment_embeddings.clear()
+                self._enrollment_metadata.clear()
                 
-                # Handle both list and dict formats
-                if isinstance(metadata, list):
-                    for i, person_info in enumerate(metadata):
-                        old_key = f"person_{i:04d}"
-                        new_key = person_info.get("person_id", person_info.get("id", old_key))
-                        if old_key in self._enrollment_embeddings:
-                            self._enrollment_embeddings[new_key] = self._enrollment_embeddings.pop(old_key)
-                            self._enrollment_metadata[new_key] = {**self._enrollment_metadata[old_key], **person_info}
-                            self._enrollment_metadata.pop(old_key, None)
-                elif isinstance(metadata, dict):
-                    # Handle dict format with person_ids and sample_provenance
-                    person_ids = metadata.get("person_ids", [])
-                    sample_provenance = metadata.get("sample_provenance", [])
-                    for i, person_id in enumerate(person_ids):
-                        old_key = f"person_{i:04d}"
-                        if old_key in self._enrollment_embeddings:
-                            self._enrollment_embeddings[person_id] = self._enrollment_embeddings.pop(old_key)
-                            prov = sample_provenance[i] if i < len(sample_provenance) else {}
-                            self._enrollment_metadata[person_id] = {**self._enrollment_metadata[old_key], **prov}
-                            self._enrollment_metadata.pop(old_key, None)
-            
-            # Also build the new matrix-based gallery
-            self._build_matrix_gallery()
+                for i in range(embeddings.shape[0]):
+                    person_id = f"person_{i:04d}"  # Will be overridden by metadata
+                    emb_tensor = torch.from_numpy(embeddings[i]).to(self.device).float()
+                    # Ensure L2 normalized
+                    norm = torch.norm(emb_tensor)
+                    if norm > 0:
+                        emb_tensor = emb_tensor / norm
+                    self._enrollment_embeddings[person_id] = emb_tensor
+                    self._enrollment_metadata[person_id] = {"index": i}
+                
+                # Load metadata if available
+                if metadata_path:
+                    import json
+                    with open(metadata_path, 'r') as f:
+                        metadata = json.load(f)
+                    
+                    # Handle both list and dict formats
+                    if isinstance(metadata, list):
+                        for i, person_info in enumerate(metadata):
+                            old_key = f"person_{i:04d}"
+                            new_key = person_info.get("person_id", person_info.get("id", old_key))
+                            if old_key in self._enrollment_embeddings:
+                                self._enrollment_embeddings[new_key] = self._enrollment_embeddings.pop(old_key)
+                                self._enrollment_metadata[new_key] = {**self._enrollment_metadata[old_key], **person_info}
+                                self._enrollment_metadata.pop(old_key, None)
+                    elif isinstance(metadata, dict):
+                        # Handle dict format with person_ids and sample_provenance
+                        person_ids = metadata.get("person_ids", [])
+                        sample_provenance = metadata.get("sample_provenance", [])
+                        for i, person_id in enumerate(person_ids):
+                            old_key = f"person_{i:04d}"
+                            if old_key in self._enrollment_embeddings:
+                                self._enrollment_embeddings[person_id] = self._enrollment_embeddings.pop(old_key)
+                                prov = sample_provenance[i] if i < len(sample_provenance) else {}
+                                self._enrollment_metadata[person_id] = {**self._enrollment_metadata[old_key], **prov}
+                                self._enrollment_metadata.pop(old_key, None)
+                
+                # Also build the new matrix-based gallery
+                self._build_matrix_gallery()
             
             logger.info(f"ArcFaceRecognizer: Loaded {len(self._enrollment_embeddings)} enrolled identities")
             return True
@@ -778,19 +779,22 @@ class ArcFaceRecognizer:
         Returns:
             List of (person_id, similarity) sorted by similarity descending
         """
-        if self.embeddings_matrix is None or self.embeddings_matrix.shape[0] == 0:
+        with self._lock:
+            matrix = self.embeddings_matrix
+            identities = list(self.identities)
+        if matrix is None or matrix.shape[0] == 0:
             return []
         
         # Matrix multiplication for batched cosine similarity (N, 512) @ (512,) -> (N,)
-        similarities = torch.matmul(self.embeddings_matrix, embedding)  # (N,)
+        similarities = torch.matmul(matrix, embedding)  # (N,)
         
         # Get top-k
-        top_k = min(top_k, self.embeddings_matrix.shape[0])
+        top_k = min(top_k, matrix.shape[0])
         top_values, top_indices = torch.topk(similarities, top_k)
         
         results = []
         for val, idx in zip(top_values.cpu().numpy(), top_indices.cpu().numpy()):
-            person_id = self.identities[idx]
+            person_id = identities[idx]
             similarity = float(val)
             # Only return matches above threshold
             if similarity >= self.arcface_config.similarity_threshold:
@@ -804,10 +808,12 @@ class ArcFaceRecognizer:
         top_k: int = 5
     ) -> List[Dict[str, Any]]:
         """Identify with full metadata."""
-        matches = self.identify(embedding, top_k)
+        with self._lock:
+            matches = self.identify(embedding, top_k)
+            meta_snapshot = dict(self.metadata_lookup)
         results = []
         for person_id, similarity in matches:
-            meta = self.metadata_lookup.get(person_id, {})
+            meta = meta_snapshot.get(person_id, {})
             results.append({
                 "person_id": person_id,
                 "similarity": similarity,
@@ -817,7 +823,8 @@ class ArcFaceRecognizer:
     
     def get_stats(self) -> Dict[str, Any]:
         backend = "tensorrt" if self._use_tensorrt else "onnxruntime"
-        enrolled = self.embeddings_matrix.shape[0] if self.embeddings_matrix is not None else 0
+        with self._lock:
+            enrolled = self.embeddings_matrix.shape[0] if self.embeddings_matrix is not None else 0
         stats = {
             "model": "arcface",
             "backend": backend,

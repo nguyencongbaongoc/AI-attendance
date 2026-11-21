@@ -138,6 +138,7 @@ class CrossingPolicyConfig:
     """Policy for line crossing detection."""
     min_crossing_distance: float = 50.0
     temporal_debounce_seconds: float = 2.0
+    cooldown_seconds: float = 2.0
     side_confirmation_frames: int = 3
     max_trajectory_gap_frames: int = 5
 
@@ -371,6 +372,7 @@ class CrossingEngine:
         
         # Per-track state
         self._track_states: Dict[int, Dict] = {}
+        self._subject_last_crossing: Dict[Tuple[str, CrossingDirection], float] = {}
         self._events: List[CrossingEvent] = []
         
         # Stats
@@ -379,6 +381,7 @@ class CrossingEngine:
             "in_crossings": 0,
             "out_crossings": 0,
             "rejected_debounce": 0,
+            "rejected_cooldown": 0,
             "rejected_distance": 0,
         }
     
@@ -445,6 +448,21 @@ class CrossingEngine:
                 else:
                     direction = CrossingDirection.IN if prev_side > current_side else CrossingDirection.OUT
 
+                # Per-subject / per-track cooldown guard against boundary swaying
+                subject_key = (
+                    getattr(track, "global_person_id", None)
+                    or getattr(track, "person_id", None)
+                    or f"track:{track_id}"
+                )
+                cooldown_win = max(self.policy.temporal_debounce_seconds, self.policy.cooldown_seconds)
+                last_subj_ts = self._subject_last_crossing.get((subject_key, direction))
+                if last_subj_ts is not None and cooldown_win > 0 and (timestamp - last_subj_ts) < cooldown_win:
+                    self._stats["rejected_cooldown"] += 1
+                    state["confirmed_side"] = current_side
+                    state["current_side"] = current_side
+                    state["anchor_position"] = current_center
+                    return []
+
                 crossing_point = self._calculate_intersection(anchor_pos, current_center)
 
                 event = CrossingEvent(
@@ -477,6 +495,7 @@ class CrossingEngine:
                 state["current_side"] = current_side
                 state["anchor_position"] = current_center
                 state["frames_on_current_side"] = 1
+                self._subject_last_crossing[(subject_key, direction)] = timestamp
 
                 return [event]
             else:
@@ -573,6 +592,7 @@ class AttendanceEngine:
             policy = CrossingPolicyConfig(
                 min_crossing_distance=policy_config.get("min_crossing_distance", 50.0),
                 temporal_debounce_seconds=policy_config.get("temporal_debounce_seconds", 2.0),
+                cooldown_seconds=policy_config.get("cooldown_seconds", policy_config.get("temporal_debounce_seconds", 2.0)),
                 side_confirmation_frames=policy_config.get("side_confirmation_frames", 3),
                 max_trajectory_gap_frames=policy_config.get("max_trajectory_gap_frames", 5),
             )

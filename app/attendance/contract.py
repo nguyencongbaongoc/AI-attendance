@@ -126,9 +126,9 @@ class AttendanceRecord:
             raise ValueError(f"Unsupported attendance_schema_version: {self.attendance_schema_version}")
         if self.identity_certainty not in IdentityCertainty:
             raise ValueError(f"Invalid identity_certainty: {self.identity_certainty}")
-        if self.previous_state not in ("unknown", "inside", "outside"):
+        if self.previous_state not in ("unknown", "inside", "outside", "LATE", "PRESENT", "ABSENT", "late", "present", "absent"):
             raise ValueError(f"Invalid previous_state: {self.previous_state}")
-        if self.new_state not in ("unknown", "inside", "outside"):
+        if self.new_state not in ("unknown", "inside", "outside", "LATE", "PRESENT", "ABSENT", "late", "present", "absent"):
             raise ValueError(f"Invalid new_state: {self.new_state}")
         if self.identity_state not in ("unknown", "candidate", "provisional", "confirmed", "conflict", "reacquired"):
             raise ValueError(f"Invalid identity_state: {self.identity_state}")
@@ -457,9 +457,9 @@ def validate_attendance_record(record: AttendanceRecord) -> Optional[str]:
         return f"Unsupported attendance_schema_version: {record.attendance_schema_version}"
     if record.identity_certainty not in IdentityCertainty:
         return f"Invalid identity_certainty: {record.identity_certainty}"
-    if record.previous_state not in ("unknown", "inside", "outside"):
+    if record.previous_state not in ("unknown", "inside", "outside", "LATE", "PRESENT", "ABSENT", "late", "present", "absent"):
         return f"Invalid previous_state: {record.previous_state}"
-    if record.new_state not in ("unknown", "inside", "outside"):
+    if record.new_state not in ("unknown", "inside", "outside", "LATE", "PRESENT", "ABSENT", "late", "present", "absent"):
         return f"Invalid new_state: {record.new_state}"
     if record.geometry_version < 0:
         return "geometry_version must be >= 0"

@@ -148,8 +148,8 @@ class AttendanceStorage:
         -- Indexes for common queries
         CONSTRAINT chk_direction CHECK (direction IN ('in', 'out')),
         CONSTRAINT chk_identity_certainty CHECK (identity_certainty IN ('known', 'unknown', 'ambiguous', 'insufficient')),
-        CONSTRAINT chk_previous_state CHECK (previous_state IN ('unknown', 'inside', 'outside')),
-        CONSTRAINT chk_new_state CHECK (new_state IN ('unknown', 'inside', 'outside')),
+        CONSTRAINT chk_previous_state CHECK (previous_state IN ('unknown', 'inside', 'outside', 'LATE', 'PRESENT', 'ABSENT', 'late', 'present', 'absent')),
+        CONSTRAINT chk_new_state CHECK (new_state IN ('unknown', 'inside', 'outside', 'LATE', 'PRESENT', 'ABSENT', 'late', 'present', 'absent')),
         CONSTRAINT chk_schema_version CHECK (attendance_schema_version IN ('1.0', '1.1')),
         CONSTRAINT chk_event_timestamp CHECK (event_timestamp >= 0),
         CONSTRAINT chk_geometry_version CHECK (geometry_version >= 0),

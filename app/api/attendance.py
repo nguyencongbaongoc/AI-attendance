@@ -66,6 +66,7 @@ class AttendanceRecordResponse(BaseModel):
     session_id: Optional[str]
     session_type: Optional[str]
     attendance_state: str
+    status: Optional[str] = None
     in_state: str
     out_state: str
     decision_reason: str
@@ -154,12 +155,59 @@ class PersonAttendanceResponse(BaseModel):
     attendance_states: Dict[str, int]
 
 
+def _get_student_late_threshold(student_id: Optional[str], default_threshold: str = "07:00:00") -> str:
+    """Resolve class late_threshold_time (HH:MM:SS) from school.db, falling back to default_threshold."""
+    if not student_id or student_id in ("UNKNOWN", "None", ""):
+        return default_threshold
+    try:
+        import sqlite3
+        from app.config.settings import load_settings
+        settings = load_settings()
+        db_path = settings.paths.data_dir / "school.db"
+        if db_path.exists():
+            with sqlite3.connect(db_path) as conn:
+                row = conn.execute(
+                    "SELECT c.late_threshold_time FROM students s "
+                    "JOIN classes c ON s.class_id = c.class_id "
+                    "WHERE s.student_id = ?",
+                    (student_id,),
+                ).fetchone()
+                if row and row[0]:
+                    val = str(row[0]).strip()
+                    return val if len(val) == 8 else f"{val}:00"
+    except Exception:
+        pass
+    return default_threshold
+
+
+def evaluate_entry_status(
+    event_timestamp: float,
+    student_id: Optional[str] = None,
+    default_threshold: str = "07:00:00",
+    is_first_entry: bool = True,
+) -> str:
+    """Tag first-entry IN event as LATE if local arrival time exceeds the class start threshold."""
+    if not is_first_entry:
+        return "PRESENT"
+    threshold = _get_student_late_threshold(student_id, default_threshold=default_threshold)
+    local_hms = datetime.fromtimestamp(event_timestamp).strftime("%H:%M:%S")
+    return "LATE" if local_hms > threshold else "PRESENT"
+
+
 @router.get("/summary", response_model=AttendanceSummaryResponse)
 async def get_attendance_summary_endpoint():
     """Get attendance summary for today."""
     repository = get_repository()
     summary = get_attendance_summary(repository)
     
+    all_records = repository.get_chronological_history(limit=None)
+    late_count = sum(
+        1 for r in all_records
+        if (r.direction.value if hasattr(r.direction, "value") else str(r.direction)).lower() == "in"
+        and (r.new_state or "").upper() == "LATE"
+    )
+    present_count = max(0, summary.in_count - late_count)
+
     total_students = 0
     try:
         import sqlite3
@@ -174,12 +222,12 @@ async def get_attendance_summary_endpoint():
     except Exception:
         pass
     
-    absent = max(0, total_students - summary.in_count)
+    absent = max(0, total_students - present_count - late_count)
     
     return AttendanceSummaryResponse(
-        present=summary.in_count,  # IN events = present
-        late=0,
-        left_early=summary.out_count,  # OUT events = left
+        present=present_count,
+        late=late_count,
+        left_early=summary.out_count,
         absent=absent,
         total=summary.total_records,
         total_students=total_students,
@@ -303,7 +351,8 @@ async def get_attendance_records(
             session_id=None,
             session_type=None,
             attendance_state=record.new_state,
-            in_state="on_time" if event_type == "IN" else "not_applicable",
+            status=semantic_state,
+            in_state="late" if semantic_state == "LATE" else ("on_time" if event_type == "IN" else "not_applicable"),
             out_state="on_time" if event_type == "OUT" else "not_applicable",
             decision_reason="Auto-generated from resolution",
             created_at=record.created_at,
@@ -620,8 +669,12 @@ async def export_attendance(
     ws2 = wb.create_sheet(title="Tong_Hop_Si_So")
     summary = await get_attendance_summary_endpoint()
     total_students = summary.total_students or max(summary.total, len({r.person_id for r in records}))
-    present_cnt = summary.present
-    late_cnt = summary.late
+    if records:
+        present_cnt = sum(1 for r in records if (r.event_type or "").upper() == "IN" and (r.status or r.attendance_state or "").upper() != "LATE")
+        late_cnt = sum(1 for r in records if (r.event_type or "").upper() == "IN" and (r.status or r.attendance_state or "").upper() == "LATE")
+    else:
+        present_cnt = summary.present
+        late_cnt = summary.late
     absent_cnt = max(0, total_students - present_cnt - late_cnt) if total_students > 0 else summary.absent
     rate_pct = round(((present_cnt + late_cnt) / total_students) * 100.0, 1) if total_students > 0 else 0.0
 

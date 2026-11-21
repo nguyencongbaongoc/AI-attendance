@@ -1259,13 +1259,21 @@ class CameraManager:
             total_loaded = 0
             for cid, cam in self._cameras.items():
                 arcface = cam.get("arcface")
-                if arcface and hasattr(arcface, "load_enrollment_database"):
-                    try:
-                        count = arcface.load_enrollment_database(npy_path, metadata_path)
-                        total_loaded = max(total_loaded, count or 0)
+                if not arcface:
+                    continue
+                try:
+                    if hasattr(arcface, "reload_gallery"):
+                        res = arcface.reload_gallery()
+                        count = int(res.get("enrolled_count", 0)) if isinstance(res, dict) else 0
+                        total_loaded = max(total_loaded, count)
+                        logger.info(f"CameraManager({cid}): Hot-reloaded {count} ArcFace identities")
+                    elif hasattr(arcface, "load_enrollment_database"):
+                        ok = arcface.load_enrollment_database(npy_path, metadata_path)
+                        count = len(getattr(arcface, "identities", [])) if ok else 0
+                        total_loaded = max(total_loaded, count)
                         logger.info(f"CameraManager({cid}): Reloaded {count} ArcFace embeddings from {npy_path}")
-                    except Exception as e:
-                        logger.error(f"CameraManager({cid}): Failed to reload ArcFace embeddings: {e}")
+                except Exception as e:
+                    logger.error(f"CameraManager({cid}): Failed to reload ArcFace embeddings: {e}")
             return total_loaded
 
     def restart_camera(self, camera_id: str) -> bool:

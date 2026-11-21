@@ -47,3 +47,13 @@ test_students.xlsx
 reports/*.xlsx
 models/yolo/yolo11n_fp16.engine.bak
 mediamtx/.mediamtx.exe.old
+
+# Rust / Native Extensions & Python cache
+target/
+rust_core/target/
+*.pyd
+*.so
+__pycache__/
+*.pyc
+artifacts/test_*
+logs/*.log
