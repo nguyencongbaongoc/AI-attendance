@@ -25,6 +25,13 @@ from pipeline_engine.config import get_config
 
 logger = logging.getLogger(__name__)
 
+try:
+    from attendance_core import batch_iou_and_match_rs as _batch_iou_and_match_rs
+    _HAS_RUST_TRACKING = True
+except ImportError:
+    _batch_iou_and_match_rs = None
+    _HAS_RUST_TRACKING = False
+
 
 class TrackLifecycleState(str, Enum):
     """Track lifecycle states."""
@@ -940,8 +947,13 @@ class Tracker:
         """Vectorized pixel-space IoU matrix between (N, 4) and (M, 4) [x1, y1, x2, y2] arrays."""
         if len(bboxes1) == 0 or len(bboxes2) == 0:
             return np.zeros((len(bboxes1), len(bboxes2)), dtype=np.float32)
-        b1 = np.asarray(bboxes1, dtype=np.float32)[:, None, :]
-        b2 = np.asarray(bboxes2, dtype=np.float32)[None, :, :]
+        b1_arr = np.ascontiguousarray(bboxes1, dtype=np.float32)
+        b2_arr = np.ascontiguousarray(bboxes2, dtype=np.float32)
+        if _HAS_RUST_TRACKING and _batch_iou_and_match_rs is not None:
+            iou_mat, _, _, _ = _batch_iou_and_match_rs(b1_arr, b2_arr, 0.0)
+            return iou_mat
+        b1 = b1_arr[:, None, :]
+        b2 = b2_arr[None, :, :]
         inter_x1 = np.maximum(b1[..., 0], b2[..., 0])
         inter_y1 = np.maximum(b1[..., 1], b2[..., 1])
         inter_x2 = np.minimum(b1[..., 2], b2[..., 2])
@@ -953,6 +965,40 @@ class Tracker:
         area2 = np.maximum(0.0, b2[..., 2] - b2[..., 0]) * np.maximum(0.0, b2[..., 3] - b2[..., 1])
         union = area1 + area2 - inter_area
         return np.where(union > 0.0, inter_area / np.maximum(union, 1e-12), 0.0).astype(np.float32)
+
+    @staticmethod
+    def match_iou_batch(
+        bboxes1: np.ndarray,
+        bboxes2: np.ndarray,
+        iou_thresh: float = 0.3,
+    ) -> Tuple[np.ndarray, List[Tuple[int, int]], List[int], List[int]]:
+        """Compute IoU matrix and greedy assignment via Rust kernel (with Python fallback)."""
+        b1 = np.ascontiguousarray(bboxes1, dtype=np.float32)
+        b2 = np.ascontiguousarray(bboxes2, dtype=np.float32)
+        if _HAS_RUST_TRACKING and _batch_iou_and_match_rs is not None:
+            return _batch_iou_and_match_rs(b1, b2, float(iou_thresh))
+        iou = SimpleTracker._calculate_iou_batch(b1, b2)
+        n, m = iou.shape
+        det_assigned = [False] * m
+        track_assigned = [False] * n
+        matches: List[Tuple[int, int]] = []
+        for i in range(n):
+            best_j = -1
+            best_iou = float(iou_thresh)
+            for j in range(m):
+                if det_assigned[j]:
+                    continue
+                val = float(iou[i, j])
+                if val >= iou_thresh and (best_j == -1 or val > best_iou):
+                    best_iou = val
+                    best_j = j
+            if best_j >= 0:
+                det_assigned[best_j] = True
+                track_assigned[i] = True
+                matches.append((i, best_j))
+        unmatched_tracks = [i for i in range(n) if not track_assigned[i]]
+        unmatched_dets = [j for j in range(m) if not det_assigned[j]]
+        return iou, matches, unmatched_tracks, unmatched_dets
     
     def get_active_tracks(self) -> List[Track]:
         return [t for t in self._tracks if t.is_active or t.is_new]

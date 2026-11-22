@@ -20,6 +20,13 @@ from typing import Dict, List, Optional, Callable
 
 logger = logging.getLogger(__name__)
 
+try:
+    from attendance_core import scan_expired_files_rs as _scan_expired_files_rs
+    _HAS_RUST_STORAGE = True
+except ImportError:
+    _scan_expired_files_rs = None
+    _HAS_RUST_STORAGE = False
+
 
 @dataclass
 class RetentionPolicy:
@@ -190,6 +197,28 @@ class RetentionService:
                     logger.debug(f"Path not found: {base_path}")
                     continue
                 
+                if _HAS_RUST_STORAGE and _scan_expired_files_rs is not None and policy.preserve_recent == 0:
+                    max_age_secs = float(policy.max_age_days * 86400)
+                    expired_paths, _ = _scan_expired_files_rs(str(base_path), max_age_secs)
+                    exts = set(e.lower() for e in policy.file_extensions)
+                    allow_all = "*" in exts
+                    for p_str in expired_paths:
+                        file_path = Path(p_str)
+                        if not allow_all and file_path.suffix.lower() not in exts:
+                            continue
+                        stats.files_scanned += 1
+                        try:
+                            file_size = file_path.stat().st_size
+                            file_path.unlink()
+                            stats.files_deleted += 1
+                            stats.bytes_freed += file_size
+                            logger.debug(f"Deleted expired file: {file_path}")
+                        except Exception as e:
+                            error_msg = f"Error processing {file_path}: {e}"
+                            stats.errors.append(error_msg)
+                            logger.warning(error_msg)
+                    continue
+
                 # Find files matching extensions
                 for ext in policy.file_extensions:
                     if ext == "*":

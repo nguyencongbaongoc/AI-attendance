@@ -27,7 +27,12 @@ from app.identity.models import IdentityState, GISConfig
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
+try:
+    from attendance_core import batch_line_crossing_rs as _batch_line_crossing_rs
+    _HAS_RUST_CROSSING = True
+except ImportError:
+    _batch_line_crossing_rs = None
+    _HAS_RUST_CROSSING = False
 
 
 class CrossingDirection(str, Enum):
@@ -555,6 +560,40 @@ class CrossingEngine:
         self._events.clear()
         for key in self._stats:
             self._stats[key] = 0
+
+    def detect_batch_crossings(
+        self,
+        prev_pts: np.ndarray,
+        curr_pts: np.ndarray,
+    ) -> np.ndarray:
+        """Batch line-crossing detection for K track segments using Rust kernel with Python fallback."""
+        p_arr = np.ascontiguousarray(prev_pts, dtype=np.float32)
+        c_arr = np.ascontiguousarray(curr_pts, dtype=np.float32)
+        if len(p_arr) == 0:
+            return np.zeros((0,), dtype=np.int8)
+        if _HAS_RUST_CROSSING and _batch_line_crossing_rs is not None:
+            return _batch_line_crossing_rs(
+                p_arr,
+                c_arr,
+                (float(self.line.p1[0]), float(self.line.p1[1])),
+                (float(self.line.p2[0]), float(self.line.p2[1])),
+            )
+        lx1, ly1 = float(self.line.p1[0]), float(self.line.p1[1])
+        lx2, ly2 = float(self.line.p2[0]), float(self.line.p2[1])
+        ldx, ldy = lx2 - lx1, ly2 - ly1
+        out = np.zeros((len(p_arr),), dtype=np.int8)
+        for i in range(len(p_arr)):
+            px, py_ = float(p_arr[i, 0]), float(p_arr[i, 1])
+            cx, cy = float(c_arr[i, 0]), float(c_arr[i, 1])
+            cross_prev = ldx * (py_ - ly1) - ldy * (px - lx1)
+            cross_curr = ldx * (cy - ly1) - ldy * (cx - lx1)
+            if cross_prev * cross_curr < 0.0:
+                tdx, tdy = cx - px, cy - py_
+                d1 = tdx * (ly1 - py_) - tdy * (lx1 - px)
+                d2 = tdx * (ly2 - py_) - tdy * (lx2 - px)
+                if d1 * d2 <= 0.0:
+                    out[i] = 1 if cross_prev > 0.0 else -1
+        return out
 
 
 class AttendanceEngine:

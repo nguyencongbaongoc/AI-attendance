@@ -26,6 +26,13 @@ from pipeline_engine.inference.tensorrt_engine import TensorRTExecutor, create_t
 
 logger = logging.getLogger(__name__)
 
+try:
+    from attendance_core import GalleryIndexRs as _GalleryIndexRs
+    _HAS_RUST_GALLERY = True
+except ImportError:
+    _GalleryIndexRs = None
+    _HAS_RUST_GALLERY = False
+
 
 @dataclass
 class ArcFaceConfig:
@@ -116,6 +123,7 @@ class ArcFaceRecognizer:
         
         # Thread-safe hot-reload (RLock for re-entrant safety)
         self._lock = threading.RLock()
+        self._rust_gallery = _GalleryIndexRs() if _HAS_RUST_GALLERY and _GalleryIndexRs is not None else None
         
         # Stats
         self._inference_count = 0
@@ -419,6 +427,7 @@ class ArcFaceRecognizer:
                 for i, student_id in enumerate(identities):
                     self._enrollment_embeddings[student_id] = self.embeddings_matrix[i]
                     self._enrollment_metadata[student_id] = metadata_lookup.get(student_id, {})
+                self._sync_rust_gallery_locked()
 
             logger.info(f"ArcFaceRecognizer: Loaded {len(identities)} identities from student database")
             return len(identities)
@@ -555,6 +564,16 @@ class ArcFaceRecognizer:
         
         return len(identities)
 
+    def _sync_rust_gallery_locked(self) -> None:
+        """Sync current embeddings_matrix into Rust GalleryIndexRs (caller holds self._lock)."""
+        if self._rust_gallery is None or self.embeddings_matrix is None:
+            return
+        if self.embeddings_matrix.shape[0] == 0:
+            self._rust_gallery.update_gallery(np.zeros((0, self.arcface_config.embedding_dim), dtype=np.float32))
+        else:
+            mat_np = np.ascontiguousarray(self.embeddings_matrix.detach().cpu().numpy(), dtype=np.float32)
+            self._rust_gallery.update_gallery(mat_np)
+
     def _build_matrix_gallery(self) -> None:
         """Build the matrix-based gallery from legacy dict storage."""
         with self._lock:
@@ -562,6 +581,7 @@ class ArcFaceRecognizer:
                 self.embeddings_matrix = torch.empty((0, self.arcface_config.embedding_dim), device=self.device, dtype=torch.float32)
                 self.identities = []
                 self.metadata_lookup = {}
+                self._sync_rust_gallery_locked()
                 return
             
             person_ids = list(self._enrollment_embeddings.keys())
@@ -570,6 +590,7 @@ class ArcFaceRecognizer:
             self.embeddings_matrix = torch.stack(embeddings_list, dim=0)
             self.identities = person_ids
             self.metadata_lookup = {pid: self._enrollment_metadata.get(pid, {}) for pid in person_ids}
+            self._sync_rust_gallery_locked()
 
     def reload_gallery(self, db_session_factory=None) -> Dict[str, Any]:
         """
@@ -768,6 +789,32 @@ class ArcFaceRecognizer:
             source_id="",
         )
     
+    def identify_top1_cpu(self, embedding: np.ndarray, threshold: Optional[float] = None) -> Optional[Tuple[str, float]]:
+        """Fast GIL-released top-1 cosine similarity search via Rust GalleryIndexRs (with NumPy fallback)."""
+        thresh = self.arcface_config.similarity_threshold if threshold is None else float(threshold)
+        q = np.ascontiguousarray(embedding, dtype=np.float32).reshape(-1)
+        with self._lock:
+            identities = list(self.identities)
+            rust_gal = self._rust_gallery
+            mat = self.embeddings_matrix
+        if not identities:
+            return None
+        if rust_gal is not None and rust_gal.len() == len(identities):
+            idx, sim = rust_gal.search_top1(q, thresh)
+            if idx >= 0 and idx < len(identities):
+                return (identities[idx], float(sim))
+            return None
+        if mat is None or mat.shape[0] == 0:
+            return None
+        mat_np = mat.detach().cpu().numpy()
+        q_norm = q / max(float(np.linalg.norm(q)), 1e-12)
+        sims = mat_np @ q_norm
+        best_idx = int(np.argmax(sims))
+        best_sim = float(sims[best_idx])
+        if best_sim >= thresh:
+            return (identities[best_idx], best_sim)
+        return None
+
     def identify(self, embedding: torch.Tensor, top_k: int = 5) -> List[Tuple[str, float]]:
         """
         Identify face against enrollment database using matrix-based GPU cosine similarity.

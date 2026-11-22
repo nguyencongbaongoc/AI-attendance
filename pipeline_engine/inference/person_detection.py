@@ -25,6 +25,13 @@ from pipeline_engine.inference.tensorrt_engine import TensorRTExecutor, create_t
 
 logger = logging.getLogger(__name__)
 
+try:
+    from attendance_core import fast_nms_rs as _fast_nms_rs
+    _HAS_RUST_NMS = True
+except ImportError:
+    _fast_nms_rs = None
+    _HAS_RUST_NMS = False
+
 
 @dataclass
 class YOLOConfig:
@@ -545,6 +552,11 @@ class YOLOPersonDetector:
         """Apply Non-Maximum Suppression."""
         if len(detections) <= 1:
             return detections
+        if _HAS_RUST_NMS and _fast_nms_rs is not None:
+            boxes = np.ascontiguousarray([d.bbox for d in detections], dtype=np.float32)
+            scores = np.ascontiguousarray([d.confidence for d in detections], dtype=np.float32)
+            kept = _fast_nms_rs(boxes, scores, float(self.yolo_config.nms_threshold))
+            return [detections[i] for i in kept]
         
         detections = sorted(detections, key=lambda d: d.confidence, reverse=True)
         
