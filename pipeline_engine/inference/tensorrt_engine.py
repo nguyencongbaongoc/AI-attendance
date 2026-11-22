@@ -252,9 +252,28 @@ class TensorRTExecutor:
                     if hasattr(self._context, 'set_input_shape'):
                         self._context.set_input_shape(name, tensor.shape)
                 
+                # Re-allocate output tensors if dynamic shapes resolved to a different size
+                if hasattr(self._context, 'get_tensor_shape'):
+                    for out_name in self._output_names:
+                        resolved_shape = tuple(int(d) for d in self._context.get_tensor_shape(out_name))
+                        if all(d > 0 for d in resolved_shape):
+                            cur_tensor = self._output_tensors.get(out_name)
+                            if cur_tensor is None or tuple(cur_tensor.shape) != resolved_shape:
+                                dtype = cur_tensor.dtype if cur_tensor is not None else torch.float32
+                                self._output_tensors[out_name] = torch.empty(
+                                    resolved_shape,
+                                    dtype=dtype,
+                                    device=self.device,
+                                )
+                
                 # Bind outputs
                 if not self._bind_outputs():
                     raise RuntimeError("Failed to bind outputs")
+                
+                # Ensure TensorRT stream waits for PyTorch's current stream to finish writing input_tensors
+                cur_stream = torch.cuda.current_stream(self.device_id)
+                if cur_stream != self._stream:
+                    self._stream.wait_stream(cur_stream)
                 
                 # Execute
                 start = time.perf_counter()
@@ -269,8 +288,13 @@ class TensorRTExecutor:
                         stream_handle=self._stream.cuda_stream
                     )
                 
-                # CRITICAL: Synchronize stream BEFORE reading output tensors
-                # Prevents host/device race condition where CPU reads while GPU is still writing
+                # Clone output tensors on TensorRT's stream and synchronize BEFORE releasing self._lock
+                # Prevents concurrent camera streams from overwriting _output_tensors while clone() is in flight
+                with torch.cuda.stream(self._stream):
+                    cloned_outputs = {
+                        k: v.clone() if hasattr(v, 'clone') else v.copy()
+                        for k, v in self._output_tensors.items()
+                    }
                 self._stream.synchronize()
                 inference_ms = (time.perf_counter() - start) * 1000
                 
@@ -278,8 +302,7 @@ class TensorRTExecutor:
                 self._inference_count += 1
                 self._total_inference_time += inference_ms
                 
-                # Return cloned output tensors to prevent aliasing issues
-                return {k: v.clone() if hasattr(v, 'clone') else v.copy() for k, v in self._output_tensors.items()}
+                return cloned_outputs
                 
             except Exception as e:
                 self._last_error = str(e)

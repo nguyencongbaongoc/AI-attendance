@@ -3,32 +3,26 @@
   "embedding_dimension": 512,
   "dtype": "float32",
   "normalization": "L2",
-  "model_id": "arcface",
-  "model_filename": "glintr100.onnx",
-  "model_sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
-  "enrollment_contract_version": "1.0",
-  "embedding_count": 3,
+  "embedding_count": 2,
   "person_ids": [
-    "TEST-001",
-    "TEST-002",
-    "TEST-003"
+    "SIM_HS_01",
+    "SIM_HS_02"
   ],
   "sample_provenance": [
     {
-      "person_id": "TEST-001",
+      "person_id": "SIM_HS_01",
+      "name": "Nguyễn Công Bảo Ngọc",
+      "class_id": "10A1",
       "sample_index": 0,
-      "quality": 0.95
+      "quality": 0.99
     },
     {
-      "person_id": "TEST-002",
+      "person_id": "SIM_HS_02",
+      "name": "Trần Minh Quân",
+      "class_id": "10A1",
       "sample_index": 0,
-      "quality": 0.92
-    },
-    {
-      "person_id": "TEST-003",
-      "sample_index": 0,
-      "quality": 0.88
+      "quality": 0.99
     }
   ],
-  "creation_timestamp": "2026-10-04T08:07:01.912695Z"
+  "creation_timestamp": "2026-11-22T08:12:35.354657+00:00"
 }

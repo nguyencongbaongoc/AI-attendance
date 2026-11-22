@@ -61,17 +61,21 @@ def load_pipeline_config(config_path: Optional[Path] = None) -> PipelineConfig:
     settings = Settings()
     
     if config_path is None:
-        # Search standard locations
-        search_paths = [
-            settings.project_root / "pipeline_engine" / "config" / "pipeline.yaml",
-            settings.project_root / "config" / "pipeline.yaml",
-            Path.cwd() / "pipeline_engine" / "config" / "pipeline.yaml",
-        ]
-        
-        for path in search_paths:
-            if path.exists():
-                config_path = path
-                break
+        env_cfg = os.environ.get("PIPELINE_CONFIG_PATH")
+        if env_cfg and Path(env_cfg).exists():
+            config_path = Path(env_cfg)
+        else:
+            # Search standard locations
+            search_paths = [
+                settings.project_root / "pipeline_engine" / "config" / "pipeline.yaml",
+                settings.project_root / "config" / "pipeline.yaml",
+                Path.cwd() / "pipeline_engine" / "config" / "pipeline.yaml",
+            ]
+            
+            for path in search_paths:
+                if path.exists():
+                    config_path = path
+                    break
     
     if config_path is None or not config_path.exists():
         raise FileNotFoundError(

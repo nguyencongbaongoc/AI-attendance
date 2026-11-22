@@ -36,6 +36,7 @@ async def reload_gallery():
         return {
             "status": "success",
             "count": count,
+            "gallery_size": count,
             "message": f"Successfully reloaded gallery with {count} embeddings."
         }
     except Exception as e:

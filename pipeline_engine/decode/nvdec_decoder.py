@@ -526,9 +526,11 @@ class NVDECDecoder:
                                     timestamp=timestamp,
                                     pts=pts if pts is not None else self._frame_id,
                                 )
-                                # Copy to pooled frame (zero-copy via tensor assignment)
-                                gpu_frame.y_tensor.copy_(y_tensor)
-                                gpu_frame.uv_tensor.copy_(uv_tensor)
+                                # Copy to pooled frame on the decoder CUDA stream and synchronize before exposing
+                                with torch.cuda.stream(self._cuda_stream):
+                                    gpu_frame.y_tensor.copy_(y_tensor)
+                                    gpu_frame.uv_tensor.copy_(uv_tensor)
+                                self._cuda_stream.synchronize()
                                 gpu_frame.pts = pts if pts is not None else self._frame_id
                                 gpu_frame.dts = pts if pts is not None else self._frame_id
                                 gpu_frame.time_base = self._time_base

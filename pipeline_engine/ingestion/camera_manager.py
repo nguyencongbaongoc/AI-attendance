@@ -275,8 +275,8 @@ class CameraManager:
             recognizer=arcface_recognizer,
         )
         
-        # Create attendance engine
-        attendance_engine = create_attendance_engine()
+        # Create attendance engine using active pipeline config
+        attendance_engine = create_attendance_engine(config=self.config)
         
         # Create annotator
         annotator = GPUAnnotator(
@@ -628,7 +628,7 @@ class CameraManager:
                 
                 # ========== STAGE 1: DECODE (Latest-Only Frame Drop Policy) ==========
                 decode_start = time.perf_counter()
-                gpu_frame = self._drain_to_latest_frame(decoder, max_age_ms=200.0)
+                gpu_frame = self._drain_to_latest_frame(decoder, max_age_ms=500.0)
                 decode_ms = (time.perf_counter() - decode_start) * 1000
                 
                 if gpu_frame is None:
@@ -959,10 +959,8 @@ class CameraManager:
                     self._update_camera_metrics(camera_id)
                     camera["last_metrics_update"] = time.time()
                 
-                # Small sleep to prevent CPU spinning
-                loop_elapsed = (time.perf_counter() - loop_start) * 1000
-                if loop_elapsed < 20:  # Target ~50 FPS max processing
-                    time.sleep(0.001)
+                # Yield GIL/thread scheduler each frame so dual cameras never starve each other
+                time.sleep(0.002)
                 
         except Exception as e:
             logger.error(f"CameraManager({camera_id}): Pipeline error: {e}")
@@ -1137,21 +1135,19 @@ class CameraManager:
     # ========== ASYNC METADATA DISPATCH (NON-BLOCKING) ==========
     
     def _enqueue_metadata(self, payload: dict) -> None:
-        """Put metadata payload into asyncio queue on the event loop thread (latest-only bounded)."""
+        """Store latest metadata payload per camera on the event loop thread."""
+        if not hasattr(self, "_latest_metadata_by_cam"):
+            self._latest_metadata_by_cam = {}
+        cam_key = str(payload.get("camera_id", "unknown"))
+        self._latest_metadata_by_cam[cam_key] = payload
         try:
-            while self._metadata_queue.qsize() >= 4:
-                self._metadata_queue.get_nowait()
-                self._metadata_queue.task_done()
-            self._metadata_queue.put_nowait(payload)
-        except (asyncio.QueueFull, asyncio.QueueEmpty):
+            if self._metadata_queue.empty():
+                self._metadata_queue.put_nowait(True)
+        except asyncio.QueueFull:
             pass
 
     def _dispatch_metadata(self, payload: dict) -> None:
-        """Non-blocking thread-safe metadata dispatch using asyncio queue.
-
-        Puts payload in queue immediately - never blocks the AI pipeline.
-        A background worker handles actual HTTP delivery.
-        """
+        """Non-blocking thread-safe metadata dispatch using per-camera latest slot."""
         loop = getattr(self, "_async_loop", None)
         if loop is not None and loop.is_running():
             loop.call_soon_threadsafe(self._enqueue_metadata, payload)
@@ -1159,22 +1155,30 @@ class CameraManager:
             self._enqueue_metadata(payload)
 
     async def _metadata_dispatcher_worker(self) -> None:
-        """Background worker that drains the metadata queue and posts to HTTP endpoint."""
+        """Background worker that drains per-camera latest metadata and posts concurrently."""
         session = await _get_http_session()
+        if not hasattr(self, "_latest_metadata_by_cam"):
+            self._latest_metadata_by_cam = {}
         while self._running:
             try:
-                payload = await self._metadata_queue.get()
-                payload["timestamp"] = time.time()
-                try:
-                    await session.post(
-                        "http://127.0.0.1:8000/api/v1/stream/metadata/ingest",
-                        json=payload,
-                        timeout=aiohttp.ClientTimeout(total=0.04)
-                    )
-                except Exception as exc:
-                    logger.debug(f"CameraManager: metadata ingest failed: {exc}")
-                finally:
-                    self._metadata_queue.task_done()
+                await self._metadata_queue.get()
+                self._metadata_queue.task_done()
+                batch = list(self._latest_metadata_by_cam.values())
+                self._latest_metadata_by_cam.clear()
+                if not batch:
+                    continue
+                now_ts = time.time()
+                async def _post_one(p: dict) -> None:
+                    p["timestamp"] = now_ts
+                    try:
+                        await session.post(
+                            "http://127.0.0.1:8000/api/v1/stream/metadata/ingest",
+                            json=p,
+                            timeout=aiohttp.ClientTimeout(total=0.08),
+                        )
+                    except Exception as exc:
+                        logger.debug(f"CameraManager: metadata ingest failed: {exc}")
+                await asyncio.gather(*(_post_one(p) for p in batch))
             except Exception:
                 await asyncio.sleep(0.01)  # Brief pause on error
     

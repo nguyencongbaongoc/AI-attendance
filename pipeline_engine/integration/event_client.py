@@ -215,7 +215,7 @@ class EventDeliveryClient:
                 if response.status_code == 200:
                     data = response.json()
                     if data.get("success"):
-                        logger.debug(f"Event {getattr(queued.event, 'event_id', 'unknown')} delivered successfully")
+                        logger.info(f"Event {getattr(queued.event, 'event_id', 'unknown')} delivered successfully")
                         return True
                     else:
                         queued.last_error = data.get("message", "Unknown error")

@@ -260,18 +260,19 @@ class SCRFDDetector:
         Returns:
             Tuple of (preprocessed_tensor, padding_info)
         """
-        # Convert NV12 to BGR on GPU
+        # Convert NV12 to BGR on GPU, then BGR -> RGB for InsightFace SCRFD
         y_tensor, uv_tensor = frame.get_tensors()
         bgr_tensor = nv12_to_bgr_cuda(y_tensor, uv_tensor)  # (H, W, 3) uint8
+        rgb_tensor = bgr_tensor[:, :, [2, 1, 0]]
         
-        # Convert to float and normalize: (H, W, 3) -> (1, 3, H, W) float32 [0,1]
-        bgr_float = bgr_tensor.permute(2, 0, 1).unsqueeze(0).float() / 255.0
+        # Convert to float [0, 255]: (H, W, 3) -> (1, 3, H, W) float32
+        rgb_float = rgb_tensor.permute(2, 0, 1).unsqueeze(0).float()
         
         # Letterbox resize
-        resized, padding_info = letterbox_resize_cuda(bgr_float, (self.input_w, self.input_h))
+        resized, padding_info = letterbox_resize_cuda(rgb_float, (self.input_w, self.input_h))
         
-        # Normalize: (x - mean) / std
-        normalized = (resized - self.mean) / self.std
+        # Normalize using InsightFace SCRFD contract: (x - 127.5) / 128.0
+        normalized = (resized - 127.5) / 128.0
         
         return normalized.contiguous(), padding_info
     
@@ -286,6 +287,9 @@ class SCRFDDetector:
         # Run inference within the camera's CUDA stream if provided
         stream = getattr(self, "cuda_stream", None)
         if stream is not None:
+            caller_stream = torch.cuda.current_stream(self.device_id)
+            if stream != caller_stream:
+                stream.wait_stream(caller_stream)
             with torch.cuda.stream(stream):
                 if self._use_tensorrt:
                     return self._infer_tensorrt(input_tensor)
@@ -424,36 +428,58 @@ class SCRFDDetector:
         strides = self.scrfd_config.strides
         
         for stride in strides:
-            score_key = f"score_{stride}"
-            bbox_key = f"bbox_{stride}"
-            kps_key = f"kps_{stride}"
+            expected_anchors = (self.input_h // stride) * (self.input_w // stride) * len(self.scrfd_config.anchor_scales[stride])
             
-            # Find matching output keys (ONNX may have different naming)
+            # Find matching output keys (supports named keys or InsightFace numeric keys matched by shape)
             score_tensor = None
             bbox_tensor = None
             kps_tensor = None
             
             for key, tensor in outputs.items():
-                if f"score_{stride}" in key or key.endswith(f"_{stride}"):
-                    if "score" in key or "cls" in key:
-                        score_tensor = tensor
-                elif f"bbox_{stride}" in key or "bbox" in key:
+                if f"score_{stride}" in key or (key.endswith(f"_{stride}") and ("score" in key or "cls" in key)):
+                    score_tensor = tensor
+                elif f"bbox_{stride}" in key or (key.endswith(f"_{stride}") and "bbox" in key):
                     bbox_tensor = tensor
-                elif f"kps_{stride}" in key or "landmark" in key or "kps" in key:
+                elif f"kps_{stride}" in key or (key.endswith(f"_{stride}") and ("landmark" in key or "kps" in key)):
                     kps_tensor = tensor
+            
+            # Fallback: match by anchor count & channel dimension (InsightFace ONNX/TRT numeric names)
+            if score_tensor is None or bbox_tensor is None:
+                for key, tensor in outputs.items():
+                    if tensor.dim() == 2 and tensor.shape[0] == expected_anchors:
+                        if tensor.shape[1] in (1, 2) and score_tensor is None:
+                            score_tensor = tensor
+                        elif tensor.shape[1] == 4 and bbox_tensor is None:
+                            bbox_tensor = tensor
+                        elif tensor.shape[1] == 10 and kps_tensor is None:
+                            kps_tensor = tensor
+                    elif tensor.dim() == 3 and tensor.shape[0] == 1 and tensor.shape[1] == expected_anchors:
+                        if tensor.shape[2] in (1, 2) and score_tensor is None:
+                            score_tensor = tensor
+                        elif tensor.shape[2] == 4 and bbox_tensor is None:
+                            bbox_tensor = tensor
+                        elif tensor.shape[2] == 10 and kps_tensor is None:
+                            kps_tensor = tensor
             
             if score_tensor is None or bbox_tensor is None:
                 continue
             
-            # Reshape scores if needed: (1, 2, H, W) -> (1, num_anchors, 2)
+            # Normalize tensor dimensions to 2D: (num_anchors, C)
             if score_tensor.dim() == 4:
-                score_tensor = score_tensor.permute(0, 2, 3, 1).reshape(1, -1, 2)
+                score_tensor = score_tensor.permute(0, 2, 3, 1).reshape(-1, score_tensor.shape[1])
+            elif score_tensor.dim() == 3 and score_tensor.shape[0] == 1:
+                score_tensor = score_tensor.squeeze(0)
             
-            if score_tensor.dim() == 3 and score_tensor.shape[0] == 1:
-                score_tensor = score_tensor.squeeze(0)  # (num_anchors, 2)
+            if bbox_tensor.dim() == 3 and bbox_tensor.shape[0] == 1:
+                bbox_tensor = bbox_tensor.squeeze(0)
+            if kps_tensor is not None and kps_tensor.dim() == 3 and kps_tensor.shape[0] == 1:
+                kps_tensor = kps_tensor.squeeze(0)
             
-            # Get max score across anchors per location
-            max_scores, _ = score_tensor.max(dim=1)  # (num_anchors,)
+            # Get max score across class/anchor dim
+            if score_tensor.shape[1] == 1:
+                max_scores = score_tensor.squeeze(1)
+            else:
+                max_scores, _ = score_tensor.max(dim=1)
             
             # Filter by confidence
             conf_mask = max_scores >= self.scrfd_config.confidence_threshold
@@ -461,56 +487,67 @@ class SCRFDDetector:
                 continue
             
             valid_indices = torch.where(conf_mask)[0]
-            
+            # Cap candidates per stride to top-100 by score to prevent O(N) Python stalls on noisy frames
+            if valid_indices.numel() > 100:
+                top_vals = torch.topk(max_scores[valid_indices], 100)
+                valid_indices = valid_indices[top_vals.indices]
+
             anchors = self._anchors[stride]
-            anchor_scales = self._anchor_scales[stride]
-            
+
+            # Batch-transfer selected candidates to CPU once (eliminates per-element CUDA syncs)
+            scores_np = max_scores[valid_indices].detach().cpu().numpy()
+            anchors_np = anchors[valid_indices].detach().cpu().numpy()
+            bboxes_np = bbox_tensor[valid_indices].detach().cpu().numpy()
+            kps_np = kps_tensor[valid_indices].detach().cpu().numpy() if kps_tensor is not None else None
+
             # Valid region in model input space
-            valid_x1 = pad_left
-            valid_y1 = pad_top
-            valid_x2 = self.input_w - (self.input_w - new_W - pad_left)
-            valid_y2 = self.input_h - (self.input_h - new_H - pad_top)
-            
-            for idx in valid_indices:
-                idx = idx.item()
-                confidence = float(max_scores[idx])
-                
-                # Decode bbox: in SCRFD 10G, bboxes are distance offsets (dl, dt, dr, db)
-                anchor_cx, anchor_cy = anchors[idx]
-                
-                dl, dt, dr, db = bbox_tensor[0, idx]
-                
+            valid_x1 = float(pad_left)
+            valid_y1 = float(pad_top)
+            valid_x2 = float(self.input_w - (self.input_w - new_W - pad_left))
+            valid_y2 = float(self.input_h - (self.input_h - new_H - pad_top))
+
+            for i in range(len(scores_np)):
+                confidence = float(scores_np[i])
+                anchor_cx = float(anchors_np[i, 0])
+                anchor_cy = float(anchors_np[i, 1])
+
+                dl, dt, dr, db = (
+                    float(bboxes_np[i, 0]),
+                    float(bboxes_np[i, 1]),
+                    float(bboxes_np[i, 2]),
+                    float(bboxes_np[i, 3]),
+                )
+
                 x1 = anchor_cx - dl * stride
                 y1 = anchor_cy - dt * stride
                 x2 = anchor_cx + dr * stride
                 y2 = anchor_cy + db * stride
-                
+
                 # Check if center is in valid (non-padded) region
-                center_x = (x1 + x2) / 2.0
-                center_y = (y1 + y2) / 2.0
+                center_x = (x1 + x2) * 0.5
+                center_y = (y1 + y2) * 0.5
                 if center_x < valid_x1 or center_x > valid_x2 or center_y < valid_y1 or center_y > valid_y2:
                     continue
-                
-                x1 = torch.clamp(x1, min=valid_x1, max=valid_x2)
-                y1 = torch.clamp(y1, min=valid_y1, max=valid_y2)
-                x2 = torch.clamp(x2, min=valid_x1, max=valid_x2)
-                y2 = torch.clamp(y2, min=valid_y1, max=valid_y2)
+
+                x1 = max(valid_x1, min(x1, valid_x2))
+                y1 = max(valid_y1, min(y1, valid_y2))
+                x2 = max(valid_x1, min(x2, valid_x2))
+                y2 = max(valid_y1, min(y2, valid_y2))
                 if x2 <= x1 or y2 <= y1:
                     continue
-                
+
                 # Convert to original frame coordinates
                 bbox_original = self._convert_bbox_to_original(
                     x1, y1, x2, y2, scale, pad_left, pad_top, original_width, original_height
                 )
-                
+
                 # Decode keypoints if available
                 kps_original = []
-                if kps_tensor is not None:
-                    kps_model = kps_tensor[0, idx].reshape(5, 2)
+                if kps_np is not None:
+                    kps_model = kps_np[i].reshape(5, 2)
                     for kp_idx in range(5):
-                        kp_dx, kp_dy = kps_model[kp_idx]
-                        kp_x = anchor_cx + kp_dx * stride
-                        kp_y = anchor_cy + kp_dy * stride
+                        kp_x = anchor_cx + float(kps_model[kp_idx, 0]) * stride
+                        kp_y = anchor_cy + float(kps_model[kp_idx, 1]) * stride
                         kp_orig = self._convert_point_to_original(
                             kp_x, kp_y, scale, pad_left, pad_top, original_width, original_height
                         )
@@ -518,16 +555,16 @@ class SCRFDDetector:
                 else:
                     # Default 5 points at face center/corners (fallback)
                     cx_orig, cy_orig = self._convert_point_to_original(
-                        float(center_x), float(center_y), scale, pad_left, pad_top, original_width, original_height
+                        center_x, center_y, scale, pad_left, pad_top, original_width, original_height
                     )
-                    w_orig = float(x2 - x1) / scale
-                    h_orig = float(y2 - y1) / scale
+                    w_orig = (x2 - x1) / scale
+                    h_orig = (y2 - y1) / scale
                     kps_original = [
-                        (cx_orig - w_orig/3, cy_orig - h_orig/3),  # left eye
-                        (cx_orig + w_orig/3, cy_orig - h_orig/3),  # right eye
-                        (cx_orig, cy_orig),                          # nose
-                        (cx_orig - w_orig/4, cy_orig + h_orig/3),   # left mouth
-                        (cx_orig + w_orig/4, cy_orig + h_orig/3),   # right mouth
+                        (cx_orig - w_orig / 3, cy_orig - h_orig / 3),  # left eye
+                        (cx_orig + w_orig / 3, cy_orig - h_orig / 3),  # right eye
+                        (cx_orig, cy_orig),                            # nose
+                        (cx_orig - w_orig / 4, cy_orig + h_orig / 3),  # left mouth
+                        (cx_orig + w_orig / 4, cy_orig + h_orig / 3),  # right mouth
                     ]
                 
                 detection = FaceDetection(

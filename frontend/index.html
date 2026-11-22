@@ -1992,12 +1992,12 @@ window.attendanceWS = attendanceWS;
       </div>
 
       <div class="card rounded-2xl p-3 flex flex-wrap gap-2 items-center">
-        <div class="relative flex-1 min-w-[180px]"><svg class="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="recSearch" oninput="applyRecordsFilter()" placeholder="Tìm theo tên, ID..." class="w-full pl-9 pr-3 py-2 rounded-full bg-black border border-zinc-800 text-[13px] placeholder:text-zinc-600 focus:outline-none"></div>
-        <select id="recCam" onchange="applyRecordsFilter()" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả camera</option><option value="cam1">CAM-01</option><option value="cam2">CAM-02</option></select>
-        <select id="recClass" onchange="applyRecordsFilter()" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả lớp</option></select>
-        <select id="recType" onchange="applyRecordsFilter()" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">IN / OUT</option><option value="in">IN</option><option value="out">OUT</option></select>
-        <select id="recStatus" onchange="applyRecordsFilter()" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả trạng thái</option><option value="PRESENT">PRESENT</option><option value="LATE">LATE</option><option value="ABSENT">ABSENT</option></select>
-        <input id="recDate" onchange="applyRecordsFilter()" type="date" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]">
+        <div class="relative flex-1 min-w-[180px]"><svg class="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="recSearch" placeholder="Tìm theo tên, ID..." class="w-full pl-9 pr-3 py-2 rounded-full bg-black border border-zinc-800 text-[13px] placeholder:text-zinc-600 focus:outline-none"></div>
+        <select id="recCam" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả camera</option><option value="cam1">CAM-01</option><option value="cam2">CAM-02</option></select>
+        <select id="recClass" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả lớp</option></select>
+        <select id="recType" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">IN / OUT</option><option value="in">IN</option><option value="out">OUT</option></select>
+        <select id="recStatus" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]"><option value="">Tất cả trạng thái</option><option value="PRESENT">PRESENT</option><option value="LATE">LATE</option><option value="ABSENT">ABSENT</option></select>
+        <input id="recDate" type="date" class="px-3 py-2 rounded-full bg-black border border-zinc-800 text-[12px]">
         <span id="recCount" class="ml-auto text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-800">0 bản ghi</span>
       </div>
 
@@ -2005,7 +2005,7 @@ window.attendanceWS = attendanceWS;
         <div class="overflow-auto">
           <table class="w-full text-left">
             <thead class="bg-[#0f0f10] border-b border-[#232326] text-[11px] tracking-[0.08em] font-semibold text-zinc-500">
-              <tr><th class="px-4 py-3">NGƯỜI DÙNG</th><th class="px-4 py-3">ID</th><th class="px-4 py-3">CAMERA</th><th class="px-4 py-3">LOẠI</th><th class="px-4 py-3">THỜI GIAN</th><th class="px-4 py-3">CONF</th><th class="px-4 py-3">TRẠNG THÁI</th></tr>
+              <tr><th class="px-4 py-3">NGƯỜI DÙNG</th><th class="px-4 py-3">ID</th><th class="px-4 py-3">CAMERA</th><th class="px-4 py-3">LOẠI</th><th class="px-4 py-3">THỜI GIAN</th><th class="px-4 py-3">CONF</th><th class="px-4 py-3">TRẠNG THÁI</th><th class="px-4 py-3">BẰNG CHỨNG</th></tr>
             </thead>
             <tbody id="recordsBody" class="divide-y divide-[#232326] text-[13px]">
             </tbody>
@@ -2744,6 +2744,7 @@ window.updateGeometryDisplay = updateGeometryDisplay;
 window.saveLines = async function() {
   try {
     const saves = [];
+    const savedCids = [];
     let count = 0;
     for (const cid of ['cam1', 'cam2']) {
       const lines = cid === 'cam1' ? lines1 : lines2;
@@ -2751,16 +2752,19 @@ window.saveLines = async function() {
       if (lines.length > 0 && canvas) {
         const rect = canvas.getBoundingClientRect();
         const l = lines[lines.length - 1];
-        const nx1 = Number((l.x1 / rect.width).toFixed(4));
-        const ny1 = Number((l.y1 / rect.height).toFixed(4));
-        const nx2 = Number((l.x2 / rect.width).toFixed(4));
-        const ny2 = Number((l.y2 / rect.height).toFixed(4));
+        const w = rect.width || canvas.width || 640;
+        const h = rect.height || canvas.height || 360;
+        const nx1 = Number((l.x1 / w).toFixed(4));
+        const ny1 = Number((l.y1 / h).toFixed(4));
+        const nx2 = Number((l.x2 / w).toFixed(4));
+        const ny2 = Number((l.y2 / h).toFixed(4));
         const payload = {
           camera_id: cid,
           line: [[nx1, ny1], [nx2, ny2]],
           direction: "IN->OUT"
         };
         saves.push(api.post(`/api/v1/cameras/${cid}/line`, payload));
+        savedCids.push(cid);
         count++;
       }
     }
@@ -2768,7 +2772,12 @@ window.saveLines = async function() {
       showToast('Chưa có line nào để lưu', 'warning');
       return;
     }
-    await Promise.all(saves);
+    const savedResults = await Promise.all(saves);
+    savedCids.forEach((cid, idx) => {
+      if (savedResults[idx]) {
+        appState.geometryConfigs[cid] = savedResults[idx];
+      }
+    });
     updateGeometryDisplay(true);
     showToast('✓ Đã lưu line vào backend (đồng bộ real-time)', 'success');
   } catch (err) {
@@ -3647,7 +3656,8 @@ async function reloadGalleryEmbeddings() {
   if (btn) btn.textContent = 'Đang tải...';
   try {
     const res = await api.post('/api/v1/pipeline/reload-gallery', {});
-    showToast(`✓ Đã reload gallery (${res.gallery_size || 0} embeddings)`, 'success');
+    const reloadedCount = res.gallery_size ?? res.count ?? 0;
+    showToast(`✓ Đã reload gallery (${reloadedCount} embeddings)`, 'success');
     await loadEnrolledPersons();
   } catch (err) {
     console.error('Reload gallery error:', err);
@@ -4559,13 +4569,14 @@ function renderRecordsTable(records) {
   if (!tbody) return;
   
   if (records.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-10 text-center text-zinc-500 text-[13px]">Không có dữ liệu phù hợp</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-10 text-center text-zinc-500 text-[13px]">Không có dữ liệu phù hợp</td></tr>';
     if (countEl) countEl.textContent = '0 bản ghi';
     return;
   }
   
-  tbody.innerHTML = records.map(r => {
+  tbody.innerHTML = records.map((r, idx) => {
     const initials = ((r.person_name || r.person_id || '?')[0] || '?').toUpperCase();
+    const hasEvidence = Boolean(r.snapshot_face_url || r.crop_url || r.evidence_snapshot_path || r.snapshot_scene_url);
     return `
     <tr class="hover:bg-zinc-900/40 transition">
       <td class="px-4 py-3 flex items-center gap-2.5">
@@ -4578,6 +4589,7 @@ function renderRecordsTable(records) {
       <td class="px-4 py-3 font-mono text-[12px]">${new Date((r.timestamp || r.event_timestamp || 0) * 1000).toLocaleString('vi-VN')}</td>
       <td class="px-4 py-3 font-mono text-[12px] ${r.identity_confidence<0.5?'text-zinc-500':''}">${(r.identity_confidence || 0).toFixed(2)}</td>
       <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold ${(r.identity_confidence || 0)>=0.6?'bg-white text-black': (r.identity_confidence || 0)>=0.4?'border border-zinc-600 text-zinc-300':'border border-zinc-800 text-zinc-500'}">${(r.identity_confidence || 0)>=0.6?'THÀNH CÔNG': (r.identity_confidence || 0)>=0.4?'CẢNH BÁO':'THẤT BẠI'}</span></td>
+      <td class="px-4 py-3">${hasEvidence ? `<button type="button" onclick="openEvidenceModal(currentRecords[${idx}])" class="btn-evidence-preview px-2.5 py-1 rounded-full border border-zinc-700 hover:bg-zinc-800 text-[11px] font-mono text-zinc-200 transition">Xem ảnh</button>` : '<span class="text-zinc-600 text-[11px] font-mono">—</span>'}</td>
     </tr>
   `;
   }).join('');
@@ -5088,6 +5100,7 @@ document.getElementById('nextStudentsPage')?.addEventListener('click', () => {
 // EXCEL IMPORT MODULE (Module C)
 // ============================================================
 let pendingExcelData = null;
+let pendingExcelFile = null;
 
 function openImportModal() {
   document.getElementById('importModal').classList.remove('hidden');
@@ -5107,6 +5120,7 @@ function resetImportModal() {
   document.getElementById('importResult').classList.add('hidden');
   document.getElementById('btnConfirmImport').disabled = true;
   pendingExcelData = null;
+  pendingExcelFile = null;
 }
 
 document.getElementById('excelFileInput')?.addEventListener('change', handleExcelFileSelect);
@@ -5121,6 +5135,7 @@ document.getElementById('excelDropZone')?.addEventListener('drop', e => {
 function handleExcelFileSelect(e) {
   const file = e.target.files[0];
   if (!file) return;
+  pendingExcelFile = file;
   
   const reader = new FileReader();
   reader.onload = async (event) => {
@@ -5184,27 +5199,26 @@ function renderExcelPreview(headers, rows) {
 }
 
 async function confirmImport() {
-  if (!pendingExcelData) return;
+  if (!pendingExcelData && !pendingExcelFile) return;
+  if (!pendingExcelFile) {
+    showToast('Vui lòng chọn file Excel/CSV để tải lên', 'error');
+    return;
+  }
   
   const btn = document.getElementById('btnConfirmImport');
   btn.disabled = true;
   btn.textContent = 'Đang nhập...';
   
   try {
-    // Convert to FormData
     const formData = new FormData();
-    // We need to recreate the file - for now, we'll use the API directly
+    formData.append('file', pendingExcelFile);
     const response = await fetch(`${API_CONFIG.endpoints.students}/import`, {
       method: 'POST',
       headers: {
         'X-API-Key': API_CONFIG.getApiKey(),
       },
-      body: JSON.stringify({ students: pendingExcelData.rows })
+      body: formData
     });
-    
-    // Actually, the backend expects multipart/form-data with a file
-    // We need to convert the data back to a file-like object
-    // For now, let's use a different approach - send the parsed data
     
     const result = await response.json();
     
@@ -5442,11 +5456,13 @@ function openEvidenceModal(record) {
   const imagesContainer = document.getElementById('evidenceImages');
   const detailsContainer = document.getElementById('evidenceDetails');
   
+  if (!record) return;
   title.textContent = `Bằng chứng: ${record.person_name || record.person_id} - ${record.direction?.toUpperCase() || 'IN/OUT'}`;
   
   let imagesHtml = '';
-  if (record.snapshot_face_url) {
-    const faceUrl = record.snapshot_face_url.startsWith('http') ? record.snapshot_face_url : `${window.location.origin}${record.snapshot_face_url}`;
+  const faceRaw = record.snapshot_face_url || record.crop_url || record.evidence_snapshot_path;
+  if (faceRaw) {
+    const faceUrl = faceRaw.startsWith('http') ? faceRaw : `${window.location.origin}${faceRaw}`;
     imagesHtml += `
       <div class="space-y-2">
         <div class="text-[11px] font-mono text-zinc-400">FACE CROP</div>
@@ -5455,8 +5471,9 @@ function openEvidenceModal(record) {
       </div>
     `;
   }
-  if (record.snapshot_scene_url) {
-    const sceneUrl = record.snapshot_scene_url.startsWith('http') ? record.snapshot_scene_url : `${window.location.origin}${record.snapshot_scene_url}`;
+  const sceneRaw = record.snapshot_scene_url;
+  if (sceneRaw) {
+    const sceneUrl = sceneRaw.startsWith('http') ? sceneRaw : `${window.location.origin}${sceneRaw}`;
     imagesHtml += `
       <div class="space-y-2">
         <div class="text-[11px] font-mono text-zinc-400">SCENE CROP (4K)</div>
@@ -5471,7 +5488,7 @@ function openEvidenceModal(record) {
   
   imagesContainer.innerHTML = imagesHtml;
   
-  const time = new Date(record.timestamp * 1000).toLocaleString('vi-VN');
+  const time = new Date((record.timestamp || record.event_timestamp || 0) * 1000).toLocaleString('vi-VN');
   detailsContainer.innerHTML = `
     <div class="grid grid-cols-2 gap-2 text-[11px]">
       <div><span class="text-zinc-500">Thời gian:</span> <span class="text-white font-mono">${time}</span></div>
@@ -5514,7 +5531,9 @@ async function exportExcel() {
     if (statusVal) query.set('status', statusVal);
     if (date) query.set('date', date);
 
-    const response = await fetch(`${API_CONFIG.endpoints.attendance}/export?${query.toString()}`);
+    const response = await fetch(`${API_CONFIG.endpoints.attendance}/export?${query.toString()}`, {
+      headers: { 'X-API-Key': API_CONFIG.getApiKey() }
+    });
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Export failed' }));
       throw new Error(error.detail || 'Export failed');

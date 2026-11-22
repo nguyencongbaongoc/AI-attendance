@@ -293,6 +293,9 @@ class YOLOPersonDetector:
         # Run inference within the camera's CUDA stream if provided
         stream = getattr(self, "cuda_stream", None)
         if stream is not None:
+            caller_stream = torch.cuda.current_stream(self.device_id)
+            if stream != caller_stream:
+                stream.wait_stream(caller_stream)
             with torch.cuda.stream(stream):
                 if self._use_tensorrt:
                     return self._infer_tensorrt(input_tensor)

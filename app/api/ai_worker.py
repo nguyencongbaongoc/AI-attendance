@@ -611,6 +611,12 @@ async def ingest_attendance_event(event: CrossingEventRequest) -> CrossingEventR
         resolver = get_resolver()
         resolution_result = resolver.resolve_single(raw_event)
         
+        # Persist resolved transition into AttendanceRepository (Phase 25)
+        try:
+            get_repository().persist_single_resolution(resolution_result)
+        except Exception as persist_err:
+            logger.warning(f"Attendance persistence warning for {event.event_id}: {persist_err}")
+        
         # Get the source_resolution_id from the transition
         source_resolution_id = resolution_result.resolution_id
         

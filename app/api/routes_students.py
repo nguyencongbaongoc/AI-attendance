@@ -12,7 +12,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session, get_session_factory, init_database
@@ -184,6 +184,7 @@ async def list_students(
     class_id: Optional[str] = None,
     enrollment_status: Optional[str] = None,
     is_active: Optional[bool] = None,
+    search: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
@@ -199,6 +200,9 @@ async def list_students(
         query = query.where(Student.enrollment_status == enrollment_status)
     if is_active is not None:
         query = query.where(Student.is_active == is_active)
+    if search and search.strip():
+        q = f"%{search.strip()}%"
+        query = query.where(or_(Student.student_id.ilike(q), Student.full_name.ilike(q)))
     
     query = query.order_by(Student.class_id, Student.student_id).limit(limit).offset(offset)
     

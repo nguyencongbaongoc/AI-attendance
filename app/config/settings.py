@@ -465,8 +465,8 @@ class RateLimitConfig(BaseModel):
     """Rate limiting configuration - Phase 7."""
     
     enabled: bool = Field(default=True, description="Enable rate limiting")
-    default_rpm: int = Field(default=60, description="Default requests per minute")
-    default_burst: int = Field(default=10, description="Default burst allowance")
+    default_rpm: int = Field(default=300, description="Default requests per minute")
+    default_burst: int = Field(default=30, description="Default burst allowance")
     auth_rpm: int = Field(default=6, description="Auth endpoints requests per minute")
     auth_burst: int = Field(default=2, description="Auth endpoints burst")
     ws_connections_per_minute: int = Field(default=10, description="WebSocket connections per minute per IP")

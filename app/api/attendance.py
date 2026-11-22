@@ -74,6 +74,8 @@ class AttendanceRecordResponse(BaseModel):
     persisted_at: str
     class_id: Optional[str] = None
     crop_url: Optional[str] = None
+    snapshot_face_url: Optional[str] = None
+    snapshot_scene_url: Optional[str] = None
     id: Optional[str] = None
     student_id: Optional[str] = None
     event_type: Optional[str] = None
@@ -194,21 +196,8 @@ def evaluate_entry_status(
     return "LATE" if local_hms > threshold else "PRESENT"
 
 
-@router.get("/summary", response_model=AttendanceSummaryResponse)
-async def get_attendance_summary_endpoint():
-    """Get attendance summary for today."""
-    repository = get_repository()
-    summary = get_attendance_summary(repository)
-    
-    all_records = repository.get_chronological_history(limit=None)
-    late_count = sum(
-        1 for r in all_records
-        if (r.direction.value if hasattr(r.direction, "value") else str(r.direction)).lower() == "in"
-        and (r.new_state or "").upper() == "LATE"
-    )
-    present_count = max(0, summary.in_count - late_count)
-
-    total_students = 0
+def _get_active_student_ids() -> set[str]:
+    """Return active enrolled student IDs from school.db."""
     try:
         import sqlite3
         from app.config.settings import load_settings
@@ -216,22 +205,100 @@ async def get_attendance_summary_endpoint():
         db_path = settings.paths.data_dir / "school.db"
         if db_path.exists():
             with sqlite3.connect(db_path) as conn:
-                row = conn.execute("SELECT COUNT(*) FROM students WHERE is_active = 1").fetchone()
-                if row:
-                    total_students = row[0]
+                rows = conn.execute("SELECT student_id FROM students WHERE is_active = 1").fetchall()
+                return {str(r[0]).strip() for r in rows if r and r[0]}
     except Exception:
         pass
-    
-    absent = max(0, total_students - present_count - late_count)
-    
+    return set()
+
+
+def _parse_day_bounds(date_str: Optional[str]) -> Optional[tuple[float, float]]:
+    """Parse YYYY-MM-DD or YYYYMMDD string into local (start_ts, end_ts) bounds."""
+    if not date_str:
+        return None
+    clean_d = date_str.replace("-", "").strip()
+    try:
+        dt = datetime.strptime(clean_d, "%Y%m%d")
+        d_start = dt.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        d_end = dt.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp()
+        return d_start, d_end
+    except Exception as exc:
+        logger.debug(f"Invalid date filter '{date_str}': {exc}")
+        return None
+
+
+def _compute_unique_student_counts(records: List[Any], enrolled_ids: set[str]) -> tuple[int, int]:
+    """Count unique enrolled students as (present_count, late_count) from IN records."""
+    ordered = sorted(
+        records,
+        key=lambda r: float(getattr(r, "event_timestamp", None) or getattr(r, "timestamp", 0.0) or 0.0),
+    )
+    first_in_status: Dict[str, str] = {}
+    for rec in ordered:
+        raw_dir = getattr(rec, "event_type", None) or getattr(rec, "direction", "")
+        dir_val = raw_dir.value if hasattr(raw_dir, "value") else str(raw_dir)
+        if dir_val.strip().lower() != "in":
+            continue
+        sid = str(
+            getattr(rec, "identity_candidate", None)
+            or getattr(rec, "student_id", None)
+            or getattr(rec, "person_id", None)
+            or ""
+        ).strip()
+        if not sid or sid in ("UNKNOWN", "None"):
+            continue
+        if enrolled_ids and sid not in enrolled_ids:
+            continue
+        if sid not in first_in_status:
+            raw_state = (
+                getattr(rec, "status", None)
+                or getattr(rec, "new_state", None)
+                or getattr(rec, "attendance_state", None)
+                or ""
+            )
+            first_in_status[sid] = "LATE" if str(raw_state).strip().upper() == "LATE" else "PRESENT"
+
+    late_count = sum(1 for st in first_in_status.values() if st == "LATE")
+    present_count = sum(1 for st in first_in_status.values() if st != "LATE")
+    return present_count, late_count
+
+
+def _compute_attendance_summary(date: Optional[str] = None) -> AttendanceSummaryResponse:
+    """Compute deduplicated per-student attendance summary for the target date (defaults to today)."""
+    repository = get_repository()
+    target_date = date if isinstance(date, str) and date.strip() else datetime.now().strftime("%Y-%m-%d")
+    bounds = _parse_day_bounds(target_date)
+
+    all_records = repository.get_chronological_history(limit=None)
+    if bounds is not None:
+        d_start, d_end = bounds
+        day_records = [r for r in all_records if d_start <= float(r.event_timestamp or 0.0) <= d_end]
+    else:
+        day_records = list(all_records)
+
+    enrolled_ids = _get_active_student_ids()
+    total_students = len(enrolled_ids)
+    present_count, late_count = _compute_unique_student_counts(day_records, enrolled_ids)
+    out_count = sum(
+        1 for r in day_records
+        if (r.direction.value if hasattr(r.direction, "value") else str(r.direction)).strip().lower() == "out"
+    )
+    absent = max(0, total_students - (present_count + late_count))
+
     return AttendanceSummaryResponse(
         present=present_count,
         late=late_count,
-        left_early=summary.out_count,
+        left_early=out_count,
         absent=absent,
-        total=summary.total_records,
+        total=len(day_records),
         total_students=total_students,
     )
+
+
+@router.get("/summary", response_model=AttendanceSummaryResponse)
+async def get_attendance_summary_endpoint(date: Optional[str] = Query(None)):
+    """Get deduplicated per-student attendance summary for the target date (defaults to today)."""
+    return _compute_attendance_summary(date=date)
 
 
 @router.get("/records", response_model=AttendanceQueryResultResponse)
@@ -272,17 +339,12 @@ async def get_attendance_records(
         builder.identity_candidate(identity_candidate)
         
     if date:
-        clean_d = date.replace("-", "").strip()
-        try:
-            dt = datetime.strptime(clean_d, "%Y%m%d")
-            d_start = dt.replace(hour=0, minute=0, second=0).timestamp()
-            d_end = dt.replace(hour=23, minute=59, second=59).timestamp()
+        bounds = _parse_day_bounds(date)
+        if bounds is not None:
             if start_time is None:
-                start_time = d_start
+                start_time = bounds[0]
             if end_time is None:
-                end_time = d_end
-        except Exception as exc:
-            logger.debug(f"Invalid date filter '{date}': {exc}")
+                end_time = bounds[1]
 
     if start_date and start_time is None:
         try:
@@ -359,6 +421,8 @@ async def get_attendance_records(
             persisted_at=record.persisted_at,
             class_id=student_class,
             crop_url=crop_url,
+            snapshot_face_url=record.snapshot_face_url,
+            snapshot_scene_url=record.snapshot_scene_url,
             id=record.attendance_record_id,
             student_id=candidate,
             event_type=event_type,
@@ -667,16 +731,28 @@ async def export_attendance(
 
     # Sheet 2: Tong_Hop_Si_So
     ws2 = wb.create_sheet(title="Tong_Hop_Si_So")
-    summary = await get_attendance_summary_endpoint()
-    total_students = summary.total_students or max(summary.total, len({r.person_id for r in records}))
+    enrolled_ids = _get_active_student_ids()
+    summary = _compute_attendance_summary(date=date)
     if records:
-        present_cnt = sum(1 for r in records if (r.event_type or "").upper() == "IN" and (r.status or r.attendance_state or "").upper() != "LATE")
-        late_cnt = sum(1 for r in records if (r.event_type or "").upper() == "IN" and (r.status or r.attendance_state or "").upper() == "LATE")
+        present_cnt, late_cnt = _compute_unique_student_counts(records, enrolled_ids)
     else:
         present_cnt = summary.present
         late_cnt = summary.late
-    absent_cnt = max(0, total_students - present_cnt - late_cnt) if total_students > 0 else summary.absent
-    rate_pct = round(((present_cnt + late_cnt) / total_students) * 100.0, 1) if total_students > 0 else 0.0
+
+    unique_known_in_records = len({
+        str(r.person_id).strip()
+        for r in records
+        if r.person_id and str(r.person_id).strip() not in ("UNKNOWN", "None", "")
+    })
+    total_students = len(enrolled_ids) or summary.total_students or unique_known_in_records
+    if total_students > 0:
+        present_cnt = min(present_cnt, total_students)
+        late_cnt = min(late_cnt, max(0, total_students - present_cnt))
+        absent_cnt = max(0, total_students - (present_cnt + late_cnt))
+        rate_pct = min(100.0, round(((present_cnt + late_cnt) / total_students) * 100.0, 1))
+    else:
+        absent_cnt = summary.absent
+        rate_pct = 0.0
 
     sum_headers = ["Tổng số", "Có mặt", "Đi trễ", "Vắng mặt", "Tỷ lệ chuyên cần %"]
     ws2.append(sum_headers)

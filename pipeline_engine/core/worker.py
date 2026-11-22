@@ -433,24 +433,21 @@ class AIWorker:
         await self.event_client.start()
         
     def _register_event_callback(self) -> None:
-        """Register callback to receive attendance events from AttendanceEngine."""
-        if not self.engine or not self.engine.camera_manager:
+        """Register callback to receive attendance events from all camera AttendanceEngines."""
+        if not self.engine or not self.engine.camera_manager or not self.event_client:
             return
             
-        attendance_engine = None
-        # Get attendance engine from any camera (they share the same engine instance)
+        def on_attendance_event(event: CrossingEvent):
+            self._on_attendance_event(event)
+            
+        registered = 0
         for camera_id in self.engine.camera_manager.get_camera_list():
             camera = self.engine.camera_manager._cameras.get(camera_id)
             if camera and camera.get("attendance"):
-                attendance_engine = camera["attendance"]
-                break
-                
-        if attendance_engine and self.event_client:
-            def on_attendance_event(event: CrossingEvent):
-                self._on_attendance_event(event)
-                
-            attendance_engine.register_event_callback(on_attendance_event)
-            logger.info("Registered attendance event callback")
+                camera["attendance"].register_event_callback(on_attendance_event)
+                registered += 1
+        if registered > 0:
+            logger.info(f"Registered attendance event callback on {registered} camera(s)")
             
     def _on_attendance_event(self, event: CrossingEvent) -> None:
         """Handle attendance event from AttendanceEngine (thread-safe)."""
