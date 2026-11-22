@@ -8,6 +8,7 @@ Input: Person crop (256x128) → Normalize → ReID TensorRT/ONNX → 2048D embe
 from __future__ import annotations
 
 import logging
+import threading
 import time
 import numpy as np
 import torch
@@ -106,6 +107,8 @@ class ReIDDetector:
         self._total_inference_time = 0.0
         self._last_error: Optional[str] = None
         self._initialized = False
+        self._lock = threading.RLock()
+        self.body_prototypes: Dict[str, np.ndarray] = {}
     
     def initialize(self) -> bool:
         """Initialize backend (TensorRT or ONNX Runtime) based on model file extension."""
@@ -114,14 +117,80 @@ class ReIDDetector:
         
         try:
             if self._use_tensorrt:
-                return self._initialize_tensorrt()
+                ok = self._initialize_tensorrt()
             else:
-                return self._initialize_onnx()
+                ok = self._initialize_onnx()
+            if ok:
+                self.load_body_gallery()
+            return ok
                 
         except Exception as e:
             self._last_error = str(e)
             logger.error(f"ReIDDetector: Initialization failed: {e}")
             return False
+
+    def load_body_gallery(self, gallery_dir: str = "app/data/embeddings") -> int:
+        """Load enrolled *_body.npy 2048D L2-normalized prototypes from disk."""
+        emb_dir = Path(gallery_dir)
+        new_prototypes: Dict[str, np.ndarray] = {}
+        if emb_dir.exists():
+            for npy_file in sorted(emb_dir.glob("*_body.npy")):
+                student_id = npy_file.stem[:-5] if npy_file.stem.endswith("_body") else npy_file.stem
+                try:
+                    vec = np.load(str(npy_file)).astype(np.float32).reshape(-1)
+                    if vec.shape[0] != self.reid_config.embedding_dim:
+                        continue
+                    norm = float(np.linalg.norm(vec))
+                    if norm > 1e-12:
+                        vec = (vec / norm).astype(np.float32)
+                    new_prototypes[student_id] = np.ascontiguousarray(vec, dtype=np.float32)
+                except Exception as exc:
+                    logger.warning(f"ReIDDetector: Failed loading body prototype {npy_file}: {exc}")
+        with self._lock:
+            self.body_prototypes = new_prototypes
+        logger.info(f"ReIDDetector: Loaded {len(new_prototypes)} body prototypes from {emb_dir}")
+        return len(new_prototypes)
+
+    def reload_gallery(self, gallery_dir: str = "app/data/embeddings") -> Dict[str, Any]:
+        """Thread-safe hot-reload of enrolled body ReID prototypes."""
+        count = self.load_body_gallery(gallery_dir)
+        return {"status": "success", "enrolled_count": count}
+
+    def update_prototype_ema(self, student_id: str, embedding: np.ndarray, alpha: float = 0.15) -> None:
+        """Update online EMA appearance prototype for an enrolled student_id."""
+        if not student_id or embedding is None:
+            return
+        vec = np.asarray(embedding, dtype=np.float32).reshape(-1)
+        if vec.shape[0] != self.reid_config.embedding_dim:
+            return
+        norm = float(np.linalg.norm(vec))
+        if norm <= 1e-12:
+            return
+        vec = vec / norm
+        with self._lock:
+            prev = self.body_prototypes.get(student_id)
+            if prev is not None and prev.shape == vec.shape:
+                blended = (1.0 - float(alpha)) * prev + float(alpha) * vec
+            else:
+                blended = vec
+            bnorm = float(np.linalg.norm(blended))
+            if bnorm > 1e-12:
+                blended = blended / bnorm
+            self.body_prototypes[student_id] = np.ascontiguousarray(blended, dtype=np.float32)
+
+    def match_body(self, embedding: np.ndarray) -> Dict[str, float]:
+        """Compute cosine similarity against all enrolled body prototypes."""
+        if embedding is None:
+            return {}
+        vec = np.asarray(embedding, dtype=np.float32).reshape(-1)
+        if vec.shape[0] != self.reid_config.embedding_dim:
+            return {}
+        norm = float(np.linalg.norm(vec))
+        if norm <= 1e-12:
+            return {}
+        vec = vec / norm
+        with self._lock:
+            return {sid: float(np.dot(proto, vec)) for sid, proto in self.body_prototypes.items()}
     
     def _initialize_tensorrt(self) -> bool:
         """Initialize TensorRT executor for .engine file."""

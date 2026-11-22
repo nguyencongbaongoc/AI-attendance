@@ -40,6 +40,21 @@ import torch
 
 logger = logging.getLogger(__name__)
 
+
+def _point_in_polygon(x: float, y: float, polygon: List[List[float]]) -> bool:
+    """Ray-casting point-in-polygon check for optional camera ROI filtering."""
+    n = len(polygon)
+    inside = False
+    j = n - 1
+    for i in range(n):
+        xi, yi = float(polygon[i][0]), float(polygon[i][1])
+        xj, yj = float(polygon[j][0]), float(polygon[j][1])
+        if ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / ((yj - yi) if (yj - yi) != 0.0 else 1e-12) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
 # Persistent HTTP session for metadata ingest
 _http_session: Optional[aiohttp.ClientSession] = None
 _http_session_lock: Optional[asyncio.Lock] = None
@@ -266,13 +281,14 @@ class CameraManager:
         yolo_detector = self._shared_models.get('yolo')
         reid_detector = self._shared_models.get('reid')
         
-        # Create tracker with shared recognizer
+        # Create tracker with shared recognizer & ReID detector for multi-modal lock
         tracker = Tracker(
             config=TrackingConfig(
                 min_iou_threshold=cam_config.get("tracking", {}).get("min_iou", 0.3),
                 max_lost_frames=cam_config.get("tracking", {}).get("max_lost", 10),
             ),
             recognizer=arcface_recognizer,
+            reid_detector=reid_detector,
         )
         
         # Create attendance engine using active pipeline config
@@ -302,6 +318,7 @@ class CameraManager:
             "yolo": yolo_detector,
             "reid": reid_detector,
             "tracker": tracker,
+            "locked_track_identities": tracker._locked_track_identities,
             "attendance": attendance_engine,
             "annotator": annotator,
             "quality_assessor": quality_assessor,
@@ -662,6 +679,26 @@ class CameraManager:
                     
                     # Run person detection
                     person_detections = yolo.detect(gpu_frame)
+
+                    # Optional ROI polygon filtering (e.g., exclude static stacked-desk zone)
+                    roi_polygon = camera["config"].get("geometry", {}).get("roi_polygon")
+                    if isinstance(roi_polygon, list) and len(roi_polygon) >= 3:
+                        person_detections = [
+                            d for d in person_detections
+                            if _point_in_polygon(
+                                (d.bbox[0] + d.bbox[2]) * 0.5,
+                                (d.bbox[1] + d.bbox[3]) * 0.5,
+                                roi_polygon,
+                            )
+                        ]
+                        face_detections = [
+                            f for f in face_detections
+                            if _point_in_polygon(
+                                (f.bbox[0] + f.bbox[2]) * 0.5,
+                                (f.bbox[1] + f.bbox[3]) * 0.5,
+                                roi_polygon,
+                            )
+                        ]
                     
                     # Check VRAM pressure & enforce backpressure
                     skip_heavy_inference = False
@@ -794,22 +831,29 @@ class CameraManager:
                     frame_h = max(1, camera["config"].get("expected", {}).get("height", 2160))
 
                     persons_data = []
+                    enrolled_identities = set(getattr(arcface, "identities", [])) if arcface is not None else set()
                     for track in active_tracks:
                         bx1, by1, bx2, by2 = track.bbox_original_frame
                         nx1 = max(0.0, min(1.0, float(bx1) / frame_w))
                         ny1 = max(0.0, min(1.0, float(by1) / frame_h))
                         nx2 = max(0.0, min(1.0, float(bx2) / frame_w))
                         ny2 = max(0.0, min(1.0, float(by2) / frame_h))
-                        identity_cand = (
-                            getattr(track, "identity_candidate", None)
-                            or getattr(track, "matched_name", None)
-                            or getattr(track, "person_name", None)
-                            or "Unknown"
-                        )
-                        identity_conf = float(
-                            getattr(track, "identity_confidence", 0.0)
-                            or (track.confidence if getattr(track, "person_id", None) is not None else 0.0)
-                        )
+                        raw_pid = getattr(track, "person_id", None)
+                        raw_pname = getattr(track, "person_name", None)
+                        if (
+                            raw_pid
+                            and raw_pid in enrolled_identities
+                            and raw_pname
+                            and str(raw_pname).strip() != str(raw_pid).strip()
+                        ):
+                            identity_cand = str(raw_pname).strip()
+                            identity_conf = float(
+                                getattr(track, "identity_confidence", 0.0)
+                                or getattr(track, "confidence", 0.0)
+                            )
+                        else:
+                            identity_cand = "Khách / Chưa đăng ký"
+                            identity_conf = 0.0
                         track_state = (
                             track.lifecycle_state.value
                             if hasattr(track.lifecycle_state, "value")
@@ -1278,6 +1322,12 @@ class CameraManager:
                         logger.info(f"CameraManager({cid}): Reloaded {count} ArcFace embeddings from {npy_path}")
                 except Exception as e:
                     logger.error(f"CameraManager({cid}): Failed to reload ArcFace embeddings: {e}")
+                reid = cam.get("reid")
+                if reid and hasattr(reid, "reload_gallery"):
+                    try:
+                        reid.reload_gallery()
+                    except Exception as e:
+                        logger.error(f"CameraManager({cid}): Failed to reload ReID body gallery: {e}")
             return total_loaded
 
     def restart_camera(self, camera_id: str) -> bool:

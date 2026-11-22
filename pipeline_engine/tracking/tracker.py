@@ -144,6 +144,11 @@ class Track:
     def center(self) -> Tuple[float, float]:
         x1, y1, x2, y2 = self.bbox_original_frame
         return ((x1 + x2) / 2, (y1 + y2) / 2)
+
+    @property
+    def foot_center(self) -> Tuple[float, float]:
+        x1, _, x2, y2 = self.bbox_original_frame
+        return ((x1 + x2) * 0.5, float(y2))
     
     @property
     def is_active(self) -> bool:
@@ -492,6 +497,192 @@ def find_face_for_person(
     return best_face
 
 
+def _resolve_display_name(recognizer: Optional[Any], student_id: Optional[str]) -> Optional[str]:
+    """Return mapped display name if student_id is actively enrolled, else None."""
+    if recognizer is None or not student_id:
+        return None
+    lock = getattr(recognizer, "_lock", None)
+    if lock is not None:
+        with lock:
+            identities = set(getattr(recognizer, "identities", []))
+            meta_lookup = getattr(recognizer, "metadata_lookup", {}) or {}
+            enroll_meta = getattr(recognizer, "_enrollment_metadata", {}) or {}
+    else:
+        identities = set(getattr(recognizer, "identities", []))
+        meta_lookup = getattr(recognizer, "metadata_lookup", {}) or {}
+        enroll_meta = getattr(recognizer, "_enrollment_metadata", {}) or {}
+    if student_id not in identities:
+        return None
+    meta = meta_lookup.get(student_id) or enroll_meta.get(student_id) or {}
+    name = meta.get("name")
+    if not name or str(name).strip() == str(student_id).strip():
+        return None
+    return str(name).strip()
+
+
+def _compute_face_scores(
+    recognizer: Optional[Any],
+    face_embedding: Optional[FaceEmbedding],
+) -> Dict[str, float]:
+    """Compute cosine similarity against all enrolled ArcFace identities."""
+    if recognizer is None or face_embedding is None:
+        return {}
+    lock = getattr(recognizer, "_lock", None)
+    if lock is not None:
+        with lock:
+            matrix = getattr(recognizer, "embeddings_matrix", None)
+            identities = list(getattr(recognizer, "identities", []))
+    else:
+        matrix = getattr(recognizer, "embeddings_matrix", None)
+        identities = list(getattr(recognizer, "identities", []))
+    if matrix is None or not identities or matrix.shape[0] != len(identities):
+        return {}
+    sims = torch.matmul(matrix, face_embedding.embedding).detach().cpu().numpy()
+    return {identities[i]: float(sims[i]) for i in range(len(identities))}
+
+
+def _compute_frontal_pose_score(face_detection: Optional[FaceDetection]) -> float:
+    """Estimate frontalness in [0.0, 1.0] from 5 facial landmarks."""
+    if not face_detection or not getattr(face_detection, "landmarks5", None):
+        return 1.0
+    lm = face_detection.landmarks5
+    if len(lm) != 5:
+        return 1.0
+    eye_dist = abs(float(lm[1][0]) - float(lm[0][0]))
+    if eye_dist <= 1.0:
+        return 1.0
+    nose_off = abs(float(lm[2][0]) - (float(lm[0][0]) + float(lm[1][0])) * 0.5)
+    return max(0.0, min(1.0, 1.0 - 2.0 * (nose_off / eye_dist)))
+
+
+def _resolve_track_identity(
+    track_id: int,
+    prev_person_id: Optional[str],
+    prev_person_name: Optional[str],
+    prev_conf: float,
+    prev_source: str,
+    prev_emb: Optional[np.ndarray],
+    face_embedding: Optional[FaceEmbedding],
+    face_detection: Optional[FaceDetection],
+    body_vec: Optional[np.ndarray],
+    recognizer: Optional[Any],
+    reid_detector: Optional[Any],
+    locked_identities: Dict[int, Dict[str, Any]],
+    track_consensus: Dict[int, Dict[str, Dict[str, Any]]],
+    locked_sids_in_frame: set,
+) -> Tuple[Optional[str], Optional[str], float, str, Optional[np.ndarray]]:
+    """Multi-modal Face + Body ReID fusion with sticky track-level identity lock."""
+    face_scores = _compute_face_scores(recognizer, face_embedding)
+    body_scores = (
+        reid_detector.match_body(body_vec)
+        if reid_detector is not None and body_vec is not None and hasattr(reid_detector, "match_body")
+        else {}
+    )
+    frontal_score = _compute_frontal_pose_score(face_detection)
+    scrfd_conf = float(getattr(face_detection, "confidence", 1.0)) if face_detection is not None else 0.0
+
+    # 1. Track is already locked: preserve identity for entire lifetime of track_id
+    if track_id in locked_identities:
+        lock_info = locked_identities[track_id]
+        sid = lock_info["student_id"]
+        fname = lock_info["full_name"]
+        lconf = float(lock_info["locked_confidence"])
+        src = str(lock_info.get("source", "multimodal_lock"))
+        emb_out = face_embedding.embedding.detach().cpu().numpy() if face_embedding is not None else prev_emb
+
+        raw_fsim = face_scores.get(sid, 0.0)
+        if raw_fsim >= 0.55 and scrfd_conf >= 0.55 and frontal_score >= 0.20:
+            w_fsim = raw_fsim * (0.94 + 0.06 * frontal_score)
+            fused = 0.65 * w_fsim + 0.35 * body_scores[sid] if sid in body_scores else w_fsim
+            if fused >= 0.62:
+                lock_info["locked_confidence"] = max(lconf, float(fused))
+                lconf = lock_info["locked_confidence"]
+                if reid_detector is not None and body_vec is not None and hasattr(reid_detector, "update_prototype_ema"):
+                    reid_detector.update_prototype_ema(sid, body_vec, alpha=0.10)
+        return sid, fname, lconf, src, emb_out
+
+    # Keep any valid previously resolved identity as fallback
+    valid_prev_name = _resolve_display_name(recognizer, prev_person_id)
+    if valid_prev_name is not None:
+        out_id, out_name, out_conf, out_src, out_emb = (
+            prev_person_id,
+            valid_prev_name,
+            prev_conf,
+            prev_source,
+            prev_emb,
+        )
+    else:
+        out_id, out_name, out_conf, out_src, out_emb = None, None, 0.0, "unknown", None
+
+    # 2. Frontal face visible -> Multi-modal Face + Body score fusion
+    best_raw_fsim = max(face_scores.values()) if face_scores else 0.0
+    has_frontal_face = bool(face_scores) and scrfd_conf >= 0.55 and frontal_score >= 0.20 and best_raw_fsim >= 0.55
+
+    if has_frontal_face:
+        best_cand: Optional[Tuple[str, str, float]] = None
+        for sid, raw_fsim in face_scores.items():
+            if raw_fsim < 0.55:
+                continue
+            fname = _resolve_display_name(recognizer, sid)
+            if fname is None:
+                continue
+            w_fsim = raw_fsim * (0.94 + 0.06 * frontal_score)
+            fused = 0.65 * w_fsim + 0.35 * body_scores[sid] if sid in body_scores else w_fsim
+            if sid in locked_sids_in_frame and fused < 0.80:
+                continue
+            if best_cand is None or fused > best_cand[2]:
+                best_cand = (sid, fname, float(fused))
+
+        if best_cand is not None and best_cand[2] >= 0.62:
+            sid, fname, fused = best_cand
+            entry = track_consensus.setdefault(track_id, {}).setdefault(sid, {"hits": 0, "best_score": 0.0})
+            entry["hits"] += 1
+            entry["best_score"] = max(entry["best_score"], fused)
+            out_emb = face_embedding.embedding.detach().cpu().numpy() if face_embedding is not None else out_emb
+            if entry["hits"] >= 2:
+                locked_identities[track_id] = {
+                    "student_id": sid,
+                    "full_name": fname,
+                    "locked_confidence": entry["best_score"],
+                    "source": "multimodal_lock",
+                }
+                if reid_detector is not None and body_vec is not None and hasattr(reid_detector, "update_prototype_ema"):
+                    reid_detector.update_prototype_ema(sid, body_vec, alpha=0.15)
+                return sid, fname, entry["best_score"], "multimodal_lock", out_emb
+            return sid, fname, fused, "multimodal_fusion", out_emb
+        return out_id, out_name, out_conf, out_src, out_emb
+
+    # 3. Facing away / no frontal face -> Body ReID fallback
+    if body_scores:
+        body_cands: List[Tuple[str, str, float]] = []
+        for sid, bsim in body_scores.items():
+            if sid in locked_sids_in_frame:
+                continue
+            fname = _resolve_display_name(recognizer, sid)
+            if fname is not None:
+                body_cands.append((sid, fname, float(bsim)))
+        body_cands.sort(key=lambda item: item[2], reverse=True)
+        if body_cands:
+            sid, fname, bsim = body_cands[0]
+            second_bsim = body_cands[1][2] if len(body_cands) >= 2 else 0.0
+            margin_ok = (len(body_cands) == 1) or ((bsim - second_bsim) >= 0.025)
+            if bsim >= 0.68 and margin_ok:
+                entry = track_consensus.setdefault(track_id, {}).setdefault(sid, {"hits": 0, "best_score": 0.0})
+                entry["hits"] += 1
+                entry["best_score"] = max(entry["best_score"], bsim)
+                if entry["hits"] >= 2:
+                    locked_identities[track_id] = {
+                        "student_id": sid,
+                        "full_name": fname,
+                        "locked_confidence": entry["best_score"],
+                        "source": "body_reid_lock",
+                    }
+                    return sid, fname, entry["best_score"], "body_reid_lock", out_emb
+                return sid, fname, bsim, "body_reid", out_emb
+
+    return out_id, out_name, out_conf, out_src, out_emb
+
+
 def update_tracks(
     previous_tracks: List[Track],
     person_detections: List[PersonDetection],
@@ -502,14 +693,21 @@ def update_tracks(
     frame_index: int = 0,
     timestamp: float = 0.0,
     config: Optional[TrackingConfig] = None,
+    reid_detector: Optional[Any] = None,
+    locked_track_identities: Optional[Dict[int, Dict[str, Any]]] = None,
+    track_consensus: Optional[Dict[int, Dict[str, Dict[str, Any]]]] = None,
 ) -> Tuple[List[Track], List[Track], List[Track]]:
     """
     Update existing tracks with new detections.
     
-    Also performs identity resolution using face recognition embeddings.
+    Performs multi-modal Face + Body ReID resolution with sticky track identity locking.
     """
     if config is None:
         config = TrackingConfig()
+    if locked_track_identities is None:
+        locked_track_identities = {}
+    if track_consensus is None:
+        track_consensus = {}
     
     # Separate active/lost tracks from closed
     active_lost_tracks = [t for t in previous_tracks if not t.is_closed]
@@ -519,6 +717,8 @@ def update_tracks(
     assignments, unmatched_track_indices, unmatched_detection_indices = solve_track_assignment(
         active_lost_tracks, person_detections, face_detections, config
     )
+
+    active_frame_tids = {active_lost_tracks[ti].track_id for ti, _ in assignments}
     
     updated_tracks = []
     new_tracks = []
@@ -540,23 +740,9 @@ def update_tracks(
         if detection.detection_id in body_embeddings:
             body_embedding = body_embeddings[detection.detection_id]
         
-        # Identity resolution
-        person_id = track.person_id
-        person_name = track.person_name
-        identity_confidence = track.identity_confidence
-        identity_source = track.identity_source
-        embedding = track.embedding
-        
         # NEW: GIS integration - get global person ID
         global_person_id = track.global_person_id
         identity_state = track.identity_state
-        face_evidence_ref = None
-        body_evidence_ref = None
-        face_quality = 0.0
-        body_quality = 0.0
-        association_method = ""
-        conflict_flag = False
-        provisional_person_id = None
         
         # NEW: Update live embeddings on track
         face_quality = 0.0
@@ -596,17 +782,6 @@ def update_tracks(
                 norm = torch.norm(avg_face_embedding)
                 if norm > 0:
                     avg_face_embedding = avg_face_embedding / norm
-            
-            if recognizer:
-                matches = recognizer.identify(face_embedding.embedding, top_k=1)
-                if matches:
-                    person_id, similarity = matches[0]
-                    if similarity >= config.identity_confidence_threshold:
-                        identity_confidence = similarity
-                        identity_source = "face_recognition"
-                        meta = recognizer._enrollment_metadata.get(person_id, {})
-                        person_name = meta.get("name", person_id)
-                        embedding = face_embedding.embedding.cpu().numpy()
         
         matched_body_np = track.body_embedding
         if body_embedding is not None:
@@ -632,12 +807,30 @@ def update_tracks(
                 norm = torch.norm(avg_body_embedding)
                 if norm > 0:
                     avg_body_embedding = avg_body_embedding / norm
+
+        locked_sids_other = {
+            info["student_id"]
+            for tid, info in locked_track_identities.items()
+            if tid in active_frame_tids and tid != track.track_id
+        }
+        person_id, person_name, identity_confidence, identity_source, embedding = _resolve_track_identity(
+            track_id=track.track_id,
+            prev_person_id=track.person_id,
+            prev_person_name=track.person_name,
+            prev_conf=track.identity_confidence,
+            prev_source=track.identity_source,
+            prev_emb=track.embedding,
+            face_embedding=face_embedding,
+            face_detection=face_detection,
+            body_vec=matched_body_np,
+            recognizer=recognizer,
+            reid_detector=reid_detector,
+            locked_identities=locked_track_identities,
+            track_consensus=track_consensus,
+            locked_sids_in_frame=locked_sids_other,
+        )
         
         embedding_count += 1
-        
-        # Fallback to ReID if enabled and no face recognition match
-        if config.reid_fallback_enabled and track.embedding is not None and not face_embedding:
-            pass
         
         updated_track = Track(
             track_id=track.track_id,
@@ -758,37 +951,21 @@ def update_tracks(
     for det_idx in unmatched_detection_indices:
         detection = person_detections[det_idx]
         face_detection = find_face_for_person(detection, face_detections)
-        
-        # Identity for new track
-        person_id = None
-        person_name = None
-        identity_confidence = 0.0
-        identity_source = "unknown"
-        embedding = None
-        
+
         face_quality = 0.0
         body_quality = 0.0
         face_model_id = "arcface_r100"
         face_model_sha256 = ""
         body_model_id = "resnet50_reid"
         body_model_sha256 = ""
-        
+
         face_embedding = None
         body_embedding = None
-        
-        if face_detection and face_detection.detection_id in face_embeddings and recognizer:
+
+        if face_detection and face_detection.detection_id in face_embeddings:
             face_embedding = face_embeddings[face_detection.detection_id]
             face_quality = float(getattr(face_embedding, "face_quality", getattr(face_detection, "confidence", 1.0)))
-            matches = recognizer.identify(face_embedding.embedding, top_k=1)
-            if matches:
-                person_id, similarity = matches[0]
-                if similarity >= config.identity_confidence_threshold:
-                    identity_confidence = similarity
-                    identity_source = "face_recognition"
-                    meta = recognizer._enrollment_metadata.get(person_id, {})
-                    person_name = meta.get("name", person_id)
-                    embedding = face_embedding.embedding.cpu().numpy()
-        
+
         # Get body embedding if available (keyed by person detection_id or face fallback)
         raw_body = None
         body_emb_tensor = None
@@ -816,6 +993,28 @@ def update_tracks(
             + [0]
         )
         track_id = max_existing_id + 1
+
+        locked_sids_other = {
+            info["student_id"]
+            for tid, info in locked_track_identities.items()
+            if tid in active_frame_tids
+        }
+        person_id, person_name, identity_confidence, identity_source, embedding = _resolve_track_identity(
+            track_id=track_id,
+            prev_person_id=None,
+            prev_person_name=None,
+            prev_conf=0.0,
+            prev_source="unknown",
+            prev_emb=None,
+            face_embedding=face_embedding,
+            face_detection=face_detection,
+            body_vec=body_embedding,
+            recognizer=recognizer,
+            reid_detector=reid_detector,
+            locked_identities=locked_track_identities,
+            track_consensus=track_consensus,
+            locked_sids_in_frame=locked_sids_other,
+        )
 
         new_track = Track(
             track_id=track_id,
@@ -888,6 +1087,11 @@ def update_tracks(
             t.lifecycle_state = TrackLifecycleState.CLOSED
             newly_closed.append(t)
     
+    # Clean up sticky identity state for closed tracks
+    for closed_t in newly_closed:
+        locked_track_identities.pop(closed_t.track_id, None)
+        track_consensus.pop(closed_t.track_id, None)
+
     # Combine all tracks
     final_tracks = active_tracks + lost_tracks + new_tracks_list + closed_tracks + newly_closed
     
@@ -899,12 +1103,20 @@ class Tracker:
     Main tracker class managing track state across frames.
     """
     
-    def __init__(self, config: Optional[TrackingConfig] = None, recognizer: Optional[Any] = None):
+    def __init__(
+        self,
+        config: Optional[TrackingConfig] = None,
+        recognizer: Optional[Any] = None,
+        reid_detector: Optional[Any] = None,
+    ):
         self.config = config or TrackingConfig()
         self.recognizer = recognizer
+        self.reid_detector = reid_detector
         self._tracks: List[Track] = []
         self._next_track_id = 1
         self._frame_index = 0
+        self._locked_track_identities: Dict[int, Dict[str, Any]] = {}
+        self._track_consensus: Dict[int, Dict[str, Dict[str, Any]]] = {}
     
     def process_frame(
         self,
@@ -929,6 +1141,9 @@ class Tracker:
             frame_index=self._frame_index,
             timestamp=timestamp,
             config=self.config,
+            reid_detector=self.reid_detector,
+            locked_track_identities=self._locked_track_identities,
+            track_consensus=self._track_consensus,
         )
 
         self._tracks = updated_tracks
@@ -1010,6 +1225,8 @@ class Tracker:
         self._tracks.clear()
         self._next_track_id = 1
         self._frame_index = 0
+        self._locked_track_identities.clear()
+        self._track_consensus.clear()
     
     def get_stats(self) -> Dict[str, Any]:
         active = len([t for t in self._tracks if t.is_active])

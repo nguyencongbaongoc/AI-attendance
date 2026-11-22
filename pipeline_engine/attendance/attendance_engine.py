@@ -146,6 +146,7 @@ class CrossingPolicyConfig:
     cooldown_seconds: float = 2.0
     side_confirmation_frames: int = 3
     max_trajectory_gap_frames: int = 5
+    reference_point: str = "center"
 
 
 @dataclass
@@ -400,12 +401,25 @@ class CrossingEngine:
         if not track.is_active and not track.is_new:
             return []
 
-        current_center = track.center
         track_id = track.track_id
 
         if track_id not in self._track_states:
+            if self.policy.reference_point == "adaptive":
+                line_max_y = max(self.line.p1[1], self.line.p2[1])
+                ref_mode = (
+                    "center"
+                    if track.foot_center[1] > line_max_y + 40.0
+                    else "foot_center"
+                )
+            else:
+                ref_mode = self.policy.reference_point
+
+            current_center = (
+                track.foot_center if ref_mode == "foot_center" else track.center
+            )
             init_side = self.line.side_of_point(current_center)
             self._track_states[track_id] = {
+                "ref_mode": ref_mode,
                 "current_side": init_side,
                 "confirmed_side": init_side,
                 "anchor_position": current_center,
@@ -417,6 +431,10 @@ class CrossingEngine:
             return []
 
         state = self._track_states[track_id]
+        ref_mode = state.get("ref_mode", self.policy.reference_point)
+        current_center = (
+            track.foot_center if ref_mode == "foot_center" else track.center
+        )
         previous_center = state["last_position"]
         state["last_position"] = current_center
 
@@ -432,8 +450,21 @@ class CrossingEngine:
 
         # Detect crossing against confirmed/previous side (supports gradual multi-frame motion)
         if current_side != prev_side and current_side != 0 and prev_side != 0:
+            if self.line.direction_semantics == "side_a_to_b_in":
+                direction = CrossingDirection.IN if prev_side == 1 and current_side == -1 else CrossingDirection.OUT
+            elif self.line.direction_semantics == "side_b_to_a_in":
+                direction = CrossingDirection.IN if prev_side == -1 and current_side == 1 else CrossingDirection.OUT
+            else:
+                direction = CrossingDirection.IN if prev_side > current_side else CrossingDirection.OUT
+
             time_since_last = timestamp - state["last_crossing_timestamp"]
-            if state["last_crossing_timestamp"] > 0 and time_since_last < self.policy.temporal_debounce_seconds:
+            last_dir = state.get("last_crossing_direction")
+            min_debounce = (
+                self.policy.temporal_debounce_seconds
+                if last_dir == direction
+                else min(0.8, self.policy.temporal_debounce_seconds)
+            )
+            if state["last_crossing_timestamp"] > 0 and time_since_last < min_debounce:
                 self._stats["rejected_debounce"] += 1
                 state["confirmed_side"] = current_side
                 state["current_side"] = current_side
@@ -446,17 +477,10 @@ class CrossingEngine:
             crossing_distance = max(perp_span, euclid_span)
 
             if crossing_distance >= self.policy.min_crossing_distance:
-                if self.line.direction_semantics == "side_a_to_b_in":
-                    direction = CrossingDirection.IN if prev_side == 1 and current_side == -1 else CrossingDirection.OUT
-                elif self.line.direction_semantics == "side_b_to_a_in":
-                    direction = CrossingDirection.IN if prev_side == -1 and current_side == 1 else CrossingDirection.OUT
-                else:
-                    direction = CrossingDirection.IN if prev_side > current_side else CrossingDirection.OUT
-
                 # Per-subject / per-track cooldown guard against boundary swaying
                 subject_key = (
-                    getattr(track, "global_person_id", None)
-                    or getattr(track, "person_id", None)
+                    getattr(track, "person_id", None)
+                    or getattr(track, "global_person_id", None)
                     or f"track:{track_id}"
                 )
                 cooldown_win = max(self.policy.temporal_debounce_seconds, self.policy.cooldown_seconds)
@@ -634,6 +658,7 @@ class AttendanceEngine:
                 cooldown_seconds=policy_config.get("cooldown_seconds", policy_config.get("temporal_debounce_seconds", 2.0)),
                 side_confirmation_frames=policy_config.get("side_confirmation_frames", 3),
                 max_trajectory_gap_frames=policy_config.get("max_trajectory_gap_frames", 5),
+                reference_point=policy_config.get("reference_point", "center"),
             )
             
             line = LineGeometry(
