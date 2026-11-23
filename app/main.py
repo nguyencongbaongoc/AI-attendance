@@ -127,6 +127,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             request.url.path.startswith("/api/v1/health")
             or request.url.path == "/api/v1/stream/metadata/ingest"
             or request.url.path == "/api/v1/attendance/events"
+            or request.url.path == "/api/v1/attendance/backfill"
             or request.url.path.startswith("/api/v1/ai/control/pending")
         ):
             return await call_next(request)

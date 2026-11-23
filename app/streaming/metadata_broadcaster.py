@@ -68,6 +68,10 @@ class PersonMetadata:
     identity_confidence: float = 0.0
     state: str = "active"
     face_id: Optional[str] = None
+    face_verified: bool = False
+    pending_global_id: Optional[str] = None
+    bridged_from_cam: Optional[str] = None
+    identity_source: str = "unknown"
 
     def __post_init__(self) -> None:
         self.bbox = _clamp_norm_bbox(self.bbox)
@@ -141,6 +145,10 @@ class FrameMetadata:
                     "identity_candidate": p.identity_candidate,
                     "identity_confidence": float(p.identity_confidence),
                     "state": p.state,
+                    "face_verified": bool(p.face_verified),
+                    "pending_global_id": p.pending_global_id,
+                    "bridged_from_cam": p.bridged_from_cam,
+                    "identity_source": p.identity_source,
                 }
                 for p in self.persons
             ],
@@ -747,6 +755,10 @@ async def ingest_metadata(request: MetadataIngestRequest):
                 ),
                 state=str(p.get("state", "active")),
                 face_id=str(p.get("face_id")) if p.get("face_id") is not None else None,
+                face_verified=bool(p.get("face_verified", False)),
+                pending_global_id=p.get("pending_global_id"),
+                bridged_from_cam=p.get("bridged_from_cam"),
+                identity_source=str(p.get("identity_source", "unknown")),
             )
             for p in request.persons
         ],

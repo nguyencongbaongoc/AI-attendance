@@ -147,6 +147,27 @@ class EventDeliveryClient:
         except asyncio.QueueFull:
             self._failed_count += 1
             return False
+
+    async def _post_backfill_with_retry(self, payload: Dict[str, Any]) -> None:
+        """Post retroactive backfill to backend with short retries for in-flight crossing events."""
+        if not self._client:
+            return
+        for delay in (0.15, 0.5, 1.2):
+            try:
+                resp = await self._client.post("/api/v1/attendance/backfill", json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if int(data.get("updated_rows", 0)) > 0:
+                        return
+            except Exception as exc:
+                logger.debug(f"Backfill post attempt error: {exc}")
+            await asyncio.sleep(delay)
+
+    def submit_backfill_sync(self, payload: Dict[str, Any]) -> None:
+        """Thread-safe submission of a retroactive GIS backfill notification."""
+        loop = self._loop
+        if loop is not None and loop.is_running():
+            asyncio.run_coroutine_threadsafe(self._post_backfill_with_retry(payload), loop)
             
     async def _delivery_loop(self) -> None:
         """Main delivery loop: process queued events."""

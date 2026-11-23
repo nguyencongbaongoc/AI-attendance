@@ -362,6 +362,55 @@ class AttendanceStore:
             logger.error(f"AttendanceStore: Export failed: {e}")
             return False
 
+    def backfill_pending_identity(
+        self,
+        camera_id: str,
+        track_id: int,
+        pending_id: str,
+        student_id: str,
+        full_name: str,
+        confidence: float,
+    ) -> int:
+        """Retroactively backfill student_id/person_name on stored pending crossing events."""
+        norm_cam = str(camera_id).lower().strip()
+        pid_str = str(pending_id or "").strip()
+
+        def _do_backfill() -> int:
+            with self._connect() as conn:
+                if pid_str:
+                    cur = conn.execute(
+                        """
+                        UPDATE attendance_events
+                        SET person_id = ?,
+                            person_name = ?,
+                            identity_confidence = ?,
+                            identity_state = 'confirmed'
+                        WHERE (camera_id = ? AND track_id = ?)
+                           OR (global_person_id = ?)
+                        """,
+                        (student_id, full_name, float(confidence), norm_cam, int(track_id), pid_str),
+                    )
+                else:
+                    cur = conn.execute(
+                        """
+                        UPDATE attendance_events
+                        SET person_id = ?,
+                            person_name = ?,
+                            identity_confidence = ?,
+                            identity_state = 'confirmed'
+                        WHERE camera_id = ? AND track_id = ?
+                        """,
+                        (student_id, full_name, float(confidence), norm_cam, int(track_id)),
+                    )
+                conn.commit()
+                return int(cur.rowcount or 0)
+
+        try:
+            return self._run_with_retry(_do_backfill)
+        except Exception as e:
+            logger.error(f"AttendanceStore: Backfill failed: {e}")
+            return 0
+
 
 class CrossingEngine:
     """
@@ -700,23 +749,31 @@ class AttendanceEngine:
         all_events = []
         
         for track in tracking_result.get_active_tracks():
-            # Update track with GIS identity
-            global_person_id, identity_state = self.gis.update_track(camera_id, track)
-            
-            # Set GIS fields on track
-            track.global_person_id = global_person_id
-            track.identity_state = identity_state
-            
+            pending_gid = getattr(track, "pending_global_id", None)
+            if pending_gid and not track.person_id:
+                track.global_person_id = pending_gid
+                track.identity_state = "candidate"
+            else:
+                # Update track with GIS identity
+                global_person_id, identity_state = self.gis.update_track(camera_id, track)
+                # Set GIS fields on track
+                track.global_person_id = pending_gid or global_person_id
+                track.identity_state = (
+                    identity_state.value if hasattr(identity_state, "value") else str(identity_state)
+                )
+
             events = engine.process_track_update(
                 track=track,
                 timestamp=tracking_result.timestamp,
                 frame_index=tracking_result.frame_index,
             )
-            
+
             for event in events:
                 all_events.append(event)
                 # Store in database
                 self._store.store_event(event)
+                if pending_gid and not track.person_id and hasattr(self.gis, "record_pending_crossing_event"):
+                    self.gis.record_pending_crossing_event(camera_id, track.track_id, event.to_dict())
                 # Trigger callbacks
                 for callback in self._event_callbacks:
                     try:
@@ -803,9 +860,29 @@ class AttendanceEngine:
 
 
 
-def create_attendance_engine(config: Optional[Any] = None) -> AttendanceEngine:
+    def backfill_pending_identity(
+        self,
+        camera_id: str,
+        track_id: int,
+        pending_id: str,
+        student_id: str,
+        full_name: str,
+        confidence: float,
+    ) -> int:
+        """Retroactively backfill student identity on stored pending crossing events."""
+        return self._store.backfill_pending_identity(
+            camera_id=camera_id,
+            track_id=track_id,
+            pending_id=pending_id,
+            student_id=student_id,
+            full_name=full_name,
+            confidence=confidence,
+        )
+
+
+def create_attendance_engine(config: Optional[Any] = None, gis: Optional[GlobalIdentityService] = None) -> AttendanceEngine:
     """Factory function to create attendance engine."""
-    return AttendanceEngine(config)
+    return AttendanceEngine(config, gis=gis)
 
 
 if __name__ == "__main__":

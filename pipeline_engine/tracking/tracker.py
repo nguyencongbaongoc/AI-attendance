@@ -93,6 +93,10 @@ class Track:
     global_person_id: Optional[str] = None           # Canonical Person ID from GIS
     identity_state: str = "unknown"                  # UNKNOWN | CANDIDATE | PROVISIONAL | CONFIRMED | CONFLICT | REACQUIRED
     identity_updated_at: float = 0.0                 # Timestamp of last identity update
+    face_verified: bool = False                      # Strict Face-First Acquisition gate
+    pending_global_id: Optional[str] = None          # Anonymous cross-cam token (e.g., "G-01")
+    bridged_from_cam: Optional[str] = None           # Source cam ID if bridged via GIS BodyReID
+    unmatched_face_frames: int = 0                   # Consecutive clear frontal-face frames < 0.50
     
     # NEW: Embedding accumulation (P2.4)
     face_embeddings_history: Optional[List[Any]] = None  # History of face embeddings
@@ -237,6 +241,10 @@ class Track:
             "person_name": self.person_name,
             "identity_confidence": self.identity_confidence,
             "identity_source": self.identity_source,
+            "face_verified": self.face_verified,
+            "pending_global_id": self.pending_global_id,
+            "bridged_from_cam": self.bridged_from_cam,
+            "unmatched_face_frames": self.unmatched_face_frames,
             "center": self.center,
         }
 
@@ -257,11 +265,26 @@ class TrackingConfig:
     max_new_tracks: int = 10
     use_face_association: bool = True
     face_center_weight: float = 0.5
-    # Identity fusion
+    # Identity fusion & strict Face-First Identity Acquisition
+    camera_role: str = "frontal"  # "frontal" | "side_profile"
     face_recognition_priority: bool = True
     reid_fallback_enabled: bool = False
     reid_similarity_threshold: float = 0.7
     identity_confidence_threshold: float = 0.5
+    min_face_conf: float = 0.55
+    min_face_size_px: float = 34.0
+    face_upper_box_ratio: float = 0.55
+    min_person_width_px: float = 75.0
+    max_person_aspect_ratio: float = 4.0
+    face_verify_min_sim: float = 0.56
+    fused_verify_min_score: float = 0.62
+    face_fusion_weight: float = 0.75
+    body_fusion_weight: float = 0.25
+    unregistered_face_min_frames: int = 5
+    unregistered_face_max_sim: float = 0.50
+    handoff_ttl_seconds: float = 15.0
+    handoff_min_body_sim: float = 0.68
+    handoff_min_margin: float = 0.08
 
 
 @dataclass
@@ -589,24 +612,23 @@ def find_face_for_person(
     person_detection: PersonDetection,
     face_detections: List[FaceDetection],
 ) -> Optional[FaceDetection]:
-    """Find face detection associated with person detection."""
-    # Simple spatial association: face center inside person bbox
+    """Find face detection associated with person detection (prioritizing upper 55% of box)."""
     person_bbox = person_detection.bbox
-    person_center = person_detection.center
-    
+    px1, py1, px2, py2 = person_bbox[:4]
+    upper_y = py1 + 0.55 * max(0.0, py2 - py1)
+
     best_face = None
-    best_score = 0.0
-    
+    best_score = -1.0
+
     for face in face_detections:
         face_center = face.center
-        # Check if face center inside person bbox
-        if (person_bbox[0] <= face_center[0] <= person_bbox[2] and
-            person_bbox[1] <= face_center[1] <= person_bbox[3]):
-            # Score by face confidence
-            if face.confidence > best_score:
-                best_score = face.confidence
+        if px1 <= face_center[0] <= px2 and py1 <= face_center[1] <= py2:
+            in_upper = 1.0 if face_center[1] <= upper_y else 0.0
+            rank = in_upper * 2.0 + float(face.confidence)
+            if rank > best_score:
+                best_score = rank
                 best_face = face
-    
+
     return best_face
 
 
@@ -668,13 +690,64 @@ def _compute_frontal_pose_score(face_detection: Optional[FaceDetection]) -> floa
     return max(0.0, min(1.0, 1.0 - 2.0 * (nose_off / eye_dist)))
 
 
+def _is_non_sliver_person_box(
+    person_bbox: Tuple[float, float, float, float],
+    config: TrackingConfig,
+) -> bool:
+    """Return True if person bbox is wide enough and not a doorway-edge arm sliver."""
+    px1, py1, px2, py2 = person_bbox[:4]
+    pw = max(0.0, float(px2) - float(px1))
+    ph = max(0.0, float(py2) - float(py1))
+    if pw < config.min_person_width_px:
+        return False
+    if (ph / max(pw, 1.0)) > config.max_person_aspect_ratio:
+        return False
+    return True
+
+
+def _passes_strict_face_gate(
+    person_bbox: Tuple[float, float, float, float],
+    face_detection: Optional[FaceDetection],
+    config: TrackingConfig,
+) -> bool:
+    """Strict Face-First gate: genuine visible face (>= 34x34, conf >= 0.55, upper 55%) + non-sliver person."""
+    if face_detection is None:
+        return False
+    if not _is_non_sliver_person_box(person_bbox, config):
+        return False
+    scrfd_conf = float(getattr(face_detection, "confidence", 0.0))
+    if scrfd_conf < config.min_face_conf:
+        return False
+    fx1, fy1, fx2, fy2 = face_detection.bbox[:4]
+    fw = float(fx2) - float(fx1)
+    fh = float(fy2) - float(fy1)
+    if fw < config.min_face_size_px or fh < config.min_face_size_px:
+        return False
+    fcx = (float(fx1) + float(fx2)) * 0.5
+    fcy = (float(fy1) + float(fy2)) * 0.5
+    px1, py1, px2, py2 = [float(v) for v in person_bbox[:4]]
+    if not (px1 <= fcx <= px2):
+        return False
+    upper_limit_y = py1 + config.face_upper_box_ratio * max(0.0, py2 - py1)
+    if not (py1 <= fcy <= upper_limit_y):
+        return False
+    return True
+
+
 def _resolve_track_identity(
     track_id: int,
+    camera_id: str,
+    timestamp: float,
+    person_bbox: Tuple[float, float, float, float],
     prev_person_id: Optional[str],
     prev_person_name: Optional[str],
     prev_conf: float,
     prev_source: str,
     prev_emb: Optional[np.ndarray],
+    prev_face_verified: bool,
+    prev_pending_global_id: Optional[str],
+    prev_bridged_from_cam: Optional[str],
+    prev_unmatched_face_frames: int,
     face_embedding: Optional[FaceEmbedding],
     face_detection: Optional[FaceDetection],
     body_vec: Optional[np.ndarray],
@@ -683,117 +756,229 @@ def _resolve_track_identity(
     locked_identities: Dict[int, Dict[str, Any]],
     track_consensus: Dict[int, Dict[str, Dict[str, Any]]],
     locked_sids_in_frame: set,
-) -> Tuple[Optional[str], Optional[str], float, str, Optional[np.ndarray]]:
-    """Multi-modal Face + Body ReID fusion with sticky track-level identity lock."""
-    face_scores = _compute_face_scores(recognizer, face_embedding)
+    config: TrackingConfig,
+    gis: Optional[Any] = None,
+) -> Tuple[Optional[str], Optional[str], float, str, Optional[np.ndarray], bool, Optional[str], Optional[str], int]:
+    """Strict Face-First Identity Acquisition + Asymmetric Cross-Cam BodyReID Bridge."""
+    strict_face_ok = _passes_strict_face_gate(person_bbox, face_detection, config)
+    face_scores = _compute_face_scores(recognizer, face_embedding) if strict_face_ok else {}
     body_scores = (
         reid_detector.match_body(body_vec)
         if reid_detector is not None and body_vec is not None and hasattr(reid_detector, "match_body")
         else {}
     )
     frontal_score = _compute_frontal_pose_score(face_detection)
-    scrfd_conf = float(getattr(face_detection, "confidence", 1.0)) if face_detection is not None else 0.0
+    scrfd_conf = float(getattr(face_detection, "confidence", 0.0)) if face_detection is not None else 0.0
 
-    # 1. Track is already locked: preserve identity for entire lifetime of track_id
+    # Also verify via Rust GalleryIndexRs when available
+    rust_top1: Optional[Tuple[str, float]] = None
+    if strict_face_ok and face_embedding is not None and recognizer is not None and hasattr(recognizer, "identify_top1_cpu"):
+        try:
+            q_np = face_embedding.embedding.detach().cpu().numpy()
+            rust_top1 = recognizer.identify_top1_cpu(q_np, threshold=config.face_verify_min_sim)
+        except Exception:
+            rust_top1 = None
+
+    # 1. Track is already locked (face-verified or cross-cam bridged): preserve identity to border
     if track_id in locked_identities:
         lock_info = locked_identities[track_id]
         sid = lock_info["student_id"]
         fname = lock_info["full_name"]
         lconf = float(lock_info["locked_confidence"])
-        src = str(lock_info.get("source", "multimodal_lock"))
+        src = str(lock_info.get("source", "face_verified_lock"))
+        is_face_verified = bool(lock_info.get("face_verified", False))
+        bridged_from = lock_info.get("bridged_from_cam")
         emb_out = face_embedding.embedding.detach().cpu().numpy() if face_embedding is not None else prev_emb
 
         raw_fsim = face_scores.get(sid, 0.0)
-        if raw_fsim >= 0.55 and scrfd_conf >= 0.55 and frontal_score >= 0.20:
-            w_fsim = raw_fsim * (0.94 + 0.06 * frontal_score)
-            fused = 0.65 * w_fsim + 0.35 * body_scores[sid] if sid in body_scores else w_fsim
-            if fused >= 0.62:
+        if strict_face_ok and raw_fsim >= config.face_verify_min_sim and frontal_score >= 0.20:
+            bsim = body_scores.get(sid, raw_fsim)
+            fused = config.face_fusion_weight * raw_fsim + config.body_fusion_weight * bsim
+            if fused >= config.fused_verify_min_score:
                 lock_info["locked_confidence"] = max(lconf, float(fused))
+                lock_info["face_verified"] = True
                 lconf = lock_info["locked_confidence"]
+                is_face_verified = True
                 if reid_detector is not None and body_vec is not None and hasattr(reid_detector, "update_prototype_ema"):
                     reid_detector.update_prototype_ema(sid, body_vec, alpha=0.10)
-        return sid, fname, lconf, src, emb_out
+                if gis is not None and body_vec is not None and hasattr(gis, "publish_face_verified"):
+                    gis.publish_face_verified(
+                        student_id=sid,
+                        full_name=fname,
+                        body_embedding=body_vec,
+                        source_cam_id=camera_id,
+                        source_track_id=track_id,
+                        confidence=lconf,
+                        timestamp=timestamp,
+                        handoff_ttl=config.handoff_ttl_seconds,
+                        min_sim=config.handoff_min_body_sim,
+                        min_margin=config.handoff_min_margin,
+                    )
+        return sid, fname, lconf, src, emb_out, is_face_verified, None, bridged_from, 0
 
-    # Keep any valid previously resolved identity as fallback
-    valid_prev_name = _resolve_display_name(recognizer, prev_person_id)
-    if valid_prev_name is not None:
-        out_id, out_name, out_conf, out_src, out_emb = (
-            prev_person_id,
-            valid_prev_name,
-            prev_conf,
-            prev_source,
-            prev_emb,
-        )
-    else:
-        out_id, out_name, out_conf, out_src, out_emb = None, None, 0.0, "unknown", None
+    # 2. Check if an anonymous Pending Track #G-XX on this camera was retroactively backfilled by GIS
+    if gis is not None and prev_pending_global_id and hasattr(gis, "get_resolved_pending"):
+        resolved_pt = gis.get_resolved_pending(camera_id, track_id)
+        if resolved_pt is not None and resolved_pt.resolved_student_id:
+            sid = resolved_pt.resolved_student_id
+            fname = resolved_pt.resolved_full_name or _resolve_display_name(recognizer, sid) or sid
+            rconf = float(resolved_pt.resolved_confidence or 0.70)
+            src_cam = resolved_pt.resolved_from_cam
+            locked_identities[track_id] = {
+                "student_id": sid,
+                "full_name": fname,
+                "locked_confidence": rconf,
+                "source": "retroactive_backfill",
+                "face_verified": False,
+                "bridged_from_cam": src_cam,
+            }
+            return sid, fname, rconf, "retroactive_backfill", prev_emb, False, prev_pending_global_id, src_cam, 0
 
-    # 2. Frontal face visible -> Multi-modal Face + Body score fusion
+    # 3. Strict Visible-Face Gate -> ArcFace (512D + Rust GalleryIndexRs) + BodyReID fusion
     best_raw_fsim = max(face_scores.values()) if face_scores else 0.0
-    has_frontal_face = bool(face_scores) and scrfd_conf >= 0.55 and frontal_score >= 0.20 and best_raw_fsim >= 0.55
-
-    if has_frontal_face:
-        best_cand: Optional[Tuple[str, str, float]] = None
+    if strict_face_ok and face_scores and frontal_score >= 0.20:
+        best_cand: Optional[Tuple[str, str, float, float]] = None
         for sid, raw_fsim in face_scores.items():
-            if raw_fsim < 0.55:
+            if raw_fsim < config.face_verify_min_sim:
+                continue
+            # Require Rust GalleryIndexRs agreement when top-1 exists
+            if rust_top1 is not None and rust_top1[0] != sid and raw_fsim < rust_top1[1]:
                 continue
             fname = _resolve_display_name(recognizer, sid)
             if fname is None:
                 continue
-            w_fsim = raw_fsim * (0.94 + 0.06 * frontal_score)
-            fused = 0.65 * w_fsim + 0.35 * body_scores[sid] if sid in body_scores else w_fsim
+            bsim = body_scores.get(sid, raw_fsim)
+            fused = config.face_fusion_weight * raw_fsim + config.body_fusion_weight * bsim
             if sid in locked_sids_in_frame and fused < 0.80:
                 continue
             if best_cand is None or fused > best_cand[2]:
-                best_cand = (sid, fname, float(fused))
+                best_cand = (sid, fname, float(fused), float(raw_fsim))
 
-        if best_cand is not None and best_cand[2] >= 0.62:
-            sid, fname, fused = best_cand
+        if best_cand is not None and best_cand[2] >= config.fused_verify_min_score:
+            sid, fname, fused, raw_fsim = best_cand
             entry = track_consensus.setdefault(track_id, {}).setdefault(sid, {"hits": 0, "best_score": 0.0})
             entry["hits"] += 1
             entry["best_score"] = max(entry["best_score"], fused)
-            out_emb = face_embedding.embedding.detach().cpu().numpy() if face_embedding is not None else out_emb
-            if entry["hits"] >= 2:
+            out_emb = face_embedding.embedding.detach().cpu().numpy() if face_embedding is not None else prev_emb
+
+            if entry["hits"] >= 2 or raw_fsim >= 0.62:
                 locked_identities[track_id] = {
                     "student_id": sid,
                     "full_name": fname,
                     "locked_confidence": entry["best_score"],
-                    "source": "multimodal_lock",
+                    "source": "face_verified_lock",
+                    "face_verified": True,
+                    "bridged_from_cam": None,
                 }
                 if reid_detector is not None and body_vec is not None and hasattr(reid_detector, "update_prototype_ema"):
                     reid_detector.update_prototype_ema(sid, body_vec, alpha=0.15)
-                return sid, fname, entry["best_score"], "multimodal_lock", out_emb
-            return sid, fname, fused, "multimodal_fusion", out_emb
-        return out_id, out_name, out_conf, out_src, out_emb
+                if gis is not None and body_vec is not None and hasattr(gis, "publish_face_verified"):
+                    gis.publish_face_verified(
+                        student_id=sid,
+                        full_name=fname,
+                        body_embedding=body_vec,
+                        source_cam_id=camera_id,
+                        source_track_id=track_id,
+                        confidence=entry["best_score"],
+                        timestamp=timestamp,
+                        handoff_ttl=config.handoff_ttl_seconds,
+                        min_sim=config.handoff_min_body_sim,
+                        min_margin=config.handoff_min_margin,
+                    )
+                return sid, fname, entry["best_score"], "face_verified_lock", out_emb, True, None, None, 0
 
-    # 3. Facing away / no frontal face -> Body ReID fallback
-    if body_scores:
-        body_cands: List[Tuple[str, str, float]] = []
-        for sid, bsim in body_scores.items():
-            if sid in locked_sids_in_frame:
-                continue
-            fname = _resolve_display_name(recognizer, sid)
-            if fname is not None:
-                body_cands.append((sid, fname, float(bsim)))
-        body_cands.sort(key=lambda item: item[2], reverse=True)
-        if body_cands:
-            sid, fname, bsim = body_cands[0]
-            second_bsim = body_cands[1][2] if len(body_cands) >= 2 else 0.0
-            margin_ok = (len(body_cands) == 1) or ((bsim - second_bsim) >= 0.025)
-            if bsim >= 0.68 and margin_ok:
-                entry = track_consensus.setdefault(track_id, {}).setdefault(sid, {"hits": 0, "best_score": 0.0})
-                entry["hits"] += 1
-                entry["best_score"] = max(entry["best_score"], bsim)
-                if entry["hits"] >= 2:
+            # First verified hit (0.56 <= face_sim < 0.62): mark face_verified=True while building lock
+            if gis is not None and body_vec is not None and hasattr(gis, "publish_face_verified"):
+                gis.publish_face_verified(
+                    student_id=sid,
+                    full_name=fname,
+                    body_embedding=body_vec,
+                    source_cam_id=camera_id,
+                    source_track_id=track_id,
+                    confidence=fused,
+                    timestamp=timestamp,
+                    handoff_ttl=config.handoff_ttl_seconds,
+                    min_sim=config.handoff_min_body_sim,
+                    min_margin=config.handoff_min_margin,
+                )
+            return sid, fname, fused, "face_verified", out_emb, True, None, None, 0
+
+    # Track consecutive clear frontal-face frames where face_sim < 0.50 (for genuine unregistered guest label)
+    next_unmatched = prev_unmatched_face_frames
+    if strict_face_ok and face_embedding is not None:
+        fx1, fy1, fx2, fy2 = face_detection.bbox[:4]
+        fw, fh = float(fx2) - float(fx1), float(fy2) - float(fy1)
+        if (
+            scrfd_conf >= 0.70
+            and fw >= 44.0
+            and fh >= 44.0
+            and frontal_score >= 0.45
+            and best_raw_fsim < config.unregistered_face_max_sim
+            and config.camera_role != "side_profile"
+        ):
+            next_unmatched += 1
+        elif best_raw_fsim >= config.face_verify_min_sim:
+            next_unmatched = 0
+
+    # 4. NEVER assign an enrolled identity from static BodyReID alone.
+    #    Only allow cross-camera BodyReID bridge when camera_role == "side_profile" (or via GIS handoff buffer).
+    if config.camera_role == "side_profile" and gis is not None and body_vec is not None and _is_non_sliver_person_box(person_bbox, config):
+        # Direction A: Forward Handoff (query only subjects face-verified within last 15.0s on other cameras)
+        if hasattr(gis, "query_forward_handoff"):
+            bridge = gis.query_forward_handoff(
+                target_cam_id=camera_id,
+                body_embedding=body_vec,
+                timestamp=timestamp,
+                ttl_seconds=config.handoff_ttl_seconds,
+                min_sim=config.handoff_min_body_sim,
+                min_margin=config.handoff_min_margin,
+                exclude_sids=locked_sids_in_frame,
+            )
+            if bridge is not None:
+                sid = bridge["student_id"]
+                fname = bridge["full_name"]
+                bconf = float(bridge["confidence"])
+                src_cam = bridge["source_cam_id"]
+                locked_identities[track_id] = {
+                    "student_id": sid,
+                    "full_name": fname,
+                    "locked_confidence": bconf,
+                    "source": "cross_cam_bridge",
+                    "face_verified": False,
+                    "bridged_from_cam": src_cam,
+                }
+                return sid, fname, bconf, "cross_cam_bridge", prev_emb, False, None, src_cam, 0
+
+        # Direction B: No prior face match anywhere within 15s -> hold safely as Pending Track #G-XX
+        if hasattr(gis, "register_or_update_pending_track"):
+            is_border_clipped = float(person_bbox[0]) <= 15.0 or float(person_bbox[2]) >= 1905.0
+            pt = gis.register_or_update_pending_track(
+                cam_id=camera_id,
+                local_track_id=track_id,
+                body_embedding=body_vec,
+                timestamp=timestamp,
+                update_embedding=(not is_border_clipped),
+            )
+            if pt is not None:
+                if pt.resolved_student_id is not None:
+                    sid = pt.resolved_student_id
+                    fname = pt.resolved_full_name or _resolve_display_name(recognizer, sid) or sid
+                    rconf = float(pt.resolved_confidence or 0.70)
+                    src_cam = pt.resolved_from_cam
                     locked_identities[track_id] = {
                         "student_id": sid,
                         "full_name": fname,
-                        "locked_confidence": entry["best_score"],
-                        "source": "body_reid_lock",
+                        "locked_confidence": rconf,
+                        "source": "retroactive_backfill",
+                        "face_verified": False,
+                        "bridged_from_cam": src_cam,
                     }
-                    return sid, fname, entry["best_score"], "body_reid_lock", out_emb
-                return sid, fname, bsim, "body_reid", out_emb
+                    return sid, fname, rconf, "retroactive_backfill", prev_emb, False, pt.pending_id, src_cam, 0
+                return None, None, 0.0, "pending_face", prev_emb, False, pt.pending_id, None, next_unmatched
 
-    return out_id, out_name, out_conf, out_src, out_emb
+    # 5. Unverified pre-face track: emit awaiting_face or unregistered_guest (>= 5 clear face frames < 0.50)
+    out_src = "unregistered_guest" if next_unmatched >= config.unregistered_face_min_frames else "awaiting_face"
+    return None, None, 0.0, out_src, prev_emb, False, prev_pending_global_id, None, next_unmatched
 
 
 def update_tracks(
@@ -809,6 +994,8 @@ def update_tracks(
     reid_detector: Optional[Any] = None,
     locked_track_identities: Optional[Dict[int, Dict[str, Any]]] = None,
     track_consensus: Optional[Dict[int, Dict[str, Dict[str, Any]]]] = None,
+    gis: Optional[Any] = None,
+    camera_id: str = "cam1",
 ) -> Tuple[List[Track], List[Track], List[Track]]:
     """
     Update existing tracks with new detections.
@@ -933,21 +1120,51 @@ def update_tracks(
             for tid, info in locked_track_identities.items()
             if tid in active_frame_tids and tid != track.track_id
         }
-        person_id, person_name, identity_confidence, identity_source, embedding = _resolve_track_identity(
+        resolved_body_vec = matched_body_np
+        if avg_body_embedding is not None:
+            avg_np = (
+                avg_body_embedding.detach().cpu().numpy()
+                if hasattr(avg_body_embedding, "detach")
+                else np.asarray(avg_body_embedding, dtype=np.float32)
+            )
+            avg_norm = float(np.linalg.norm(avg_np))
+            if avg_norm > 1e-12:
+                resolved_body_vec = (avg_np / avg_norm).astype(np.float32)
+
+        (
+            person_id,
+            person_name,
+            identity_confidence,
+            identity_source,
+            embedding,
+            face_verified,
+            pending_global_id,
+            bridged_from_cam,
+            unmatched_face_frames,
+        ) = _resolve_track_identity(
             track_id=track.track_id,
+            camera_id=camera_id,
+            timestamp=timestamp,
+            person_bbox=detection.bbox,
             prev_person_id=track.person_id,
             prev_person_name=track.person_name,
             prev_conf=track.identity_confidence,
             prev_source=track.identity_source,
             prev_emb=track.embedding,
+            prev_face_verified=track.face_verified,
+            prev_pending_global_id=track.pending_global_id,
+            prev_bridged_from_cam=track.bridged_from_cam,
+            prev_unmatched_face_frames=track.unmatched_face_frames,
             face_embedding=face_embedding,
             face_detection=face_detection,
-            body_vec=matched_body_np,
+            body_vec=resolved_body_vec,
             recognizer=recognizer,
             reid_detector=reid_detector,
             locked_identities=locked_track_identities,
             track_consensus=track_consensus,
             locked_sids_in_frame=locked_sids_other,
+            config=config,
+            gis=gis,
         )
         
         embedding_count += 1
@@ -995,6 +1212,10 @@ def update_tracks(
             # NEW: GIS integration (P3.11)
             global_person_id=global_person_id,
             identity_state=identity_state,
+            face_verified=face_verified,
+            pending_global_id=pending_global_id,
+            bridged_from_cam=bridged_from_cam,
+            unmatched_face_frames=unmatched_face_frames,
             stationary_frames=track.stationary_frames,
             _prev_center=track.center,
         )
@@ -1054,6 +1275,10 @@ def update_tracks(
             # Preserve GIS fields
             global_person_id=track.global_person_id,
             identity_state=track.identity_state,
+            face_verified=track.face_verified,
+            pending_global_id=track.pending_global_id,
+            bridged_from_cam=track.bridged_from_cam,
+            unmatched_face_frames=track.unmatched_face_frames,
             stationary_frames=track.stationary_frames,
             _prev_center=track.center,
         )
@@ -1119,13 +1344,30 @@ def update_tracks(
             for tid, info in locked_track_identities.items()
             if tid in active_frame_tids
         }
-        person_id, person_name, identity_confidence, identity_source, embedding = _resolve_track_identity(
+        (
+            person_id,
+            person_name,
+            identity_confidence,
+            identity_source,
+            embedding,
+            face_verified,
+            pending_global_id,
+            bridged_from_cam,
+            unmatched_face_frames,
+        ) = _resolve_track_identity(
             track_id=track_id,
+            camera_id=camera_id,
+            timestamp=timestamp,
+            person_bbox=detection.bbox,
             prev_person_id=None,
             prev_person_name=None,
             prev_conf=0.0,
             prev_source="unknown",
             prev_emb=None,
+            prev_face_verified=False,
+            prev_pending_global_id=None,
+            prev_bridged_from_cam=None,
+            prev_unmatched_face_frames=0,
             face_embedding=face_embedding,
             face_detection=face_detection,
             body_vec=body_embedding,
@@ -1134,6 +1376,8 @@ def update_tracks(
             locked_identities=locked_track_identities,
             track_consensus=track_consensus,
             locked_sids_in_frame=locked_sids_other,
+            config=config,
+            gis=gis,
         )
 
         new_track = Track(
@@ -1179,6 +1423,10 @@ def update_tracks(
             # NEW: GIS integration (P3.11)
             global_person_id=None,  # Will be assigned by GIS
             identity_state="unknown",
+            face_verified=face_verified,
+            pending_global_id=pending_global_id,
+            bridged_from_cam=bridged_from_cam,
+            unmatched_face_frames=unmatched_face_frames,
         )
         new_track._update_stationary_check()
         new_tracks.append(new_track)
@@ -1228,10 +1476,12 @@ class Tracker:
         config: Optional[TrackingConfig] = None,
         recognizer: Optional[Any] = None,
         reid_detector: Optional[Any] = None,
+        gis: Optional[Any] = None,
     ):
         self.config = config or TrackingConfig()
         self.recognizer = recognizer
         self.reid_detector = reid_detector
+        self.gis = gis
         self._tracks: List[Track] = []
         self._next_track_id = 1
         self._frame_index = 0
@@ -1264,6 +1514,8 @@ class Tracker:
             reid_detector=self.reid_detector,
             locked_track_identities=self._locked_track_identities,
             track_consensus=self._track_consensus,
+            gis=self.gis,
+            camera_id=norm_cam,
         )
 
         self._tracks = updated_tracks
@@ -1276,6 +1528,32 @@ class Tracker:
             new_tracks=new_tracks,
             closed_tracks=closed_tracks,
         )
+
+    def apply_backfill(
+        self,
+        track_id: int,
+        student_id: str,
+        full_name: str,
+        confidence: float,
+        source_cam_id: Optional[str] = None,
+    ) -> None:
+        """Retroactively lock a pending track identity from cross-camera GIS confirmation."""
+        tid = int(track_id)
+        self._locked_track_identities[tid] = {
+            "student_id": student_id,
+            "full_name": full_name,
+            "locked_confidence": float(confidence),
+            "source": "retroactive_backfill",
+            "face_verified": False,
+            "bridged_from_cam": source_cam_id,
+        }
+        for tr in self._tracks:
+            if tr.track_id == tid:
+                tr.person_id = student_id
+                tr.person_name = full_name
+                tr.identity_confidence = float(confidence)
+                tr.identity_source = "retroactive_backfill"
+                tr.bridged_from_cam = source_cam_id
 
     def process_frame(
         self,

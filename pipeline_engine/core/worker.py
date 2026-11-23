@@ -448,6 +448,14 @@ class AIWorker:
                 registered += 1
         if registered > 0:
             logger.info(f"Registered attendance event callback on {registered} camera(s)")
+
+        if hasattr(self.engine.camera_manager, "register_backfill_listener"):
+            self.engine.camera_manager.register_backfill_listener(self._on_backfill_event)
+
+    def _on_backfill_event(self, backfill_event: Dict[str, Any]) -> None:
+        """Forward GIS retroactive backfill notification to backend SQLite."""
+        if self.event_client and hasattr(self.event_client, "submit_backfill_sync"):
+            self.event_client.submit_backfill_sync(backfill_event)
             
     def _on_attendance_event(self, event: CrossingEvent) -> None:
         """Handle attendance event from AttendanceEngine (thread-safe)."""
@@ -510,6 +518,7 @@ class AIWorker:
             person_id=event.person_id,
             person_name=event.person_name,
             identity_confidence=event.identity_confidence,
+            global_observation_id=getattr(event, "global_person_id", None),
             stream_epoch=stream_epoch,
             pts=getattr(event, "pts", pts),
             time_base=time_base,

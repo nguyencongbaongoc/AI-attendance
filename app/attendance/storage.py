@@ -939,6 +939,71 @@ class AttendanceStorage:
         finally:
             backup_conn.close()
 
+    def backfill_pending_identity(
+        self,
+        camera_id: str,
+        local_track_id: str,
+        pending_id: Optional[str],
+        student_id: str,
+        confidence: float,
+    ) -> int:
+        """Retroactively backfill identity on previously persisted pending attendance records."""
+        import time
+
+        norm_cam = str(camera_id).lower().strip()
+        tid_str = str(local_track_id)
+        pid_str = str(pending_id) if pending_id else ""
+
+        with self._write_lock:
+            for attempt in range(5):
+                try:
+                    conn = self._get_connection()
+                    with self._transaction(conn) as cursor:
+                        if pid_str:
+                            cursor.execute(
+                                """
+                                UPDATE attendance_records
+                                SET identity_certainty = 'known',
+                                    identity_candidate = ?,
+                                    identity_confidence = ?,
+                                    provisional_person_id = ?,
+                                    identity_state = 'confirmed',
+                                    association_method = 'body_only'
+                                WHERE (camera_id = ? COLLATE NOCASE AND local_track_id = ?)
+                                   OR global_observation_id = ?
+                                   OR provisional_person_id = ?
+                                """,
+                                (
+                                    student_id,
+                                    float(confidence),
+                                    pid_str,
+                                    norm_cam,
+                                    tid_str,
+                                    pid_str,
+                                    pid_str,
+                                ),
+                            )
+                        else:
+                            cursor.execute(
+                                """
+                                UPDATE attendance_records
+                                SET identity_certainty = 'known',
+                                    identity_candidate = ?,
+                                    identity_confidence = ?,
+                                    identity_state = 'confirmed',
+                                    association_method = 'body_only'
+                                WHERE camera_id = ? COLLATE NOCASE AND local_track_id = ?
+                                """,
+                                (student_id, float(confidence), norm_cam, tid_str),
+                            )
+                        return int(cursor.rowcount or 0)
+                except sqlite3.OperationalError as e:
+                    if "locked" in str(e).lower() and attempt < 4:
+                        time.sleep(0.02 * (attempt + 1))
+                        continue
+                    raise
+        return 0
+
 
 def create_attendance_storage(config: Optional[StorageConfig] = None) -> AttendanceStorage:
     """Factory function to create AttendanceStorage."""

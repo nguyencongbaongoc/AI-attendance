@@ -14,7 +14,7 @@ import asyncio
 import aiohttp
 from queue import Empty
 from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Any, Iterator
+from typing import Optional, Dict, List, Any, Iterator, Callable
 from enum import Enum
 from datetime import datetime
 
@@ -22,12 +22,13 @@ from pipeline_engine.ingestion.rtsp_source import RTSPSource, RTSPSourceConfig, 
 from pipeline_engine.decode.nvdec_decoder import NVDECDecoder, NVDECDecoderConfig, DecoderState
 from pipeline_engine.encode.nvenc_encoder import NVENCEncoder, NVENCEncoderConfig, EncoderState
 from pipeline_engine.inference.face_detection import SCRFDDetector, SCRFDConfig, FaceDetection
-from pipeline_engine.inference.face_recognition import ArcFaceRecognizer, ArcFaceConfig, FaceEmbedding
+from pipeline_engine.inference.face_recognition import ArcFaceRecognizer, ArcFaceConfig, FaceEmbedding, align_face_5pt_rgb
 from pipeline_engine.inference.person_detection import YOLOPersonDetector, YOLOConfig, PersonDetection
 from pipeline_engine.inference.body_reid import ReIDDetector, ReIDConfig
 from pipeline_engine.tracking.tracker import Tracker, TrackingConfig, TrackingResult
 from pipeline_engine.vision.face_quality import QualityAssessor
 from app.runtime.gpu_vram_safety import VRAMMonitor, VRAMBudget, GPUVRAMSafety
+from app.identity.global_identity_service import create_global_identity_service
 from pipeline_engine.attendance.attendance_engine import AttendanceEngine, create_attendance_engine
 from pipeline_engine.annotation.overlay import GPUAnnotator, AnnotationConfig
 from pipeline_engine.output.publisher import create_publisher, MediaMTXPublisher
@@ -187,6 +188,40 @@ class CameraManager:
         # Non-blocking metadata dispatch queue
         self._metadata_queue = asyncio.Queue(maxsize=120)
         self._dispatcher_task = None
+
+        # Shared cross-camera GlobalIdentityService & backfill listeners
+        self.gis = create_global_identity_service()
+        self._backfill_listeners: List[Callable[[Dict[str, Any]], None]] = []
+        self.gis.register_backfill_callback(self._on_gis_backfill)
+
+    def register_backfill_listener(self, callback: Callable[[Dict[str, Any]], None]) -> None:
+        """Register listener notified when GIS retroactively resolves a Pending Track #G-XX."""
+        self._backfill_listeners.append(callback)
+
+    def _on_gis_backfill(self, backfill_event: Dict[str, Any]) -> None:
+        """Propagate retroactive GIS identity backfill to target camera tracker, store, and worker."""
+        target_cam = str(backfill_event.get("target_cam_id", "")).lower().strip()
+        target_tid = int(backfill_event.get("target_track_id", 0))
+        pending_id = str(backfill_event.get("pending_id", ""))
+        sid = str(backfill_event.get("student_id", ""))
+        fname = str(backfill_event.get("full_name", ""))
+        conf = float(backfill_event.get("confidence", 0.70))
+        src_cam = backfill_event.get("source_cam_id")
+
+        cam = self._cameras.get(target_cam)
+        if cam:
+            tracker = cam.get("tracker")
+            if tracker and hasattr(tracker, "apply_backfill"):
+                tracker.apply_backfill(target_tid, sid, fname, conf, src_cam)
+            att = cam.get("attendance")
+            if att and hasattr(att, "backfill_pending_identity"):
+                att.backfill_pending_identity(target_cam, target_tid, pending_id, sid, fname, conf)
+
+        for cb in list(self._backfill_listeners):
+            try:
+                cb(backfill_event)
+            except Exception as exc:
+                logger.error(f"CameraManager: Backfill listener error: {exc}")
     
     def initialize(self) -> bool:
         """Initialize camera manager and all configured cameras."""
@@ -281,12 +316,13 @@ class CameraManager:
         yolo_detector = self._shared_models.get('yolo')
         reid_detector = self._shared_models.get('reid')
         
-        # Create tracker with shared recognizer & ReID detector for multi-modal lock
+        # Create tracker with shared recognizer, ReID detector, and shared GIS
         global_track_cfg = getattr(self.config, "tracking", None) or {}
         cam_track_cfg = cam_config.get("tracking", {}) or {}
         track_cfg = {**global_track_cfg, **cam_track_cfg}
         track_buffer = int(track_cfg.get("track_buffer", track_cfg.get("max_lost_frames", track_cfg.get("max_lost", 45))))
         match_thresh = float(track_cfg.get("match_thresh", 0.80))
+        camera_role = str(cam_config.get("camera_role", track_cfg.get("camera_role", "frontal"))).lower().strip()
         tracker = Tracker(
             config=TrackingConfig(
                 min_iou_threshold=float(track_cfg.get("min_iou_threshold", track_cfg.get("min_iou", max(0.05, 1.0 - match_thresh)))),
@@ -297,13 +333,15 @@ class CameraManager:
                 high_det_thresh=float(track_cfg.get("high_det_thresh", 0.50)),
                 low_det_thresh=float(track_cfg.get("low_det_thresh", 0.18)),
                 inner_box_ioa_threshold=float(track_cfg.get("inner_box_ioa_threshold", 0.55)),
+                camera_role=camera_role,
             ),
             recognizer=arcface_recognizer,
             reid_detector=reid_detector,
+            gis=self.gis,
         )
         
-        # Create attendance engine using active pipeline config
-        attendance_engine = create_attendance_engine(config=self.config)
+        # Create attendance engine using active pipeline config & shared GIS
+        attendance_engine = create_attendance_engine(config=self.config, gis=self.gis)
         
         # Create annotator
         annotator = GPUAnnotator(
@@ -827,6 +865,42 @@ class CameraManager:
                 active_tracks = tracking_result.get_active_tracks()
                 camera["metrics"].tracks_active = len(active_tracks)
 
+                # Local delayed-lock backfill: if a track crossed a doorway line before face_verified
+                # completed, retroactively backfill its stored CrossingEvent and attendance row once.
+                face_backfilled = camera.setdefault("face_backfilled_tracks", set())
+                for track in active_tracks:
+                    if (
+                        bool(getattr(track, "face_verified", False))
+                        and getattr(track, "person_id", None)
+                        and track.track_id not in face_backfilled
+                    ):
+                        face_backfilled.add(track.track_id)
+                        sid = str(track.person_id)
+                        fname = str(getattr(track, "person_name", None) or sid)
+                        conf = float(
+                            getattr(track, "identity_confidence", 0.0)
+                            or getattr(track, "confidence", 0.70)
+                        )
+                        if hasattr(attendance, "backfill_pending_identity"):
+                            attendance.backfill_pending_identity(
+                                camera_id, track.track_id, "", sid, fname, conf
+                            )
+                        backfill_payload = {
+                            "pending_id": "",
+                            "target_cam_id": camera_id.lower().strip(),
+                            "target_track_id": int(track.track_id),
+                            "student_id": sid,
+                            "full_name": fname,
+                            "source_cam_id": camera_id.lower().strip(),
+                            "source_track_id": int(track.track_id),
+                            "confidence": conf,
+                        }
+                        for cb in list(self._backfill_listeners):
+                            try:
+                                cb(backfill_payload)
+                            except Exception as exc:
+                                logger.error(f"CameraManager: Delayed-lock backfill listener error: {exc}")
+
                 # Broadcast live metadata to WebSocket clients (canonical schema)
                 try:
                     if hasattr(attendance, "get_camera_counts"):
@@ -851,8 +925,15 @@ class CameraManager:
                         ny2 = max(0.0, min(1.0, float(by2) / frame_h))
                         raw_pid = getattr(track, "person_id", None)
                         raw_pname = getattr(track, "person_name", None)
+                        is_face_verified = bool(getattr(track, "face_verified", False))
+                        pending_gid = getattr(track, "pending_global_id", None)
+                        bridged_from = getattr(track, "bridged_from_cam", None)
+                        unmatched_face_frames = int(getattr(track, "unmatched_face_frames", 0))
+                        id_source = str(getattr(track, "identity_source", "unknown"))
+
                         if (
-                            raw_pid
+                            (is_face_verified or bridged_from is not None)
+                            and raw_pid
                             and raw_pid in enrolled_identities
                             and raw_pname
                             and str(raw_pname).strip() != str(raw_pid).strip()
@@ -862,8 +943,14 @@ class CameraManager:
                                 getattr(track, "identity_confidence", 0.0)
                                 or getattr(track, "confidence", 0.0)
                             )
-                        else:
+                        elif pending_gid:
+                            identity_cand = "Đang chờ xác thực mặt"
+                            identity_conf = 0.0
+                        elif unmatched_face_frames >= 5:
                             identity_cand = "Khách / Chưa đăng ký"
+                            identity_conf = 0.0
+                        else:
+                            identity_cand = "Đang chờ thấy mặt..."
                             identity_conf = 0.0
                         track_state = (
                             track.lifecycle_state.value
@@ -877,6 +964,10 @@ class CameraManager:
                             "identity_candidate": identity_cand,
                             "identity_confidence": round(identity_conf, 4),
                             "state": track_state,
+                            "face_verified": is_face_verified,
+                            "pending_global_id": pending_gid,
+                            "bridged_from_cam": bridged_from,
+                            "identity_source": id_source,
                         })
 
                     now_ts = float(gpu_frame.timestamp) if getattr(gpu_frame, "timestamp", 0.0) else time.time()
@@ -1059,30 +1150,36 @@ class CameraManager:
     def _extract_aligned_face(
         self, frame: GPUFrame, face_det: FaceDetection
     ) -> Optional[torch.Tensor]:
-        """Extract and align 112x112 face crop from GPUFrame using face landmarks."""
+        """Extract and 5-point similarity-align 112x112 RGB face crop from GPUFrame."""
         try:
             y_tensor, uv_tensor = frame.get_tensors()
             bgr = nv12_to_bgr_cuda(y_tensor, uv_tensor)  # (H, W, 3) uint8
-            
-            # Use landmarks to align (simplified - crop face bbox and resize)
-            x1, y1, x2, y2 = [int(c) for c in face_det.bbox]
-            x1, y1 = max(0, x1), max(0, y1)
-            x2, y2 = min(bgr.shape[1], x2), min(bgr.shape[0], y2)
-            
-            if x2 <= x1 or y2 <= y1:
+            H, W = bgr.shape[:2]
+
+            fx1, fy1, fx2, fy2 = [float(c) for c in face_det.bbox]
+            fw, fh = max(1.0, fx2 - fx1), max(1.0, fy2 - fy1)
+            pad = max(16.0, 0.5 * max(fw, fh))
+            rx1 = max(0, int(fx1 - pad))
+            ry1 = max(0, int(fy1 - pad))
+            rx2 = min(W, int(fx2 + pad))
+            ry2 = min(H, int(fy2 + pad))
+
+            if rx2 <= rx1 or ry2 <= ry1:
                 return None
-            
-            face_crop = bgr[y1:y2, x1:x2]
-            
-            # Resize to 112x112
-            face_resized = torch.nn.functional.interpolate(
-                face_crop.permute(2, 0, 1).unsqueeze(0).float(),
-                size=(112, 112),
-                mode='bilinear',
-                align_corners=False
-            ).squeeze(0).permute(1, 2, 0).byte()
-            
-            return face_resized
+
+            roi_np = bgr[ry1:ry2, rx1:rx2].detach().cpu().numpy()
+            lm5 = getattr(face_det, "landmarks5", None)
+            shifted_lm5 = (
+                [(float(px) - rx1, float(py) - ry1) for px, py in lm5]
+                if lm5 and len(lm5) == 5
+                else None
+            )
+            shifted_bbox = (fx1 - rx1, fy1 - ry1, fx2 - rx1, fy2 - ry1)
+            aligned_rgb = align_face_5pt_rgb(roi_np, shifted_lm5, shifted_bbox)
+            if aligned_rgb is None:
+                return None
+
+            return torch.from_numpy(aligned_rgb).to(bgr.device).byte()
         except Exception as e:
             logger.warning(f"Failed to extract aligned face: {e}")
             return None

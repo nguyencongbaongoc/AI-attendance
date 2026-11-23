@@ -229,6 +229,7 @@ class CrossingEventRequest(BaseModel):
     person_id: Optional[str] = None
     person_name: Optional[str] = None
     identity_confidence: Optional[float] = None
+    global_observation_id: Optional[str] = None
     stream_epoch: int = Field(..., description="Stream session epoch (increments on reconnect)")
     pts: int = Field(..., description="Presentation timestamp from container")
     time_base: TimeBase = Field(default_factory=TimeBase, description="Stream time base")
@@ -253,6 +254,17 @@ class CrossingEventResponse(BaseModel):
     source_resolution_id: Optional[str] = None
     status: str
     message: str
+
+
+class BackfillIdentityRequest(BaseModel):
+    """Retroactive identity backfill from GIS cross-camera confirmation."""
+    pending_id: Optional[str] = None
+    target_cam_id: str
+    target_track_id: int
+    student_id: str
+    full_name: Optional[str] = None
+    source_cam_id: Optional[str] = None
+    confidence: float = 0.75
 
 
 class AIWorkerHealthRequest(BaseModel):
@@ -515,6 +527,8 @@ def _cleanup_expired_requests():
 
 _repository: Optional[AttendanceRepository] = None
 _resolver: Optional[RepeatedInOutResolver] = None
+_pending_backfill_by_track: Dict[tuple, Dict[str, Any]] = {}
+_pending_backfill_by_pid: Dict[str, Dict[str, Any]] = {}
 
 
 def get_repository() -> AttendanceRepository:
@@ -563,7 +577,18 @@ async def ingest_attendance_event(event: CrossingEventRequest) -> CrossingEventR
         
         # Extract time_base
         time_base = Fraction(event.time_base.num, event.time_base.den)
-        
+
+        # Apply cached retroactive backfill if this pending track was already confirmed cross-camera
+        resolved_pid = event.person_id
+        resolved_conf = event.identity_confidence or 0.0
+        resolved_glob_id = event.global_observation_id
+        cached_bf = _pending_backfill_by_track.get((event.camera_id.lower().strip(), str(event.track_id)))
+        if cached_bf is None and resolved_glob_id:
+            cached_bf = _pending_backfill_by_pid.get(str(resolved_glob_id))
+        if not resolved_pid and cached_bf is not None:
+            resolved_pid = cached_bf["student_id"]
+            resolved_conf = max(resolved_conf, float(cached_bf.get("confidence", 0.75)))
+
         raw_event = RawInOutEvent(
             event_id=event.event_id,
             camera_id=event.camera_id,
@@ -571,7 +596,7 @@ async def ingest_attendance_event(event: CrossingEventRequest) -> CrossingEventR
             geometry_version=geometry_version,
             geometry_config_hash=geometry_config_hash,
             local_track_id=str(event.track_id),
-            global_observation_id=None,
+            global_observation_id=resolved_glob_id,
             event_type=RawEventType.LINE_CROSSING,
             direction=RawEventDirection.IN if event.direction == "in" else RawEventDirection.OUT,
             crossing_point_x=event.crossing_point.x if event.crossing_point else (event.current_position.x if event.current_position else 0.0),
@@ -588,9 +613,9 @@ async def ingest_attendance_event(event: CrossingEventRequest) -> CrossingEventR
             current_timestamp=event.timestamp,
             crossing_distance=0.0,
             side_transition="SIDE_A->SIDE_B",
-            identity_certainty=RawIdentityCertainty.KNOWN if event.person_id else RawIdentityCertainty.UNKNOWN,
-            identity_candidate=event.person_id,
-            identity_confidence=event.identity_confidence or 0.0,
+            identity_certainty=RawIdentityCertainty.KNOWN if resolved_pid else RawIdentityCertainty.UNKNOWN,
+            identity_candidate=resolved_pid,
+            identity_confidence=resolved_conf,
             identity_evidence_ref=None,
             # NEW: Metadata fields propagated from CrossingEventRequest
             stream_epoch=event.stream_epoch,
@@ -636,6 +661,40 @@ async def ingest_attendance_event(event: CrossingEventRequest) -> CrossingEventR
     except Exception as e:
         logger.exception(f"Failed to ingest event {event.event_id}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Event ingestion failed: {e}")
+
+
+@router.post(
+    "/attendance/backfill",
+    dependencies=[Depends(verify_ai_worker_key)],
+    summary="Retroactively backfill pending cross-camera track identity in SQLite",
+)
+async def backfill_attendance_identity(req: BackfillIdentityRequest) -> Dict[str, Any]:
+    """Cache retroactive identity and update existing SQLite attendance records for the pending track."""
+    norm_cam = req.target_cam_id.lower().strip()
+    tid_str = str(req.target_track_id)
+    bf_info = {
+        "student_id": req.student_id,
+        "full_name": req.full_name,
+        "confidence": float(req.confidence),
+        "pending_id": req.pending_id,
+        "source_cam_id": req.source_cam_id,
+    }
+    _pending_backfill_by_track[(norm_cam, tid_str)] = bf_info
+    if req.pending_id:
+        _pending_backfill_by_pid[str(req.pending_id)] = bf_info
+
+    updated = get_repository().storage.backfill_pending_identity(
+        camera_id=norm_cam,
+        local_track_id=tid_str,
+        pending_id=req.pending_id,
+        student_id=req.student_id,
+        confidence=float(req.confidence),
+    )
+    logger.info(
+        f"Retroactive backfill API: {req.pending_id or tid_str} ({norm_cam}) -> "
+        f"{req.student_id}, updated_rows={updated}"
+    )
+    return {"success": True, "updated_rows": updated, "student_id": req.student_id}
 
 
 # =============================================================================

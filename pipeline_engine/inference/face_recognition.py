@@ -26,6 +26,48 @@ from pipeline_engine.inference.tensorrt_engine import TensorRTExecutor, create_t
 
 logger = logging.getLogger(__name__)
 
+ARC_DST_5PT = np.array(
+    [
+        [38.2946, 51.6963],
+        [73.5318, 51.5014],
+        [56.0252, 71.7366],
+        [41.5493, 92.3655],
+        [70.7299, 92.2041],
+    ],
+    dtype=np.float32,
+)
+
+
+def align_face_5pt_rgb(
+    bgr_img: np.ndarray,
+    landmarks5: Optional[List[Tuple[float, float]]] = None,
+    bbox: Optional[Tuple[float, float, float, float]] = None,
+) -> Optional[np.ndarray]:
+    """Align a face from BGR image to 112x112 RGB using 5-point similarity transform (Umeyama/LMEDS)."""
+    import cv2
+
+    if bgr_img is None or bgr_img.size == 0:
+        return None
+    h, w = bgr_img.shape[:2]
+
+    if landmarks5 is not None and len(landmarks5) == 5:
+        src = np.asarray(landmarks5, dtype=np.float32)
+        if np.all(np.isfinite(src)):
+            M, _ = cv2.estimateAffinePartial2D(src, ARC_DST_5PT, method=cv2.LMEDS)
+            if M is not None:
+                warped = cv2.warpAffine(bgr_img, M, (112, 112), borderValue=0)
+                return cv2.cvtColor(warped, cv2.COLOR_BGR2RGB)
+
+    if bbox is None:
+        return None
+    x1, y1, x2, y2 = [int(round(float(c))) for c in bbox[:4]]
+    x1, y1 = max(0, x1), max(0, y1)
+    x2, y2 = min(w, x2), min(h, y2)
+    if x2 <= x1 or y2 <= y1:
+        return None
+    crop = cv2.resize(bgr_img[y1:y2, x1:x2], (112, 112), interpolation=cv2.INTER_LINEAR)
+    return cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+
 try:
     from attendance_core import GalleryIndexRs as _GalleryIndexRs
     _HAS_RUST_GALLERY = True
@@ -274,7 +316,7 @@ class ArcFaceRecognizer:
                 # Load metadata if available
                 if metadata_path:
                     import json
-                    with open(metadata_path, 'r') as f:
+                    with open(metadata_path, 'r', encoding='utf-8') as f:
                         metadata = json.load(f)
                     
                     # Handle both list and dict formats

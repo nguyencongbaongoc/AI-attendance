@@ -7,9 +7,10 @@ Manages global person identities, cross-camera matching, and identity lifecycle.
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 
@@ -214,16 +215,26 @@ class GlobalIdentityService:
     - Identity lifecycle management (CANDIDATE → PROVISIONAL → CONFIRMED)
     - Conflict detection and persistence
     - Reacquisition handling
+    - Asymmetric cross-camera handoff (Forward Bridge + Reverse Retroactive Backfill)
     """
     
     def __init__(self, config: Optional[GISConfig] = None):
         self.config = config or load_gis_config()
+        self._lock = threading.RLock()
         
         # In-memory stores (in production, backed by database)
         self._global_persons: Dict[str, GlobalPersonID] = {}
         self._track_identity: Dict[Tuple[str, str], TrackRef] = {}  # (camera_id, local_track_id) -> TrackRef
         self._conflicts: Dict[str, IdentityConflict] = {}
         self._evidence_store: Dict[str, IdentityEvidence] = {}
+
+        # Asymmetric Cross-Camera Identity Bridge stores
+        self._handoff_buffer: Dict[str, "VerifiedHandoffEntry"] = {}  # student_id -> VerifiedHandoffEntry
+        self._pending_tracks: Dict[str, "PendingCrossCamTrack"] = {}  # pending_id -> PendingCrossCamTrack
+        self._pending_by_cam_track: Dict[Tuple[str, int], str] = {}   # (cam_id, local_track_id) -> pending_id
+        self._next_pending_seq: int = 1
+        self._backfill_records: List[Dict[str, Any]] = []
+        self._backfill_callbacks: List[Callable[[Dict[str, Any]], None]] = []
         
         # Components
         self._face_matcher = FaceMatcher(self.config)
@@ -238,6 +249,9 @@ class GlobalIdentityService:
             "crossings_resolved": 0,
             "conflicts_detected": 0,
             "reacquisitions": 0,
+            "forward_bridges": 0,
+            "pending_tracks_created": 0,
+            "retroactive_backfills": 0,
         }
 
     def register_track(self, camera_id: str, track: Track) -> Tuple[str, IdentityState]:
@@ -670,12 +684,374 @@ class GlobalIdentityService:
 
     def clear(self) -> None:
         """Clear all state (for testing)."""
-        self._global_persons.clear()
-        self._track_identity.clear()
-        self._conflicts.clear()
-        self._evidence_store.clear()
-        for key in self._stats:
-            self._stats[key] = 0
+        with self._lock:
+            self._global_persons.clear()
+            self._track_identity.clear()
+            self._conflicts.clear()
+            self._evidence_store.clear()
+            self._handoff_buffer.clear()
+            self._pending_tracks.clear()
+            self._pending_by_cam_track.clear()
+            self._next_pending_seq = 1
+            self._backfill_records.clear()
+            for key in self._stats:
+                self._stats[key] = 0
+
+    # =========================================================================
+    # Asymmetric Cross-Camera Identity Bridge (Forward Bridge + Reverse Backfill)
+    # =========================================================================
+
+    @staticmethod
+    def _normalize_body_vec(vec: Any) -> Optional[np.ndarray]:
+        """Convert and L2-normalize a 2048D body embedding vector."""
+        if vec is None:
+            return None
+        raw = getattr(vec, "embedding", vec)
+        if hasattr(raw, "detach"):
+            arr = raw.detach().cpu().numpy().astype(np.float32).reshape(-1)
+        elif hasattr(raw, "cpu"):
+            arr = raw.cpu().numpy().astype(np.float32).reshape(-1)
+        else:
+            arr = np.asarray(raw, dtype=np.float32).reshape(-1)
+        if arr.size == 0:
+            return None
+        norm = float(np.linalg.norm(arr))
+        if norm <= 1e-12:
+            return None
+        return np.ascontiguousarray((arr / norm).astype(np.float32))
+
+    def _prune_expired_bridge_state(
+        self,
+        now: float,
+        handoff_ttl: float = 15.0,
+        pending_ttl: float = 20.0,
+    ) -> None:
+        """Remove expired entries from handoff buffer and unresolved pending tracks (caller holds lock)."""
+        expired_handoffs = [
+            sid for sid, entry in self._handoff_buffer.items()
+            if (now - entry.timestamp) > handoff_ttl
+        ]
+        for sid in expired_handoffs:
+            del self._handoff_buffer[sid]
+
+        expired_pending = [
+            pid for pid, pt in self._pending_tracks.items()
+            if pt.resolved_student_id is None and (now - pt.last_seen) > pending_ttl
+        ]
+        for pid in expired_pending:
+            pt = self._pending_tracks.pop(pid)
+            self._pending_by_cam_track.pop((pt.cam_id, pt.local_track_id), None)
+
+    def register_backfill_callback(self, callback: Callable[[Dict[str, Any]], None]) -> None:
+        """Register callback invoked whenever a Pending Track #G-XX is retroactively resolved."""
+        with self._lock:
+            self._backfill_callbacks.append(callback)
+
+    def publish_face_verified(
+        self,
+        student_id: str,
+        full_name: str,
+        body_embedding: Any,
+        source_cam_id: str,
+        source_track_id: int,
+        confidence: float = 1.0,
+        timestamp: Optional[float] = None,
+        handoff_ttl: float = 15.0,
+        pending_ttl: float = 20.0,
+        min_sim: float = 0.68,
+        min_margin: float = 0.08,
+    ) -> List[Dict[str, Any]]:
+        """Publish a face-verified subject into the 15s handoff buffer and run Direction B reverse backfill."""
+        now = float(timestamp) if timestamp and timestamp > 0 else time.time()
+        norm_cam = str(source_cam_id).lower().strip()
+        bvec = self._normalize_body_vec(body_embedding)
+        if bvec is None or not student_id or not full_name:
+            return []
+
+        callbacks_to_run: List[Callable[[Dict[str, Any]], None]] = []
+        new_backfills: List[Dict[str, Any]] = []
+
+        with self._lock:
+            self._prune_expired_bridge_state(now, handoff_ttl=handoff_ttl, pending_ttl=pending_ttl)
+
+            existing = self._handoff_buffer.get(student_id)
+            if existing is not None and existing.body_embedding.shape == bvec.shape:
+                blended = 0.80 * existing.body_embedding + 0.20 * bvec
+                bnorm = float(np.linalg.norm(blended))
+                if bnorm > 1e-12:
+                    bvec = np.ascontiguousarray((blended / bnorm).astype(np.float32))
+
+            self._handoff_buffer[student_id] = VerifiedHandoffEntry(
+                student_id=student_id,
+                full_name=full_name,
+                body_embedding=bvec,
+                source_cam_id=norm_cam,
+                source_track_id=int(source_track_id),
+                confidence=float(confidence),
+                timestamp=now,
+            )
+
+            # Direction B: Check unresolved Pending Track #G-XX entries on other cameras within 20s
+            candidates: List[Tuple[PendingCrossCamTrack, float]] = []
+            for pt in self._pending_tracks.values():
+                if pt.resolved_student_id is not None:
+                    continue
+                if pt.cam_id == norm_cam:
+                    continue
+                if (now - pt.last_seen) > pending_ttl:
+                    continue
+                if pt.body_embedding is None or pt.body_embedding.shape != bvec.shape:
+                    continue
+                sim = float(np.dot(bvec, pt.body_embedding))
+                candidates.append((pt, sim))
+
+            if candidates:
+                candidates.sort(key=lambda item: item[1], reverse=True)
+                best_pt, best_sim = candidates[0]
+                second_sim = candidates[1][1] if len(candidates) >= 2 else -1.0
+
+                # Also check against other recently face-verified subjects in handoff buffer
+                other_verified_sims = [
+                    float(np.dot(entry.body_embedding, best_pt.body_embedding))
+                    for other_sid, entry in self._handoff_buffer.items()
+                    if other_sid != student_id and entry.body_embedding.shape == best_pt.body_embedding.shape
+                ]
+                best_other_sim = max(other_verified_sims) if other_verified_sims else -1.0
+
+                margin_vs_pending = (best_sim - second_sim) if len(candidates) >= 2 else 1.0
+                margin_vs_verified = (best_sim - best_other_sim) if other_verified_sims else 1.0
+
+                if best_sim >= min_sim and margin_vs_pending >= min_margin and margin_vs_verified >= min_margin:
+                    best_pt.resolved_student_id = student_id
+                    best_pt.resolved_full_name = full_name
+                    best_pt.resolved_from_cam = norm_cam
+                    best_pt.resolved_confidence = max(float(confidence), best_sim)
+                    best_pt.resolved_at = now
+                    self._stats["retroactive_backfills"] += 1
+
+                    record = {
+                        "pending_id": best_pt.pending_id,
+                        "target_cam_id": best_pt.cam_id,
+                        "target_track_id": best_pt.local_track_id,
+                        "student_id": student_id,
+                        "full_name": full_name,
+                        "source_cam_id": norm_cam,
+                        "source_track_id": int(source_track_id),
+                        "body_similarity": round(best_sim, 4),
+                        "confidence": round(best_pt.resolved_confidence, 4),
+                        "crossing_events_count": len(best_pt.crossing_events),
+                        "resolved_at": now,
+                    }
+                    self._backfill_records.append(record)
+                    new_backfills.append(record)
+                    callbacks_to_run = list(self._backfill_callbacks)
+                    logger.info(
+                        f"[GIS] Retroactive backfill: {best_pt.pending_id} ({best_pt.cam_id} track #{best_pt.local_track_id}) "
+                        f"-> {student_id} ({full_name}) from {norm_cam} (body_sim={best_sim:.3f})"
+                    )
+
+        for cb in callbacks_to_run:
+            for rec in new_backfills:
+                try:
+                    cb(rec)
+                except Exception as exc:
+                    logger.error(f"[GIS] Backfill callback error: {exc}")
+
+        return new_backfills
+
+    def query_forward_handoff(
+        self,
+        target_cam_id: str,
+        body_embedding: Any,
+        timestamp: Optional[float] = None,
+        ttl_seconds: float = 15.0,
+        min_sim: float = 0.68,
+        min_margin: float = 0.08,
+        exclude_sids: Optional[Set[str]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Direction A: Match a side-profile track against subjects face-verified within the last 15s."""
+        now = float(timestamp) if timestamp and timestamp > 0 else time.time()
+        norm_cam = str(target_cam_id).lower().strip()
+        bvec = self._normalize_body_vec(body_embedding)
+        if bvec is None:
+            return None
+        excluded = exclude_sids or set()
+
+        with self._lock:
+            self._prune_expired_bridge_state(now, handoff_ttl=ttl_seconds)
+            scored: List[Tuple[VerifiedHandoffEntry, float]] = []
+            for sid, entry in self._handoff_buffer.items():
+                if entry.source_cam_id == norm_cam:
+                    continue
+                if sid in excluded:
+                    continue
+                if (now - entry.timestamp) > ttl_seconds:
+                    continue
+                if entry.body_embedding.shape != bvec.shape:
+                    continue
+                sim = float(np.dot(entry.body_embedding, bvec))
+                scored.append((entry, sim))
+
+            if not scored:
+                return None
+
+            scored.sort(key=lambda item: item[1], reverse=True)
+            best_entry, best_sim = scored[0]
+            second_sim = scored[1][1] if len(scored) >= 2 else -1.0
+            margin_ok = (len(scored) == 1) or ((best_sim - second_sim) >= min_margin)
+
+            if best_sim >= min_sim and margin_ok:
+                self._stats["forward_bridges"] += 1
+                return {
+                    "student_id": best_entry.student_id,
+                    "full_name": best_entry.full_name,
+                    "source_cam_id": best_entry.source_cam_id,
+                    "source_track_id": best_entry.source_track_id,
+                    "body_similarity": float(best_sim),
+                    "confidence": max(float(best_entry.confidence), float(best_sim)),
+                }
+            return None
+
+    def register_or_update_pending_track(
+        self,
+        cam_id: str,
+        local_track_id: int,
+        body_embedding: Any,
+        timestamp: Optional[float] = None,
+        pending_ttl: float = 20.0,
+        update_embedding: bool = True,
+    ) -> Optional["PendingCrossCamTrack"]:
+        """Assign or update an anonymous Pending Track #G-XX for an unverified side-profile track."""
+        now = float(timestamp) if timestamp and timestamp > 0 else time.time()
+        norm_cam = str(cam_id).lower().strip()
+        tid = int(local_track_id)
+        bvec = self._normalize_body_vec(body_embedding)
+        if bvec is None:
+            return None
+
+        with self._lock:
+            self._prune_expired_bridge_state(now, pending_ttl=pending_ttl)
+            key = (norm_cam, tid)
+            pid = self._pending_by_cam_track.get(key)
+            if pid and pid in self._pending_tracks:
+                pt = self._pending_tracks[pid]
+                pt.last_seen = now
+                if update_embedding and pt.body_embedding.shape == bvec.shape:
+                    blended = 0.85 * pt.body_embedding + 0.15 * bvec
+                    bnorm = float(np.linalg.norm(blended))
+                    if bnorm > 1e-12:
+                        pt.body_embedding = np.ascontiguousarray((blended / bnorm).astype(np.float32))
+                return pt
+
+            pid = f"G-{self._next_pending_seq:02d}"
+            self._next_pending_seq += 1
+            pt = PendingCrossCamTrack(
+                pending_id=pid,
+                cam_id=norm_cam,
+                local_track_id=tid,
+                body_embedding=bvec,
+                timestamp=now,
+                last_seen=now,
+            )
+            self._pending_tracks[pid] = pt
+            self._pending_by_cam_track[key] = pid
+            self._stats["pending_tracks_created"] += 1
+            logger.info(f"[GIS] Created Pending Track #{pid} for {norm_cam} track #{tid}")
+            return pt
+
+    def record_pending_crossing_event(
+        self,
+        cam_id: str,
+        local_track_id: int,
+        event_dict: Dict[str, Any],
+    ) -> None:
+        """Attach a crossing event to an active pending track for retroactive backfill."""
+        norm_cam = str(cam_id).lower().strip()
+        tid = int(local_track_id)
+        with self._lock:
+            pid = self._pending_by_cam_track.get((norm_cam, tid))
+            if pid and pid in self._pending_tracks:
+                self._pending_tracks[pid].crossing_events.append(dict(event_dict))
+
+    def get_resolved_pending(self, cam_id: str, local_track_id: int) -> Optional["PendingCrossCamTrack"]:
+        """Return resolved PendingCrossCamTrack if (cam_id, local_track_id) was retroactively backfilled."""
+        norm_cam = str(cam_id).lower().strip()
+        tid = int(local_track_id)
+        with self._lock:
+            pid = self._pending_by_cam_track.get((norm_cam, tid))
+            if pid and pid in self._pending_tracks:
+                pt = self._pending_tracks[pid]
+                if pt.resolved_student_id is not None:
+                    return pt
+            return None
+
+    def list_pending_tracks(self) -> List[Dict[str, Any]]:
+        """List all pending cross-camera tracks for inspection/testing."""
+        with self._lock:
+            return [
+                {
+                    "pending_id": pt.pending_id,
+                    "cam_id": pt.cam_id,
+                    "local_track_id": pt.local_track_id,
+                    "timestamp": pt.timestamp,
+                    "last_seen": pt.last_seen,
+                    "resolved_student_id": pt.resolved_student_id,
+                    "resolved_full_name": pt.resolved_full_name,
+                    "resolved_from_cam": pt.resolved_from_cam,
+                    "resolved_confidence": pt.resolved_confidence,
+                    "crossing_events_count": len(pt.crossing_events),
+                }
+                for pt in self._pending_tracks.values()
+            ]
+
+    def list_handoff_buffer(self) -> List[Dict[str, Any]]:
+        """List active face-verified handoff buffer entries."""
+        with self._lock:
+            return [
+                {
+                    "student_id": e.student_id,
+                    "full_name": e.full_name,
+                    "source_cam_id": e.source_cam_id,
+                    "source_track_id": e.source_track_id,
+                    "confidence": e.confidence,
+                    "timestamp": e.timestamp,
+                }
+                for e in self._handoff_buffer.values()
+            ]
+
+    def list_backfill_records(self) -> List[Dict[str, Any]]:
+        """Return all retroactive backfill records."""
+        with self._lock:
+            return list(self._backfill_records)
+
+
+@dataclass
+class VerifiedHandoffEntry:
+    """Short-lived face-verified subject entry for 15s forward cross-cam BodyReID bridge."""
+    student_id: str
+    full_name: str
+    body_embedding: np.ndarray
+    source_cam_id: str
+    source_track_id: int
+    confidence: float
+    timestamp: float
+
+
+@dataclass
+class PendingCrossCamTrack:
+    """Anonymous pending track token on a side-profile camera awaiting frontal confirmation."""
+    pending_id: str
+    cam_id: str
+    local_track_id: int
+    body_embedding: np.ndarray
+    timestamp: float
+    last_seen: float
+    crossing_events: List[Dict[str, Any]] = field(default_factory=list)
+    resolved_student_id: Optional[str] = None
+    resolved_full_name: Optional[str] = None
+    resolved_from_cam: Optional[str] = None
+    resolved_confidence: float = 0.0
+    resolved_at: Optional[float] = None
 
 
 def create_global_identity_service(config: Optional[GISConfig] = None) -> GlobalIdentityService:

@@ -74,6 +74,8 @@ LINE_END_PX = [1267, 605]    # (0.66 * 1920, 0.56 * 1080)
 LEAD_IN_S = 80.0
 CAM2_STAGGER_S = 3.0
 UNREGISTERED_LABEL = "Khách / Chưa đăng ký"
+AWAITING_FACE_LABEL = "Đang chờ thấy mặt..."
+PENDING_AUTH_LABEL = "Đang chờ xác thực mặt"
 
 VERIFY_API_ENV = {
     "AI_WORKER_API_KEY": "e2e_worker_key_2026",
@@ -276,11 +278,11 @@ def _extract_and_enroll_worker() -> int:
         create_scrfd_detector,
         create_yolo_detector,
     )
+    from pipeline_engine.inference.face_recognition import align_face_5pt_rgb
     from pipeline_engine.memory.gpu_frame import (
         CUDAContext,
         GPUFrame,
         bgr_to_nv12_cuda,
-        nv12_to_bgr_cuda,
     )
 
     NPY_DIR.mkdir(parents=True, exist_ok=True)
@@ -346,7 +348,6 @@ def _extract_and_enroll_worker() -> int:
                 if not p_dets or not f_dets:
                     continue
 
-                bgr_gpu = nv12_to_bgr_cuda(y_t, uv_t)
                 for fdet in f_dets:
                     conf = float(fdet.confidence)
                     if conf < 0.60 or len(fdet.landmarks5) != 5:
@@ -354,10 +355,12 @@ def _extract_and_enroll_worker() -> int:
                     fx1, fy1, fx2, fy2 = [max(0, int(v)) for v in fdet.bbox]
                     fx2 = min(width, fx2)
                     fy2 = min(height, fy2)
-                    if (fx2 - fx1) < 28 or (fy2 - fy1) < 28:
+                    if (fx2 - fx1) < 34 or (fy2 - fy1) < 34:
                         continue
-                    crop = bgr_gpu[fy1:fy2, fx1:fx2]
-                    emb_res = arcface.infer_embedding(crop)
+                    aligned_rgb = align_face_5pt_rgb(frame, fdet.landmarks5, fdet.bbox)
+                    if aligned_rgb is None:
+                        continue
+                    emb_res = arcface.infer_embedding(aligned_rgb)
                     vec = emb_res.to_numpy().astype(np.float32).reshape(-1)
                     norm = float(np.linalg.norm(vec))
                     if norm < 1e-8:
@@ -399,7 +402,7 @@ def _extract_and_enroll_worker() -> int:
         sid = subj["student_id"]
         cands = sorted(candidates_by_id[sid], key=lambda item: item[0], reverse=True)
         assert cands, f"No clear frontal face found for {sid} in window {subj['window_s']}"
-        top_vecs = [item[2] for item in cands[:3]]
+        top_vecs = [item[2] for item in cands[:5]]
         avg_vec = np.mean(np.stack(top_vecs, axis=0), axis=0).astype(np.float32)
         avg_vec = (avg_vec / max(float(np.linalg.norm(avg_vec)), 1e-12)).astype(np.float32)
 
@@ -591,6 +594,7 @@ def _prepare_streams_and_config(src_duration_s: float = 66.816) -> None:
     )
     for cid in ("cam1", "cam2"):
         if cid in base_cfg.get("cameras", {}):
+            base_cfg["cameras"][cid]["camera_role"] = "frontal"
             base_cfg["cameras"][cid]["expected"]["width"] = 1920
             base_cfg["cameras"][cid]["expected"]["height"] = 1080
             base_cfg["cameras"][cid]["expected"]["fps"] = 30
@@ -605,7 +609,7 @@ def _prepare_streams_and_config(src_duration_s: float = 66.816) -> None:
             base_cfg["cameras"][cid]["crossing_policy"]["max_trajectory_gap_frames"] = 5
             base_cfg["cameras"][cid]["crossing_policy"]["reference_point"] = "adaptive"
 
-    base_cfg.setdefault("models", {}).setdefault("arcface", {})["similarity_threshold"] = 0.55
+    base_cfg.setdefault("models", {}).setdefault("arcface", {})["similarity_threshold"] = 0.56
     CFG_PATH.write_text(yaml.safe_dump(base_cfg, sort_keys=False), encoding="utf-8")
     print(
         f"[STEP 2] Prepared 1:1 RTSP streams ({CAM1_MP4.name} +{LEAD_IN_S:.0f}s lead-in, "
@@ -928,15 +932,37 @@ def _render_comparison_frame(
         py1 = ry0 + int(by1 * vh)
         px2 = rx0 + int(bx2 * vw)
         py2 = ry0 + int(by2 * vh)
-        draw.rectangle([px1, py1, px2, py2], outline=(16, 185, 129, 255), width=3)
 
-        cand = p.get("identity_candidate") or UNREGISTERED_LABEL
+        cand = p.get("identity_candidate") or AWAITING_FACE_LABEL
         id_conf = float(p.get("identity_confidence") or 0.0)
         tid = p.get("track_id", 0)
-        if cand not in ("Unknown", UNREGISTERED_LABEL) and id_conf > 0:
+        is_verified = bool(p.get("face_verified", False) or p.get("bridged_from_cam"))
+        is_known = (
+            cand not in ("Unknown", UNREGISTERED_LABEL, AWAITING_FACE_LABEL, PENDING_AUTH_LABEL)
+            and id_conf > 0
+            and is_verified
+        )
+        if is_known:
+            box_color = (16, 185, 129, 255)
+            pill_fill = (6, 78, 59, 255)
+            pill_outline = (52, 211, 153, 255)
+            pill_text = (255, 255, 255, 255)
             lbl = f"#{tid} {cand} ({id_conf * 100:.1f}%)"
-        else:
+        elif cand == UNREGISTERED_LABEL:
+            box_color = (239, 68, 68, 255)
+            pill_fill = (127, 29, 29, 255)
+            pill_outline = (248, 113, 113, 255)
+            pill_text = (254, 226, 226, 255)
             lbl = f"#{tid} {UNREGISTERED_LABEL}"
+        else:
+            # Pre-face awaiting pill (amber/cyan)
+            box_color = (245, 158, 11, 255)
+            pill_fill = (120, 53, 15, 250)
+            pill_outline = (56, 189, 248, 255)
+            pill_text = (254, 243, 199, 255)
+            lbl = f"#{tid} {AWAITING_FACE_LABEL}" if cand not in (PENDING_AUTH_LABEL,) else f"#{tid} {cand}"
+
+        draw.rectangle([px1, py1, px2, py2], outline=box_color, width=3)
         active_labels.append(lbl)
 
         text_bbox = draw.textbbox((0, 0), lbl, font=fonts["badge"])
@@ -961,11 +987,11 @@ def _render_comparison_frame(
         _draw_pill(
             draw,
             rect,
-            fill=(6, 78, 59, 255),
-            outline=(52, 211, 153, 255),
+            fill=pill_fill,
+            outline=pill_outline,
             radius=5,
         )
-        draw.text((tx1 + 8, ty1 + 4), lbl, font=fonts["badge"], fill=(255, 255, 255, 255))
+        draw.text((tx1 + 8, ty1 + 4), lbl, font=fonts["badge"], fill=pill_text)
 
     # Right bottom live telemetry card
     _draw_pill(draw, (980, 702, 1900, 962), fill=(30, 41, 59, 235), outline=(16, 185, 129, 190))
@@ -1084,7 +1110,8 @@ def _render_video_and_snapshot(
                 known_cnt = sum(
                     1
                     for p in pkt["persons"]
-                    if p.get("identity_candidate") and p["identity_candidate"] not in ("Unknown", UNREGISTERED_LABEL)
+                    if p.get("identity_candidate")
+                    and p["identity_candidate"] not in ("Unknown", UNREGISTERED_LABEL, AWAITING_FACE_LABEL, PENDING_AUTH_LABEL)
                 )
                 dist_42 = abs(t_s - 42.0)
                 snap_score = (known_cnt * 10.0) + len(pkt["persons"]) - dist_42
@@ -1387,13 +1414,72 @@ async def run_verification() -> Dict[str, Any]:
 
         # 1c. Verify full-frame exit persistence past x > 0.72 without freezing
         exit_reach_x2 = {}
-        for ename, ew0, ew1 in [("Pass1_exit", 7.5, 9.7), ("Pass2_exit", 17.5, 19.2), ("Pass5_exit", 43.2, 44.8)]:
+        exit_persisted_names: Dict[str, List[str]] = {}
+        non_enrolled = {"Unknown", UNREGISTERED_LABEL, AWAITING_FACE_LABEL, PENDING_AUTH_LABEL}
+        for ename, ew0, ew1, exp_name in [
+            ("Pass1_exit", 7.5, 9.7, "Cô Hằng (GVCN 12.13)"),
+            ("Pass2_exit", 17.5, 19.2, "Nguyễn Công Bảo Ngọc"),
+            ("Pass5_exit", 43.2, 44.8, "Trần Minh Quân"),
+        ]:
             max_x2 = max(
                 (float(per["bbox"][2]) for vt, p in aligned_cam1 if ew0 <= vt <= ew1 for per in p["persons"]),
                 default=0.0,
             )
+            names_exit = sorted({
+                per.get("identity_candidate")
+                for vt, p in aligned_cam1
+                if ew0 <= vt <= ew1
+                for per in p["persons"]
+                if per.get("identity_candidate") and per["identity_candidate"] not in non_enrolled
+            })
             exit_reach_x2[ename] = round(max_x2, 3)
+            exit_persisted_names[ename] = names_exit
             assert max_x2 >= 0.85, f"Exit tracking stalled early in {ename}: max_x2={max_x2:.3f} < 0.85"
+            assert exp_name in names_exit, f"Expected {exp_name} to persist to exit in {ename}, got {names_exit}"
+
+        # 1d. Face-First Identity Acquisition assertions:
+        #     ZERO enrolled names prematurely assigned on arm-only entry frames (00:13.3, 00:29.7, 00:39.0, 01:00.7)
+        arm_only_windows = [
+            ("00:13.3", 13.0, 13.85),
+            ("00:29.7", 29.4, 30.05),
+            ("00:39.0", 38.7, 39.75),
+            ("01:00.7", 60.3, 61.10),
+        ]
+        arm_only_violations: Dict[str, List[str]] = {}
+        for label, w0, w1 in arm_only_windows:
+            premature = sorted({
+                per.get("identity_candidate")
+                for vt, p in aligned_cam1
+                if w0 <= vt <= w1
+                for per in p["persons"]
+                if per.get("identity_candidate") and per["identity_candidate"] not in non_enrolled
+            })
+            if premature:
+                arm_only_violations[label] = premature
+        assert not arm_only_violations, (
+            f"Premature enrolled names assigned before visible face at arm-only windows: {arm_only_violations}"
+        )
+
+        #     Verify face-visible lock timestamps (00:14.5+, 00:31.5+, 00:40.0+, 01:02.0+)
+        face_lock_checks = [
+            ("00:14.5_BaoNgoc", 14.3, 16.5, "Nguyễn Công Bảo Ngọc"),
+            ("00:31.5_MinhQuan", 30.8, 33.5, "Trần Minh Quân"),
+            ("00:40.0_Dual_BaoNgoc", 40.0, 43.0, "Nguyễn Công Bảo Ngọc"),
+            ("00:40.0_Dual_MinhQuan", 40.0, 43.0, "Trần Minh Quân"),
+            ("01:02.0_CoHang", 61.5, 63.5, "Cô Hằng (GVCN 12.13)"),
+        ]
+        face_lock_results: Dict[str, bool] = {}
+        for cname, w0, w1, exp_name in face_lock_checks:
+            matched_verified = any(
+                per.get("identity_candidate") == exp_name and bool(per.get("face_verified", False))
+                for vt, p in aligned_cam1
+                if w0 <= vt <= w1
+                for per in p["persons"]
+            )
+            face_lock_results[cname] = matched_verified
+            assert matched_verified, (
+                f"Expected face_verified lock for {exp_name} in {cname} ({w0}s..{w1}s)"
+            )
 
         # 2. Verify dual-person separation at 00:40-00:43 without swapping or raw IDs
         dual_frames_0042 = [
@@ -1407,7 +1493,7 @@ async def run_verification() -> Dict[str, Any]:
             per.get("identity_candidate")
             for _, p in dual_frames_0042
             for per in p["persons"]
-            if per.get("identity_candidate") and per["identity_candidate"] != UNREGISTERED_LABEL
+            if per.get("identity_candidate") and per["identity_candidate"] not in non_enrolled
         })
         assert {"Nguyễn Công Bảo Ngọc", "Trần Minh Quân"}.issubset(set(dual_names_0042)), (
             f"Expected both students recognized during 00:40-00:43, got {dual_names_0042}"
@@ -1419,7 +1505,7 @@ async def run_verification() -> Dict[str, Any]:
             for vt, p in aligned_cam1
             if 60.0 <= vt <= 64.5
             for per in p["persons"]
-            if per.get("identity_candidate") and per["identity_candidate"] != UNREGISTERED_LABEL
+            if per.get("identity_candidate") and per["identity_candidate"] not in non_enrolled
         })
         assert "Cô Hằng (GVCN 12.13)" in names_0100_0104, (
             f"Expected Cô Hằng (GVCN 12.13) in 01:00-01:04, got {names_0100_0104}"
@@ -1433,13 +1519,13 @@ async def run_verification() -> Dict[str, Any]:
             per.get("identity_candidate")
             for _, p in aligned_cam1
             for per in p["persons"]
-            if per.get("identity_candidate") and per["identity_candidate"] != UNREGISTERED_LABEL
+            if per.get("identity_candidate") and per["identity_candidate"] not in non_enrolled
         })
         all_names_cam2 = sorted({
             per.get("identity_candidate")
             for p in ws2_pkts
             for per in p["persons"]
-            if per.get("identity_candidate") and per["identity_candidate"] != UNREGISTERED_LABEL
+            if per.get("identity_candidate") and per["identity_candidate"] not in non_enrolled
         })
         expected_names = {s["full_name"] for s in SUBJECT_DEFS}
         assert expected_names.issubset(set(all_names_cam1)), (
@@ -1453,7 +1539,7 @@ async def run_verification() -> Dict[str, Any]:
                 for vt, p in aligned_cam1
                 if t0 <= vt <= t1
                 for per in p["persons"]
-                if per.get("identity_candidate") and per["identity_candidate"] != UNREGISTERED_LABEL
+                if per.get("identity_candidate") and per["identity_candidate"] not in non_enrolled
             })
             pass_coverage[pname] = names_in_pass
 
@@ -1476,6 +1562,9 @@ async def run_verification() -> Dict[str, Any]:
             "phantom_desk_boxes": {"empty_windows": empty_phantom_cnt, "desk_region_unregistered": desk_unreg_cnt},
             "duplicate_inner_frames_solo": duplicate_inner_frames,
             "exit_reach_x2": exit_reach_x2,
+            "exit_persisted_names": exit_persisted_names,
+            "face_first_arm_only_violations": arm_only_violations,
+            "face_verified_locks": face_lock_results,
             "dual_separation_0040_0043": {
                 "frames_with_2plus_tracks": len(dual_frames_0042),
                 "recognized_names": dual_names_0042,
