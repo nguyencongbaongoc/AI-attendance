@@ -282,10 +282,21 @@ class CameraManager:
         reid_detector = self._shared_models.get('reid')
         
         # Create tracker with shared recognizer & ReID detector for multi-modal lock
+        global_track_cfg = getattr(self.config, "tracking", None) or {}
+        cam_track_cfg = cam_config.get("tracking", {}) or {}
+        track_cfg = {**global_track_cfg, **cam_track_cfg}
+        track_buffer = int(track_cfg.get("track_buffer", track_cfg.get("max_lost_frames", track_cfg.get("max_lost", 45))))
+        match_thresh = float(track_cfg.get("match_thresh", 0.80))
         tracker = Tracker(
             config=TrackingConfig(
-                min_iou_threshold=cam_config.get("tracking", {}).get("min_iou", 0.3),
-                max_lost_frames=cam_config.get("tracking", {}).get("max_lost", 10),
+                min_iou_threshold=float(track_cfg.get("min_iou_threshold", track_cfg.get("min_iou", max(0.05, 1.0 - match_thresh)))),
+                match_thresh=match_thresh,
+                track_buffer=track_buffer,
+                max_age=int(track_cfg.get("max_age", track_buffer)),
+                max_lost_frames=track_buffer,
+                high_det_thresh=float(track_cfg.get("high_det_thresh", 0.50)),
+                low_det_thresh=float(track_cfg.get("low_det_thresh", 0.18)),
+                inner_box_ioa_threshold=float(track_cfg.get("inner_box_ioa_threshold", 0.55)),
             ),
             recognizer=arcface_recognizer,
             reid_detector=reid_detector,

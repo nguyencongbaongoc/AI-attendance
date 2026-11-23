@@ -69,8 +69,6 @@ OUT_SNAPSHOT = ARTIFACTS / "Anh_Doi_Chieu_00m42s_Tach_2_Nguoi.jpg"
 OUT_EXCEL = ARTIFACTS / "Bao_Cao_Kiem_Chung_Lop_12_13.xlsx"
 OUT_SUMMARY = ARTIFACTS / "legacy_verify_summary.json"
 
-ROI_MAX_X_NORM = 0.72
-ROI_MAX_X_PX = int(round(1920 * ROI_MAX_X_NORM))  # 1382
 LINE_START_PX = [346, 605]   # (0.18 * 1920, 0.56 * 1080)
 LINE_END_PX = [1267, 605]    # (0.66 * 1920, 0.56 * 1080)
 LEAD_IN_S = 80.0
@@ -315,7 +313,6 @@ def _extract_and_enroll_worker() -> int:
     fps = float(cap.get(cv2.CAP_PROP_FPS) or 30.0)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 1920)
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 1080)
-    roi_limit_x = ROI_MAX_X_NORM * width
 
     candidates_by_id: Dict[str, List[Tuple[float, float, np.ndarray, Optional[np.ndarray], int]]] = {
         s["student_id"]: [] for s in SUBJECT_DEFS
@@ -344,14 +341,8 @@ def _extract_and_enroll_worker() -> int:
                     y_tensor=y_t,
                     uv_tensor=uv_t,
                 )
-                p_dets = [
-                    d for d in yolo.detect(gf)
-                    if ((d.bbox[0] + d.bbox[2]) * 0.5) <= roi_limit_x
-                ]
-                f_dets = [
-                    f for f in scrfd.detect(gf)
-                    if ((f.bbox[0] + f.bbox[2]) * 0.5) <= roi_limit_x
-                ]
+                p_dets = yolo.detect(gf)
+                f_dets = scrfd.detect(gf)
                 if not p_dets or not f_dets:
                     continue
 
@@ -598,7 +589,6 @@ def _prepare_streams_and_config(src_duration_s: float = 66.816) -> None:
     base_cfg = yaml.safe_load(
         (ROOT / "pipeline_engine" / "config" / "pipeline.yaml").read_text(encoding="utf-8")
     )
-    roi_poly = [[0, 0], [ROI_MAX_X_PX, 0], [ROI_MAX_X_PX, 1080], [0, 1080]]
     for cid in ("cam1", "cam2"):
         if cid in base_cfg.get("cameras", {}):
             base_cfg["cameras"][cid]["expected"]["width"] = 1920
@@ -607,7 +597,7 @@ def _prepare_streams_and_config(src_duration_s: float = 66.816) -> None:
             base_cfg["cameras"][cid]["geometry"]["line_start"] = list(LINE_START_PX)
             base_cfg["cameras"][cid]["geometry"]["line_end"] = list(LINE_END_PX)
             base_cfg["cameras"][cid]["geometry"]["direction_semantics"] = "side_b_to_a_in"
-            base_cfg["cameras"][cid]["geometry"]["roi_polygon"] = roi_poly
+            base_cfg["cameras"][cid]["geometry"].pop("roi_polygon", None)
             base_cfg["cameras"][cid]["crossing_policy"]["min_crossing_distance"] = 15.0
             base_cfg["cameras"][cid]["crossing_policy"]["temporal_debounce_seconds"] = 4.0
             base_cfg["cameras"][cid]["crossing_policy"]["cooldown_seconds"] = 4.0
@@ -813,9 +803,9 @@ def _render_comparison_frame(
     )
     mm, ss = int(t_s) // 60, int(t_s) % 60
     tmm, tss = int(total_s) // 60, int(total_s) % 60
-    _draw_pill(draw, (1630, 20, 1892, 65), fill=(30, 41, 59, 255), outline=(16, 185, 129, 220))
+    _draw_pill(draw, (1596, 20, 1898, 65), fill=(30, 41, 59, 255), outline=(16, 185, 129, 220))
     draw.text(
-        (1652, 30),
+        (1616, 30),
         f"THỜI GIAN  {mm:02d}:{ss:02d} / {tmm:02d}:{tss:02d}",
         font=fonts["sub"],
         fill=(16, 185, 129, 255),
@@ -893,39 +883,35 @@ def _render_comparison_frame(
         fill=(226, 232, 240, 255),
     )
 
-    # --- RIGHT PANEL LIVE v2.4.1 OVERLAYS ---
-    roi_x = rx0 + int(ROI_MAX_X_NORM * vw)
-    roi_overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-    ImageDraw.Draw(roi_overlay, "RGBA").rectangle(
-        [roi_x, ry0, rx0 + vw, ry0 + vh], fill=(251, 146, 60, 28)
-    )
-    canvas = Image.alpha_composite(canvas, roi_overlay)
-    draw = ImageDraw.Draw(canvas, "RGBA")
-    for dy in range(ry0, ry0 + vh, 14):
-        draw.line([(roi_x, dy), (roi_x, min(ry0 + vh, dy + 8))], fill=(251, 146, 60, 220), width=2)
-    _draw_pill(
-        draw,
-        (roi_x + 6, ry0 + vh - 34, rx0 + vw - 6, ry0 + vh - 6),
-        fill=(15, 23, 42, 235),
-        outline=(251, 146, 60, 220),
-        radius=5,
-    )
-    draw.text((roi_x + 12, ry0 + vh - 29), "LOẠI TRỪ BÀN GHẾ (x > 0.72)", font=fonts["small"], fill=(253, 186, 116, 255))
-
+    # --- RIGHT PANEL LIVE v2.4.1 OVERLAYS (100% FULL-FRAME TRACKING, ZERO EXCLUSION ZONE) ---
     # Doorway horizontal threshold crossing line [(0.18, 0.56), (0.66, 0.56)]
     lx1 = rx0 + int((LINE_START_PX[0] / 1920.0) * vw)
     ly1 = ry0 + int((LINE_START_PX[1] / 1080.0) * vh)
     lx2 = rx0 + int((LINE_END_PX[0] / 1920.0) * vw)
     ly2 = ry0 + int((LINE_END_PX[1] / 1080.0) * vh)
-    draw.line([(lx1, ly1), (lx2, ly2)], fill=(16, 185, 129, 240), width=3)
-    _draw_pill(draw, (lx1, ly1 + 6, lx1 + 148, ly1 + 32), fill=(6, 78, 59, 240), outline=(16, 185, 129, 255), radius=6)
-    draw.text((lx1 + 10, ly1 + 10), "LINE IN → OUT", font=fonts["small"], fill=(209, 250, 229, 255))
+    draw.line([(lx1, ly1), (lx2, ly2)], fill=(0, 0, 0, 210), width=5)
+    draw.line([(lx1, ly1), (lx2, ly2)], fill=(16, 185, 129, 255), width=3)
+    for ex, ey in ((lx1, ly1), (lx2, ly2)):
+        draw.ellipse([ex - 5, ey - 5, ex + 5, ey + 5], fill=(16, 185, 129, 255), outline=(255, 255, 255, 255), width=2)
+
+    # Directional vector arrow perpendicular to crossing line (IN downward into classroom / OUT upward)
+    lmx = (lx1 + lx2) // 2
+    draw.line([(lmx, ly1 - 18), (lmx, ly1 + 26)], fill=(52, 211, 153, 255), width=3)
+    draw.polygon([(lmx, ly1 + 32), (lmx - 6, ly1 + 21), (lmx + 6, ly1 + 21)], fill=(52, 211, 153, 255))
+    draw.polygon([(lmx, ly1 - 24), (lmx - 5, ly1 - 15), (lmx + 5, ly1 - 15)], fill=(250, 204, 21, 255))
+    _draw_pill(draw, (lmx + 12, ly1 - 28, lmx + 82, ly1 - 6), fill=(15, 23, 42, 235), outline=(250, 204, 21, 230), radius=4)
+    draw.text((lmx + 18, ly1 - 24), "RA (OUT)", font=fonts["small"], fill=(253, 224, 71, 255))
+    _draw_pill(draw, (lmx + 12, ly1 + 8, lmx + 78, ly1 + 30), fill=(6, 78, 59, 240), outline=(52, 211, 153, 240), radius=4)
+    draw.text((lmx + 18, ly1 + 12), "VÀO (IN)", font=fonts["small"], fill=(167, 243, 208, 255))
+
+    _draw_pill(draw, (lx1, ly1 + 8, lx1 + 146, ly1 + 33), fill=(6, 78, 59, 240), outline=(16, 185, 129, 255), radius=6)
+    draw.text((lx1 + 10, ly1 + 12), "LINE IN → OUT", font=fonts["small"], fill=(209, 250, 229, 255))
 
     # Top HUD badge
-    _draw_pill(draw, (rx0 + 14, ry0 + 12, rx0 + 545, ry0 + 46), fill=(6, 78, 59, 245), outline=(16, 185, 129, 240), radius=6)
+    _draw_pill(draw, (rx0 + 14, ry0 + 12, rx0 + 602, ry0 + 46), fill=(6, 78, 59, 245), outline=(16, 185, 129, 240), radius=6)
     draw.text(
         (rx0 + 26, ry0 + 18),
-        f"IN: {counts.get('in', 0)}  |  OUT: {counts.get('out', 0)}  |  Vùng loại trừ bàn ghế: 0 khung ảo",
+        f"IN: {counts.get('in', 0)}  |  OUT: {counts.get('out', 0)}  |  Toàn khung hình (100% FOV): 0 khung ảo",
         font=fonts["badge"],
         fill=(209, 250, 229, 255),
     )
@@ -933,8 +919,8 @@ def _render_comparison_frame(
     # Live Track Bounding Boxes & Crisp Opaque Vietnamese Labels
     active_labels: List[str] = []
     placed_pills: List[Tuple[int, int, int, int]] = [
-        (rx0 + 14, ry0 + 12, rx0 + 545, ry0 + 46),
-        (lx1, ly1 + 6, lx1 + 148, ly1 + 32),
+        (rx0 + 14, ry0 + 12, rx0 + 602, ry0 + 46),
+        (lx1, ly1 + 8, lx1 + 146, ly1 + 33),
     ]
     for p in sorted(persons, key=lambda item: float(item["bbox"][0])):
         bx1, by1, bx2, by2 = p["bbox"]
@@ -986,7 +972,7 @@ def _render_comparison_frame(
     draw.text((998, 718), "KẾT QUẢ ATTENDANCE OS v2.4.1 (AFTER - LIVE AI)", font=fonts["sub"], fill=(52, 211, 153, 255))
     draw.text(
         (998, 758),
-        "• Vùng loại trừ bàn ghế: 0 khung ảo (Đã loại trừ x > 0.72)",
+        "• Nhận diện toàn khung hình (100% FOV): 0 khung ảo bàn ghế, bám sát đến mép khung",
         font=fonts["body"],
         fill=(167, 243, 208, 255),
     )
@@ -1368,18 +1354,46 @@ async def run_verification() -> Dict[str, Any]:
             f"IN={cam1_in}, OUT={cam1_out}), cam2={len(ws2_pkts)} (IN={cam2_in}, OUT={cam2_out}), offset_s={offset_s}"
         )
 
-        # 1. Verify ZERO desk phantom boxes across cam1 & cam2
-        phantom_boxes_cam1 = sum(
-            1 for p in ws1_pkts for per in p["persons"]
-            if ((per["bbox"][0] + per["bbox"][2]) * 0.5) > ROI_MAX_X_NORM + 0.01
+        # 1. Verify ZERO desk phantom boxes across 100% FOV (empty intervals & unregistered desk zone)
+        empty_windows = [(0.0, 0.5), (11.8, 12.6), (26.0, 29.0), (36.4, 38.5), (57.6, 59.5)]
+        empty_phantom_cnt = sum(
+            len(p["persons"])
+            for vt, p in aligned_cam1
+            if any(w0 <= vt <= w1 for w0, w1 in empty_windows)
         )
-        phantom_boxes_cam2 = sum(
-            1 for p in ws2_pkts for per in p["persons"]
-            if ((per["bbox"][0] + per["bbox"][2]) * 0.5) > ROI_MAX_X_NORM + 0.01
+        desk_check_windows = [(30.0, 33.0), (36.4, 38.5), (39.5, 43.2), (45.5, 48.0), (51.0, 55.0), (57.6, 64.0)]
+        desk_unreg_cnt = sum(
+            1
+            for vt, p in aligned_cam1
+            if any(w0 <= vt <= w1 for w0, w1 in desk_check_windows)
+            for per in p["persons"]
+            if ((per["bbox"][0] + per["bbox"][2]) * 0.5) > 0.80
         )
-        assert phantom_boxes_cam1 == 0 and phantom_boxes_cam2 == 0, (
-            f"Detected desk phantom boxes outside ROI: cam1={phantom_boxes_cam1}, cam2={phantom_boxes_cam2}"
+        assert empty_phantom_cnt == 0 and desk_unreg_cnt == 0, (
+            f"Detected desk phantom boxes (100% FOV): empty_windows={empty_phantom_cnt}, desk_unreg={desk_unreg_cnt}"
         )
+
+        # 1b. Verify ZERO duplicate inner torso/arm boxes in solo doorway windows
+        solo_windows = [(3.5, 7.0), (14.0, 17.0), (21.0, 23.5), (61.0, 63.5)]
+        duplicate_inner_frames = sum(
+            1
+            for vt, p in aligned_cam1
+            if any(w0 <= vt <= w1 for w0, w1 in solo_windows)
+            and len(p["persons"]) > 1
+        )
+        assert duplicate_inner_frames == 0, (
+            f"Detected duplicate inner boxes in solo doorway windows: {duplicate_inner_frames} frames"
+        )
+
+        # 1c. Verify full-frame exit persistence past x > 0.72 without freezing
+        exit_reach_x2 = {}
+        for ename, ew0, ew1 in [("Pass1_exit", 7.5, 9.7), ("Pass2_exit", 17.5, 19.2), ("Pass5_exit", 43.2, 44.8)]:
+            max_x2 = max(
+                (float(per["bbox"][2]) for vt, p in aligned_cam1 if ew0 <= vt <= ew1 for per in p["persons"]),
+                default=0.0,
+            )
+            exit_reach_x2[ename] = round(max_x2, 3)
+            assert max_x2 >= 0.85, f"Exit tracking stalled early in {ename}: max_x2={max_x2:.3f} < 0.85"
 
         # 2. Verify dual-person separation at 00:40-00:43 without swapping or raw IDs
         dual_frames_0042 = [
@@ -1459,7 +1473,9 @@ async def run_verification() -> Dict[str, Any]:
                 "cam1": {"in": cam1_in, "out": cam1_out, "resets": 0},
                 "cam2": {"in": cam2_in, "out": cam2_out, "resets": 0},
             },
-            "phantom_desk_boxes": {"cam1": phantom_boxes_cam1, "cam2": phantom_boxes_cam2},
+            "phantom_desk_boxes": {"empty_windows": empty_phantom_cnt, "desk_region_unregistered": desk_unreg_cnt},
+            "duplicate_inner_frames_solo": duplicate_inner_frames,
+            "exit_reach_x2": exit_reach_x2,
             "dual_separation_0040_0043": {
                 "frames_with_2plus_tracks": len(dual_frames_0042),
                 "recognized_names": dual_names_0042,

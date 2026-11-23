@@ -2380,6 +2380,10 @@ function switchPage(p){
     document.getElementById('overlay').classList.add('hidden');
   }
   if(p==='live') {
+    if (typeof applyGeometryToCanvas === 'function') {
+      applyGeometryToCanvas('cam1', 'canvas1', lines1);
+      applyGeometryToCanvas('cam2', 'canvas2', lines2);
+    }
     resizeCanvases();
     // Start canvas overlays when entering live page
     startCanvasOverlays();
@@ -2491,18 +2495,31 @@ function resizeCanvases() {
 function drawSavedCrossingLine(camId) {
   const idStr = String(camId || 'cam1').toLowerCase();
   const isCam2 = idStr.includes('2');
+  const normId = isCam2 ? 'cam2' : 'cam1';
   const canvas = document.getElementById(isCam2 ? 'canvas2' : 'canvas1');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const lines = isCam2 ? lines2 : lines1;
+  if (lines.length === 0 && typeof applyGeometryToCanvas === 'function') {
+    const cfg = appState.geometryConfigs[normId] || appState.geometryConfigs[normId.toUpperCase()];
+    if (cfg) {
+      applyGeometryToCanvas(normId, isCam2 ? 'canvas2' : 'canvas1', lines);
+    }
+  }
   const rect = canvas.getBoundingClientRect();
   const cWidth = canvas.width || rect.width || 640;
   const cHeight = canvas.height || rect.height || 360;
   if (cWidth <= 0 || cHeight <= 0) return;
 
+  const latestMeta =
+    (window.overlayRenderers && window.overlayRenderers[isCam2 ? 'canvas2' : 'canvas1'] && window.overlayRenderers[isCam2 ? 'canvas2' : 'canvas1'].lastMetadata)
+    || (window.latestMetadataByCam && window.latestMetadataByCam[normId]);
+  const liveIn = latestMeta && latestMeta.counts && latestMeta.counts.in !== undefined ? Number(latestMeta.counts.in) : 0;
+  const liveOut = latestMeta && latestMeta.counts && latestMeta.counts.out !== undefined ? Number(latestMeta.counts.out) : 0;
+
   lines.forEach((l) => {
     const isActive = (isCam2 ? activeCam === 'cam2' : activeCam === 'cam1');
-    
+
     // Always multiply normalized coordinates [nx, ny] by active canvas.width and canvas.height
     let nx1 = l.nx1 !== undefined ? l.nx1 : (l.x1 > 1 ? l.x1 / cWidth : l.x1);
     let ny1 = l.ny1 !== undefined ? l.ny1 : (l.y1 > 1 ? l.y1 / cHeight : l.y1);
@@ -2513,24 +2530,22 @@ function drawSavedCrossingLine(camId) {
     const y1 = ny1 * cHeight;
     const x2 = nx2 * cWidth;
     const y2 = ny2 * cHeight;
-    // Keep l.x1/y1 in sync with active rendered pixels
     l.x1 = x1; l.y1 = y1; l.x2 = x2; l.y2 = y2;
     l.nx1 = nx1; l.ny1 = ny1; l.nx2 = nx2; l.ny2 = ny2;
 
     ctx.save();
-    
-    // Drop shadow / contrast edge
+
+    // Drop shadow / contrast edge + vivid emerald vector line
     ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 5;
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
 
-    // High visibility crossing line
-    ctx.strokeStyle = isActive ? '#ffffff' : 'rgba(255,255,255,0.85)';
-    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = isActive ? '#10b981' : 'rgba(52,211,153,0.9)';
+    ctx.lineWidth = 2.6;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
@@ -2538,8 +2553,8 @@ function drawSavedCrossingLine(camId) {
 
     // Endpoints
     const handleRadius = (editMode && isActive) ? 7 : 5;
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#000000';
+    ctx.fillStyle = '#10b981';
+    ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(x1, y1, handleRadius, 0, Math.PI * 2);
@@ -2553,60 +2568,93 @@ function drawSavedCrossingLine(camId) {
 
     // Midpoint label badge
     const mx = (x1 + x2) / 2;
-    const my = (y1 + y2) / 2 - 10;
-    const label = 'LINE IN→OUT';
+    const my = (y1 + y2) / 2;
+    const label = 'LINE IN → OUT';
     ctx.font = '700 11px JetBrains Mono, monospace';
     const tw = ctx.measureText(label).width;
-    const badgeW = tw + 12;
-    const badgeH = 18;
+    const badgeW = tw + 14;
+    const badgeH = 19;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.85)';
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.lineWidth = 1;
+    ctx.fillStyle = 'rgba(6, 78, 59, 0.92)';
+    ctx.strokeStyle = '#34d399';
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
     if (ctx.roundRect) {
-      ctx.roundRect(mx - badgeW / 2, my - badgeH / 2, badgeW, badgeH, 4);
+      ctx.roundRect(mx - badgeW / 2, my - badgeH - 8, badgeW, badgeH, 4);
     } else {
-      ctx.rect(mx - badgeW / 2, my - badgeH / 2, badgeW, badgeH);
+      ctx.rect(mx - badgeW / 2, my - badgeH - 8, badgeW, badgeH);
     }
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#ecfdf5';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, mx, my);
+    ctx.fillText(label, mx, my - badgeH / 2 - 8);
 
-    // Render registered direction arrow perpendicular to crossing line (IN -> OUT)
+    // Directional vector arrows + IN / OUT zone labels perpendicular to line
     const dx = x2 - x1;
     const dy = y2 - y1;
     const lineLen = Math.hypot(dx, dy) || 1;
-    const arrowNx = -dy / lineLen;
-    const arrowNy = dx / lineLen;
-    const arrowLen = 22;
+    let inNx = -dy / lineLen;
+    let inNy = dx / lineLen;
+    if (inNy < 0 && Math.abs(dx) >= Math.abs(dy)) {
+      inNx = -inNx;
+      inNy = -inNy;
+    }
+    const arrowLen = 24;
     const arrowStartX = mx;
-    const arrowStartY = my + 14;
-    const arrowEndX = arrowStartX + arrowNx * arrowLen;
-    const arrowEndY = arrowStartY + arrowNy * arrowLen;
+    const arrowStartY = my + 3;
+    const arrowEndX = arrowStartX + inNx * arrowLen;
+    const arrowEndY = arrowStartY + inNy * arrowLen;
 
-    ctx.save();
-    ctx.strokeStyle = isActive ? '#00ffff' : '#ffffff';
-    ctx.fillStyle = isActive ? '#00ffff' : '#ffffff';
-    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = '#34d399';
+    ctx.fillStyle = '#34d399';
+    ctx.lineWidth = 2.4;
     ctx.beginPath();
     ctx.moveTo(arrowStartX, arrowStartY);
     ctx.lineTo(arrowEndX, arrowEndY);
     ctx.stroke();
 
     const headLen = 7;
-    const arrowAngle = Math.atan2(arrowNy, arrowNx);
+    const arrowAngle = Math.atan2(inNy, inNx);
     ctx.beginPath();
     ctx.moveTo(arrowEndX, arrowEndY);
     ctx.lineTo(arrowEndX - headLen * Math.cos(arrowAngle - Math.PI / 6), arrowEndY - headLen * Math.sin(arrowAngle - Math.PI / 6));
     ctx.lineTo(arrowEndX - headLen * Math.cos(arrowAngle + Math.PI / 6), arrowEndY - headLen * Math.sin(arrowAngle + Math.PI / 6));
     ctx.closePath();
     ctx.fill();
-    ctx.restore();
+
+    // OUT / IN zone pills
+    ctx.font = '700 10px JetBrains Mono, monospace';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(x1 + 4, y1 - 22, 34, 16);
+    ctx.fillStyle = '#facc15';
+    ctx.fillText('OUT', x1 + 21, y1 - 14);
+
+    ctx.fillStyle = 'rgba(6, 78, 59, 0.9)';
+    ctx.fillRect(arrowEndX + 8, arrowEndY - 8, 28, 16);
+    ctx.fillStyle = '#6ee7b7';
+    ctx.fillText('IN', arrowEndX + 22, arrowEndY);
+
+    // Top-left live crossing counter badge on canvas
+    const hudText = `LINE IN → OUT  |  IN: ${liveIn}  •  OUT: ${liveOut}`;
+    ctx.font = '700 11px JetBrains Mono, monospace';
+    const hudW = ctx.measureText(hudText).width + 16;
+    ctx.fillStyle = 'rgba(6, 78, 59, 0.90)';
+    ctx.strokeStyle = 'rgba(52, 211, 153, 0.85)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(10, 10, hudW, 24, 6);
+    } else {
+      ctx.rect(10, 10, hudW, 24);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#d1fae5';
+    ctx.textAlign = 'left';
+    ctx.fillText(hudText, 18, 22);
 
     if (editMode && isActive) {
       ctx.fillStyle = '#00ffff';
@@ -2776,8 +2824,12 @@ window.saveLines = async function() {
     savedCids.forEach((cid, idx) => {
       if (savedResults[idx]) {
         appState.geometryConfigs[cid] = savedResults[idx];
+        if (typeof applyGeometryToCanvas === 'function') {
+          applyGeometryToCanvas(cid, cid === 'cam1' ? 'canvas1' : 'canvas2', cid === 'cam1' ? lines1 : lines2);
+        }
       }
     });
+    if (typeof drawAll === 'function') drawAll();
     updateGeometryDisplay(true);
     showToast('✓ Đã lưu line vào backend (đồng bộ real-time)', 'success');
   } catch (err) {
@@ -3010,37 +3062,44 @@ function applyGeometryToCanvas(cameraId, canvasId, linesArray) {
   const config = appState.geometryConfigs[normId] || appState.geometryConfigs[normId.toUpperCase()];
   if (!config) return;
   const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) return;
-  
+  const rect = canvas ? canvas.getBoundingClientRect() : { width: 0, height: 0 };
+  const cW = rect.width > 0 ? rect.width : ((canvas && canvas.width) || 640);
+  const cH = rect.height > 0 ? rect.height : ((canvas && canvas.height) || 360);
+
   linesArray.length = 0;
   if (config.normalized_line && config.normalized_line.length === 2) {
-    const nx1 = config.normalized_line[0][0];
-    const ny1 = config.normalized_line[0][1];
-    const nx2 = config.normalized_line[1][0];
-    const ny2 = config.normalized_line[1][1];
+    const nx1 = Number(config.normalized_line[0][0]);
+    const ny1 = Number(config.normalized_line[0][1]);
+    const nx2 = Number(config.normalized_line[1][0]);
+    const ny2 = Number(config.normalized_line[1][1]);
     linesArray.push({
       nx1, ny1, nx2, ny2,
-      x1: nx1 * rect.width,
-      y1: ny1 * rect.height,
-      x2: nx2 * rect.width,
-      y2: ny2 * rect.height
+      x1: nx1 * cW,
+      y1: ny1 * cH,
+      x2: nx2 * cW,
+      y2: ny2 * cH
     });
   } else if (config.line && config.line.length === 2) {
-    const nx1 = config.line[0][0] / 3840;
-    const ny1 = config.line[0][1] / 2160;
-    const nx2 = config.line[1][0] / 3840;
-    const ny2 = config.line[1][1] / 2160;
+    const p1 = config.line[0].map(Number);
+    const p2 = config.line[1].map(Number);
+    const isNorm = Math.max(p1[0], p1[1], p2[0], p2[1]) <= 1.01;
+    const srcW = Number(config.frame_width || (appState.cameras[normId] && appState.cameras[normId].width) || 3840);
+    const srcH = Number(config.frame_height || (appState.cameras[normId] && appState.cameras[normId].height) || 2160);
+    const nx1 = isNorm ? p1[0] : p1[0] / srcW;
+    const ny1 = isNorm ? p1[1] : p1[1] / srcH;
+    const nx2 = isNorm ? p2[0] : p2[0] / srcW;
+    const ny2 = isNorm ? p2[1] : p2[1] / srcH;
     linesArray.push({
       nx1, ny1, nx2, ny2,
-      x1: nx1 * rect.width,
-      y1: ny1 * rect.height,
-      x2: nx2 * rect.width,
-      y2: ny2 * rect.height
+      x1: nx1 * cW,
+      y1: ny1 * cH,
+      x2: nx2 * cW,
+      y2: ny2 * cH
     });
   }
-  drawAll();
+  if (rect.width > 0 && rect.height > 0) {
+    drawAll();
+  }
 }
 
 function applyDefaultGeometry() {

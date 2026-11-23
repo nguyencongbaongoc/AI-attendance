@@ -478,8 +478,12 @@ class YOLOPersonDetector:
                 x2 = cx + w / 2
                 y2 = cy + h / 2
 
-                # Check if in valid region (remove padding)
-                if x1 < valid_x1 or x2 > valid_x2 or y1 < valid_y1 or y2 > valid_y2:
+                # Clamp to valid letterbox region so subjects exiting frame borders are retained
+                x1 = max(float(valid_x1), min(float(x1), float(valid_x2)))
+                y1 = max(float(valid_y1), min(float(y1), float(valid_y2)))
+                x2 = max(float(valid_x1), min(float(x2), float(valid_x2)))
+                y2 = max(float(valid_y1), min(float(y2), float(valid_y2)))
+                if x2 <= x1 or y2 <= y1:
                     continue
                 
                 # Convert to original frame coordinates

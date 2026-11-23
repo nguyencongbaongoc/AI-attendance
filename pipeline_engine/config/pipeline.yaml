@@ -83,6 +83,7 @@ cameras:
       temporal_debounce_seconds: 2.0
       side_confirmation_frames: 3
       max_trajectory_gap_frames: 5
+      reference_point: adaptive
   cam2:
     enabled: true
     name: Camera 2
@@ -147,6 +148,7 @@ cameras:
       temporal_debounce_seconds: 2.0
       side_confirmation_frames: 3
       max_trajectory_gap_frames: 5
+      reference_point: adaptive
 decode:
   backend: pyav_nvdec
   default_codec: h264
@@ -205,7 +207,7 @@ models:
     - 640
     - 640
     person_class_id: 0
-    confidence_threshold: 0.35
+    confidence_threshold: 0.25
     nms_threshold: 0.45
     max_detections: 100
   reid:
@@ -222,9 +224,14 @@ models:
     - 640
     enabled: false
 tracking:
-  min_iou_threshold: 0.3
-  max_age: 30
-  max_lost_frames: 10
+  min_iou_threshold: 0.20
+  match_thresh: 0.80
+  track_buffer: 45
+  max_age: 45
+  max_lost_frames: 45
+  high_det_thresh: 0.50
+  low_det_thresh: 0.18
+  inner_box_ioa_threshold: 0.55
   max_active_tracks: 50
   max_lost_tracks: 30
   max_new_tracks: 10

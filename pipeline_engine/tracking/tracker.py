@@ -244,9 +244,14 @@ class Track:
 @dataclass
 class TrackingConfig:
     """Configuration for tracking."""
-    min_iou_threshold: float = 0.3
-    max_age: int = 30
-    max_lost_frames: int = 10
+    min_iou_threshold: float = 0.20
+    match_thresh: float = 0.80
+    track_buffer: int = 45
+    max_age: int = 45
+    max_lost_frames: int = 45
+    high_det_thresh: float = 0.50
+    low_det_thresh: float = 0.18
+    inner_box_ioa_threshold: float = 0.55
     max_active_tracks: int = 50
     max_lost_tracks: int = 30
     max_new_tracks: int = 10
@@ -337,6 +342,92 @@ def compute_iou(
     return intersection / union if union > 0 else 0.0
 
 
+def compute_ioa(
+    inner_bbox: Tuple[float, float, float, float],
+    outer_bbox: Tuple[float, float, float, float],
+    frame_w: float = 3840.0,
+    frame_h: float = 2160.0,
+) -> float:
+    """Compute Intersection over Area of inner_bbox inside outer_bbox."""
+    x1_1, y1_1, x2_1, y2_1 = inner_bbox[:4]
+    x1_2, y1_2, x2_2, y2_2 = outer_bbox[:4]
+
+    max_coord1 = max(x1_1, y1_1, x2_1, y2_1)
+    max_coord2 = max(x1_2, y1_2, x2_2, y2_2)
+    if not (max_coord1 <= 1.01 and max_coord2 <= 1.01):
+        if max_coord1 <= 1.01:
+            x1_1, y1_1, x2_1, y2_1 = x1_1 * frame_w, y1_1 * frame_h, x2_1 * frame_w, y2_1 * frame_h
+        if max_coord2 <= 1.01:
+            x1_2, y1_2, x2_2, y2_2 = x1_2 * frame_w, y1_2 * frame_h, x2_2 * frame_w, y2_2 * frame_h
+
+    x1_i = max(x1_1, x1_2)
+    y1_i = max(y1_1, y1_2)
+    x2_i = min(x2_1, x2_2)
+    y2_i = min(y2_1, y2_2)
+    if x2_i <= x1_i or y2_i <= y1_i:
+        return 0.0
+
+    intersection = (x2_i - x1_i) * (y2_i - y1_i)
+    inner_area = max(0.0, x2_1 - x1_1) * max(0.0, y2_1 - y1_1)
+    return intersection / inner_area if inner_area > 1e-6 else 0.0
+
+
+def suppress_inner_duplicate_boxes(
+    person_detections: List[PersonDetection],
+    active_tracks: Optional[List[Track]] = None,
+    ioa_threshold: float = 0.55,
+) -> List[PersonDetection]:
+    """Suppress smaller duplicate person detections contained inside larger ones (IoA >= threshold).
+
+    Preserves legitimate side-by-side crossings when both boxes strongly match distinct active tracks
+    and the smaller box is comparable in size (>= 45% area of the larger box).
+    """
+    if len(person_detections) <= 1:
+        return person_detections
+
+    def _best_track_id(bbox: Tuple[float, float, float, float]) -> Optional[int]:
+        if not active_tracks:
+            return None
+        best_tid: Optional[int] = None
+        best_iou = 0.30
+        for tr in active_tracks:
+            iou = compute_iou(bbox, tr.bbox_original_frame)
+            if iou >= best_iou:
+                best_iou = iou
+                best_tid = tr.track_id
+        return best_tid
+
+    sorted_dets = sorted(
+        person_detections,
+        key=lambda d: (float(d.area), float(d.confidence)),
+        reverse=True,
+    )
+    kept: List[PersonDetection] = []
+    kept_track_ids: List[Optional[int]] = []
+
+    for det in sorted_dets:
+        det_tid = _best_track_id(det.bbox)
+        det_area = max(1e-6, float(det.area))
+        suppressed = False
+        for k_det, k_tid in zip(kept, kept_track_ids):
+            if compute_ioa(det.bbox, k_det.bbox) >= ioa_threshold:
+                k_area = max(1e-6, float(k_det.area))
+                distinct_active = (
+                    det_tid is not None
+                    and k_tid is not None
+                    and det_tid != k_tid
+                    and det_area >= 0.45 * k_area
+                )
+                if not distinct_active:
+                    suppressed = True
+                    break
+        if not suppressed:
+            kept.append(det)
+            kept_track_ids.append(det_tid)
+
+    return kept
+
+
 def compute_track_detection_score(
     track: Track,
     person_detection: PersonDetection,
@@ -411,64 +502,86 @@ def solve_track_assignment(
     face_detections: Optional[List[FaceDetection]] = None,
     config: Optional[TrackingConfig] = None,
 ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
-    """
-    Solve global assignment between existing tracks and new person detections.
-    
-    Uses greedy assignment with deterministic ordering (by track_id).
-    """
+    """Solve two-stage ByteTrack-style assignment between tracks and person detections."""
     if config is None:
         config = TrackingConfig()
-    
+
     num_tracks = len(tracks)
     num_detections = len(person_detections)
-    
+    high_indices = [
+        di for di, d in enumerate(person_detections)
+        if float(getattr(d, "confidence", 1.0)) >= config.high_det_thresh
+    ]
+    low_indices = [
+        di for di, d in enumerate(person_detections)
+        if config.low_det_thresh <= float(getattr(d, "confidence", 1.0)) < config.high_det_thresh
+    ]
+
     if num_tracks == 0 or num_detections == 0:
-        return [], list(range(num_tracks)), list(range(num_detections))
-    
-    # Build face detection lookup
-    face_lookup = {}
-    if face_detections:
-        for fd in face_detections:
-            face_lookup[fd.detection_id] = fd
-    
-    # Build score matrix [num_tracks, num_detections]
+        return [], list(range(num_tracks)), high_indices
+
+    face_lookup = {fd.detection_id: fd for fd in face_detections} if face_detections else {}
+
+    iou_matrix = np.zeros((num_tracks, num_detections), dtype=np.float32)
     score_matrix = np.zeros((num_tracks, num_detections), dtype=np.float32)
-    
     for ti, track in enumerate(tracks):
         for di, det in enumerate(person_detections):
+            iou_matrix[ti, di] = compute_iou(track.bbox_original_frame, det.bbox, 1920.0, 1080.0)
             face_det = face_lookup.get(det.detection_id) if face_lookup else None
             score, _ = compute_track_detection_score(track, det, config, face_det)
             score_matrix[ti, di] = score
-    
-    # Greedy assignment with deterministic ordering
-    track_order = sorted(range(num_tracks), key=lambda ti: tracks[ti].track_id)
-    
+
+    # Prioritize active tracks before lost tracks, deterministically ordered by track_id
+    track_order = sorted(
+        range(num_tracks),
+        key=lambda ti: (tracks[ti].missed_frames, tracks[ti].track_id),
+    )
+
     track_assigned = [False] * num_tracks
     detection_assigned = [False] * num_detections
-    assignments = []
-    
+    assignments: List[Tuple[int, int]] = []
+    min_stage1_iou = max(0.05, 1.0 - float(config.match_thresh))
+
+    # Stage 1: Associate high-confidence detections with all active & buffered tracks
     for ti in track_order:
-        track = tracks[ti]
-        
         best_di = -1
-        best_score = 0.0
-        
-        for di in range(num_detections):
+        best_rank = -1.0
+        for di in high_indices:
             if detection_assigned[di]:
                 continue
-            score = score_matrix[ti, di]
-            if score > best_score and score >= config.min_iou_threshold:
-                best_score = score
-                best_di = di
-        
+            iou = float(iou_matrix[ti, di])
+            score = float(score_matrix[ti, di])
+            if iou >= min_stage1_iou or (iou >= 0.08 and score >= 0.30):
+                rank = 0.65 * iou + 0.35 * score
+                if rank > best_rank:
+                    best_rank = rank
+                    best_di = di
         if best_di >= 0:
             assignments.append((ti, best_di))
             track_assigned[ti] = True
             detection_assigned[best_di] = True
-    
+
+    # Stage 2: Second-stage low-score association keeps exiting/partially-occluded tracks alive
+    if low_indices:
+        for ti in track_order:
+            if track_assigned[ti] or tracks[ti].missed_frames > 5:
+                continue
+            best_di = -1
+            best_iou = 0.12
+            for di in low_indices:
+                if detection_assigned[di]:
+                    continue
+                iou = float(iou_matrix[ti, di])
+                if iou >= best_iou:
+                    best_iou = iou
+                    best_di = di
+            if best_di >= 0:
+                assignments.append((ti, best_di))
+                track_assigned[ti] = True
+                detection_assigned[best_di] = True
+
     unmatched_tracks = [ti for ti in range(num_tracks) if not track_assigned[ti]]
-    unmatched_detections = [di for di in range(num_detections) if not detection_assigned[di]]
-    
+    unmatched_detections = [di for di in high_indices if not detection_assigned[di]]
     return assignments, unmatched_tracks, unmatched_detections
 
 
@@ -712,10 +825,17 @@ def update_tracks(
     # Separate active/lost tracks from closed
     active_lost_tracks = [t for t in previous_tracks if not t.is_closed]
     closed_tracks = [t for t in previous_tracks if t.is_closed]
-    
-    # Solve assignment
+
+    # Inner Duplicate Box Suppression (IoA >= 0.55) before track assignment
+    filtered_detections = suppress_inner_duplicate_boxes(
+        person_detections,
+        active_tracks=[t for t in active_lost_tracks if t.is_active or t.is_new],
+        ioa_threshold=config.inner_box_ioa_threshold,
+    )
+
+    # Two-stage ByteTrack assignment
     assignments, unmatched_track_indices, unmatched_detection_indices = solve_track_assignment(
-        active_lost_tracks, person_detections, face_detections, config
+        active_lost_tracks, filtered_detections, face_detections, config
     )
 
     active_frame_tids = {active_lost_tracks[ti].track_id for ti, _ in assignments}
@@ -727,7 +847,7 @@ def update_tracks(
     # Update matched tracks
     for track_idx, det_idx in assignments:
         track = active_lost_tracks[track_idx]
-        detection = person_detections[det_idx]
+        detection = filtered_detections[det_idx]
         face_detection = find_face_for_person(detection, face_detections)
         
         # Get face embedding if available
@@ -881,17 +1001,14 @@ def update_tracks(
         updated_track._update_stationary_check()
         updated_tracks.append(updated_track)
     
-    # Age unmatched tracks
+    # Age unmatched tracks into LOST (kept in track_buffer for re-association, omitted from active display)
+    base_buffer = max(int(config.track_buffer), int(config.max_lost_frames))
     for track_idx in unmatched_track_indices:
         track = active_lost_tracks[track_idx]
-        
-        # Check if track is stationary (e.g., person sitting at desk)
-        # Grant 3x max_lost tolerance before transitioning to LOST/CLOSED
-        if track.is_stationary():
-            allowed_misses = config.max_lost_frames * 3
-        else:
-            allowed_misses = config.max_lost_frames
-        
+
+        allowed_misses = base_buffer * 3 if track.is_stationary() else base_buffer
+        next_missed = track.missed_frames + 1
+
         aged_track = Track(
             track_id=track.track_id,
             source_frame_id=track.source_frame_id,
@@ -900,12 +1017,12 @@ def update_tracks(
             bbox_original_frame=track.bbox_original_frame,
             confidence=track.confidence,
             lifecycle_state=(
-                TrackLifecycleState.LOST if track.missed_frames + 1 >= allowed_misses 
-                else TrackLifecycleState.ACTIVE
+                TrackLifecycleState.CLOSED if next_missed >= allowed_misses
+                else TrackLifecycleState.LOST
             ),
             age=track.age,
             hits=track.hits,
-            missed_frames=track.missed_frames + 1,
+            missed_frames=next_missed,
             last_seen=track.last_seen,
             person_id=track.person_id,
             person_name=track.person_name,
@@ -940,16 +1057,19 @@ def update_tracks(
             stationary_frames=track.stationary_frames,
             _prev_center=track.center,
         )
-        
+
         if aged_track.missed_frames >= allowed_misses:
             aged_track.lifecycle_state = TrackLifecycleState.CLOSED
             newly_closed.append(aged_track)
         else:
             updated_tracks.append(aged_track)
-    
-    # Create new tracks for unmatched detections
+
+    # Create new tracks for unmatched high-score detections (skip any inner sub-box)
+    matched_active_boxes = [t.bbox_original_frame for t in updated_tracks if t.is_active]
     for det_idx in unmatched_detection_indices:
-        detection = person_detections[det_idx]
+        detection = filtered_detections[det_idx]
+        if any(compute_ioa(detection.bbox, mb) >= config.inner_box_ioa_threshold for mb in matched_active_boxes):
+            continue
         face_detection = find_face_for_person(detection, face_detections)
 
         face_quality = 0.0
@@ -1118,25 +1238,25 @@ class Tracker:
         self._locked_track_identities: Dict[int, Dict[str, Any]] = {}
         self._track_consensus: Dict[int, Dict[str, Dict[str, Any]]] = {}
     
-    def process_frame(
+    def update(
         self,
         person_detections: List[PersonDetection],
-        face_detections: List[FaceDetection],
-        face_embeddings: Dict[str, FaceEmbedding],
-        body_embeddings: Dict[str, Any],
-        camera_id: str,
-        timestamp: float,
+        face_detections: Optional[List[FaceDetection]] = None,
+        face_embeddings: Optional[Dict[str, FaceEmbedding]] = None,
+        body_embeddings: Optional[Dict[str, Any]] = None,
+        camera_id: str = "cam1",
+        timestamp: float = 0.0,
     ) -> TrackingResult:
-        """Process a single frame and return tracking result."""
+        """Run inner-box suppression + two-stage ByteTrack association for one frame."""
         self._frame_index += 1
         norm_cam = camera_id.lower().strip()
 
         updated_tracks, new_tracks, closed_tracks = update_tracks(
             previous_tracks=self._tracks,
             person_detections=person_detections,
-            face_detections=face_detections,
-            face_embeddings=face_embeddings,
-            body_embeddings=body_embeddings,
+            face_detections=face_detections or [],
+            face_embeddings=face_embeddings or {},
+            body_embeddings=body_embeddings or {},
             recognizer=self.recognizer,
             frame_index=self._frame_index,
             timestamp=timestamp,
@@ -1155,6 +1275,25 @@ class Tracker:
             tracks=updated_tracks,
             new_tracks=new_tracks,
             closed_tracks=closed_tracks,
+        )
+
+    def process_frame(
+        self,
+        person_detections: List[PersonDetection],
+        face_detections: List[FaceDetection],
+        face_embeddings: Dict[str, FaceEmbedding],
+        body_embeddings: Dict[str, Any],
+        camera_id: str,
+        timestamp: float,
+    ) -> TrackingResult:
+        """Process a single frame and return tracking result."""
+        return self.update(
+            person_detections=person_detections,
+            face_detections=face_detections,
+            face_embeddings=face_embeddings,
+            body_embeddings=body_embeddings,
+            camera_id=camera_id,
+            timestamp=timestamp,
         )
 
     @staticmethod

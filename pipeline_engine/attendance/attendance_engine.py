@@ -146,7 +146,7 @@ class CrossingPolicyConfig:
     cooldown_seconds: float = 2.0
     side_confirmation_frames: int = 3
     max_trajectory_gap_frames: int = 5
-    reference_point: str = "center"
+    reference_point: str = "adaptive"
 
 
 @dataclass
@@ -658,7 +658,7 @@ class AttendanceEngine:
                 cooldown_seconds=policy_config.get("cooldown_seconds", policy_config.get("temporal_debounce_seconds", 2.0)),
                 side_confirmation_frames=policy_config.get("side_confirmation_frames", 3),
                 max_trajectory_gap_frames=policy_config.get("max_trajectory_gap_frames", 5),
-                reference_point=policy_config.get("reference_point", "center"),
+                reference_point=policy_config.get("reference_point", "adaptive"),
             )
             
             line = LineGeometry(
