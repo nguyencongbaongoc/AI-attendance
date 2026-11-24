@@ -851,6 +851,15 @@ class AttendanceEngine:
                     direction_semantics=direction_semantics,
                 )
                 engine.config.line = engine.line
+                # Re-baseline active track sides to the updated line while preserving monotonic counts
+                for state in engine._track_states.values():
+                    last_pos = state.get("last_position")
+                    if last_pos is not None:
+                        new_side = engine.line.side_of_point(last_pos)
+                        state["current_side"] = new_side
+                        state["confirmed_side"] = new_side
+                        state["anchor_position"] = last_pos
+                        state["frames_on_current_side"] = 1
                 logger.info(
                     f"AttendanceEngine: Dynamically updated crossing line for {cid}: "
                     f"{p1} -> {p2} ({direction_semantics})"

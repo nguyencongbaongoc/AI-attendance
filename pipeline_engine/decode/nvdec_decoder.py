@@ -150,11 +150,17 @@ class NVDECDecoder:
         self._y_gpu = None
         self._uv_gpu = None
         self._use_hw_decode = False
+        raw_cfg_codec = (config.codec or "h264").lower()
+        self._detected_codec: str = "hevc" if ("hevc" in raw_cfg_codec or "265" in raw_cfg_codec) else "h264"
         
         # Transient decode error & IDR keyframe recovery tracking
         self._waiting_for_keyframe = False
         self._first_decode_error_time: Optional[float] = None
         self._consecutive_decode_errors = 0
+
+    @property
+    def detected_codec(self) -> str:
+        return self._detected_codec
 
     @property
     def state(self) -> DecoderState:
@@ -211,9 +217,13 @@ class NVDECDecoder:
             format_name = "rtsp"
             options = {
                 "rtsp_transport": "tcp",
-                "buffer_size": "10240000",
-                "max_delay": "500000",
-                "stimeout": "5000000",
+                "fflags": "nobuffer",
+                "flags": "low_delay",
+                "probesize": "500000",
+                "analyzeduration": "500000",
+                "buffer_size": "4096000",
+                "max_delay": "250000",
+                "stimeout": "2000000",
             }
         
         import av
@@ -221,11 +231,16 @@ class NVDECDecoder:
             url,
             format=format_name,
             options=options,
+            timeout=(2.5, 2.5) if is_rtsp else None,
         )
         
         # Get video stream for metadata
         self._stream = self._container.streams.video[0]
         self._codec_context = self._stream.codec_context
+        
+        # Detect codec from stream (fallback to configured codec)
+        raw_codec = str(getattr(self._codec_context, "name", None) or self.config.codec or "h264").lower()
+        self._detected_codec = "hevc" if ("hevc" in raw_codec or "265" in raw_codec) else "h264"
         
         # Update dimensions from stream
         self._width = self._stream.width or self.config.width
@@ -238,7 +253,8 @@ class NVDECDecoder:
         
         logger.info(
             f"NVDECDecoder({self.camera_id}): Hardware NVDEC ACTIVE via PyNvVideoCodec "
-            f"on GPU {self._cuda_device} ({self._width}x{self._height}@{self._fps}fps)"
+            f"on GPU {self._cuda_device} ({self._width}x{self._height}@{self._fps:.1f}fps) | "
+            f"codec: {self._detected_codec} | rtsp_transport: tcp"
         )
         self._use_hw_decode = True
     
@@ -261,11 +277,12 @@ class NVDECDecoder:
         
         # Map output color type - NV12 native
         output_color_type = nvc.OutputColorType.NATIVE
+        nvc_codec = nvc.cudaVideoCodec.HEVC if self._detected_codec == "hevc" else nvc.cudaVideoCodec.H264
         
         # Create decoder
         self._decoder = nvc.CreateDecoder(
             gpuid=self._cuda_device,
-            codec=nvc.cudaVideoCodec.H264,
+            codec=nvc_codec,
             cudacontext=cudacontext,
             cudastream=stream_handle,
             usedevicememory=True,
@@ -280,7 +297,7 @@ class NVDECDecoder:
         
         logger.info(
             f"NVDECDecoder({self.camera_id}): PyNvVideoCodec decoder created "
-            f"(gpu={self._cuda_device}, context={cudacontext}, stream={stream_handle})"
+            f"(codec: {self._detected_codec}, gpu={self._cuda_device}, context={cudacontext}, stream={stream_handle})"
         )
 
     def start(self) -> bool:
@@ -331,8 +348,8 @@ class NVDECDecoder:
             
             # Initialize bitstream filter so H.264/HEVC packets are Annex-B for PyNvVideoCodec
             bsf = None
-            codec_name = (self.config.codec or "h264").lower()
-            bsf_name = "hevc_mp4toannexb" if "hevc" in codec_name or "265" in codec_name else "h264_mp4toannexb"
+            codec_name = (self._detected_codec or self.config.codec or "h264").lower()
+            bsf_name = "hevc_mp4toannexb" if ("hevc" in codec_name or "265" in codec_name) else "h264_mp4toannexb"
             try:
                 bsf = av.BitStreamFilterContext(bsf_name, self._stream)
             except Exception as bsf_err:
@@ -632,6 +649,47 @@ class NVDECDecoder:
         """Check if decoder is healthy (not in persistent error state)."""
         return not self.is_degraded()
 
+    def is_stream_active(self) -> bool:
+        """Return True if decoder is actively decoding and its reader thread is alive."""
+        with self._lock:
+            return (
+                self._state == DecoderState.DECODING
+                and self._reader_thread is not None
+                and self._reader_thread.is_alive()
+            )
+
+    def try_reconnect_once(self) -> bool:
+        """Close stale demuxer/decoder and attempt a single non-sleeping reconnect."""
+        with self._lock:
+            self._set_state(DecoderState.RECONNECTING)
+            self._close_internal()
+            try:
+                torch.cuda.set_device(self._cuda_device)
+                self._open_container()
+                self._stop_event.clear()
+                self._waiting_for_keyframe = False
+                self._first_decode_error_time = None
+                self._consecutive_decode_errors = 0
+                self._reader_thread = threading.Thread(
+                    target=self._reader_loop,
+                    name=f"nvdec-reader-{self.camera_id}",
+                    daemon=True,
+                )
+                self._reader_thread.start()
+                self._metrics.reconnect_count += 1
+                self._error = None
+                self._set_state(DecoderState.DECODING)
+                logger.info(
+                    f"NVDECDecoder({self.camera_id}): Reconnected successfully "
+                    f"(attempt #{self._metrics.reconnect_count}, codec: {self._detected_codec})"
+                )
+                return True
+            except Exception as e:
+                logger.warning(f"NVDECDecoder({self.camera_id}): Reconnect attempt failed: {e}")
+                self._error = e
+                self._set_state(DecoderState.ERROR)
+                return False
+
     def get_frame(self, timeout: float = 1.0) -> Optional[GPUFrame]:
         """Get next decoded GPUFrame."""
         if self._state != DecoderState.DECODING:
@@ -761,6 +819,7 @@ class NVDECDecoder:
                 "width": self._width,
                 "height": self._height,
                 "fps": self._fps,
+                "codec": self._detected_codec,
                 "gpu_device": self._cuda_device,
             }
 

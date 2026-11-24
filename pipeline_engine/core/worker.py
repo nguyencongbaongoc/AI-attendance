@@ -170,6 +170,8 @@ class AIWorker:
         self._health_update_task: Optional[asyncio.Task] = None
         self._enrollment_watcher_task: Optional[asyncio.Task] = None
         self._metrics_update_task: Optional[asyncio.Task] = None
+        self._geometry_watcher_task: Optional[asyncio.Task] = None
+        self._last_geometry_mtime_ns: int = 0
         
         # Metrics
         self._metrics = WorkerMetrics()
@@ -541,10 +543,18 @@ class AIWorker:
         # Enrollment watcher
         if self.config.enrollment_watch_enabled:
             self._enrollment_watcher_task = asyncio.create_task(self._enrollment_watch_loop())
+
+        # Geometry config watcher (hot-syncs line updates saved via backend REST API)
+        self._geometry_watcher_task = asyncio.create_task(self._geometry_watch_loop())
             
     async def _stop_background_tasks(self) -> None:
         """Stop all background tasks."""
-        for task in [self._health_update_task, self._metrics_update_task, self._enrollment_watcher_task]:
+        for task in [
+            self._health_update_task,
+            self._metrics_update_task,
+            self._enrollment_watcher_task,
+            self._geometry_watcher_task,
+        ]:
             if task:
                 task.cancel()
                 try:
@@ -732,6 +742,51 @@ class AIWorker:
                 )
             except Exception as e:
                 logger.warning(f"Backend enrollment reload notification failed: {e}")
+
+    async def _geometry_watch_loop(self) -> None:
+        """Poll active pipeline YAML for interactive crossing-line updates from backend API."""
+        import yaml
+        yaml_path = self.config.pipeline_config_path or Path("pipeline_engine/config/pipeline.yaml")
+        if yaml_path.exists():
+            try:
+                self._last_geometry_mtime_ns = yaml_path.stat().st_mtime_ns
+            except Exception:
+                self._last_geometry_mtime_ns = 0
+
+        while not self._stop_event.is_set():
+            try:
+                if yaml_path.exists() and self.engine and self.engine.camera_manager:
+                    mtime_ns = yaml_path.stat().st_mtime_ns
+                    if mtime_ns != self._last_geometry_mtime_ns:
+                        self._last_geometry_mtime_ns = mtime_ns
+                        data = yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {}
+                        cams = data.get("cameras") or {}
+                        for cid, ccfg in cams.items():
+                            geom = ccfg.get("geometry") or {}
+                            ls = geom.get("line_start")
+                            le = geom.get("line_end")
+                            sem = geom.get("direction_semantics", "side_a_to_b_in")
+                            if isinstance(ls, list) and isinstance(le, list) and len(ls) >= 2 and len(le) >= 2:
+                                cur_cfg = self.engine.camera_manager.get_camera_config(cid.lower().strip()) or {}
+                                cur_geom = cur_cfg.get("geometry") or {}
+                                cur_ls = cur_geom.get("line_start")
+                                cur_le = cur_geom.get("line_end")
+                                cur_sem = cur_geom.get("direction_semantics")
+                                if [int(ls[0]), int(ls[1])] != cur_ls or [int(le[0]), int(le[1])] != cur_le or sem != cur_sem:
+                                    self.engine.camera_manager.update_crossing_line(
+                                        cid,
+                                        (float(ls[0]), float(ls[1])),
+                                        (float(le[0]), float(le[1])),
+                                        str(sem),
+                                    )
+                                    logger.info(
+                                        f"[AIWorker] Hot-synced crossing line for {cid}: "
+                                        f"{ls} -> {le} ({sem})"
+                                    )
+            except Exception as e:
+                logger.debug(f"Geometry watch error: {e}")
+
+            await asyncio.sleep(0.4)
                 
     def _cleanup_on_failure(self) -> None:
         """Cleanup resources on startup failure."""

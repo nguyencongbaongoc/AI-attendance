@@ -503,6 +503,9 @@ class PipelineEngine:
                 running += 1
                 if self.camera_manager.is_camera_healthy(camera_id):
                     healthy += 1
+            elif state == CameraState.RECONNECTING:
+                # Camera pipeline loop is actively executing bounded RTSP recovery
+                running += 1
             elif state in (CameraState.DEGRADED, CameraState.UNHEALTHY):
                 # Try to recover
                 logger.warning(f"PipelineEngine: Camera {camera_id} in state {state.value}, attempting recovery")

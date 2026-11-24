@@ -26,6 +26,7 @@ cameras:
       protocol: rtsp
       url: rtsp://localhost:8554/live/cam1
       transport: tcp
+      rtsp_transport: "tcp"
       timeout_seconds: 10
     output:
       protocol: rtsp
@@ -56,10 +57,10 @@ cameras:
       rc: cbr
     reconnect:
       enabled: true
-      max_retries: 5
-      base_interval_seconds: 2.0
-      max_interval_seconds: 60.0
-      backoff_multiplier: 2.0
+      max_retries: 20
+      base_interval_seconds: 0.6
+      max_interval_seconds: 2.5
+      backoff_multiplier: 1.5
       jitter: 0.1
     health:
       stale_threshold_seconds: 5.0
@@ -91,6 +92,7 @@ cameras:
       protocol: rtsp
       url: rtsp://localhost:8554/live/cam2
       transport: tcp
+      rtsp_transport: "tcp"
       timeout_seconds: 10
     output:
       protocol: rtsp
@@ -121,10 +123,10 @@ cameras:
       rc: cbr
     reconnect:
       enabled: true
-      max_retries: 5
-      base_interval_seconds: 2.0
-      max_interval_seconds: 60.0
-      backoff_multiplier: 2.0
+      max_retries: 20
+      base_interval_seconds: 0.6
+      max_interval_seconds: 2.5
+      backoff_multiplier: 1.5
       jitter: 0.1
     health:
       stale_threshold_seconds: 5.0
@@ -151,10 +153,12 @@ cameras:
       reference_point: adaptive
 decode:
   backend: pyav_nvdec
+  rtsp_transport: "tcp"
   default_codec: h264
   supported_codecs:
   - h264
   - h265
+  - hevc
   default_surfaces: 32
   default_timeout: 10.0
 inference:

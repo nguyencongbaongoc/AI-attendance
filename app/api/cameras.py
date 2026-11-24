@@ -42,9 +42,42 @@ class LineConfigRequest(BaseModel):
         return self.camera_id
 
 
-def _sync_line_to_pipeline_yaml(cam_id: str, p1: tuple[int, int], p2: tuple[int, int], direction: str) -> bool:
-    """Persist updated line coordinates into pipeline_engine/config/pipeline.yaml."""
-    yaml_path = Path("pipeline_engine/config/pipeline.yaml")
+def _get_active_pipeline_yaml_path() -> Path:
+    """Resolve the active pipeline YAML path (respecting PIPELINE_CONFIG_PATH env override)."""
+    env_path = os.environ.get("PIPELINE_CONFIG_PATH")
+    if env_path:
+        p = Path(env_path)
+        if p.exists():
+            return p
+    return Path("pipeline_engine/config/pipeline.yaml")
+
+
+def _get_camera_yaml_dims_and_semantics(cam_id: str) -> tuple[int, int, str]:
+    """Read (width, height, direction_semantics) for cam_id from active pipeline YAML."""
+    yaml_path = _get_active_pipeline_yaml_path()
+    default_w, default_h, default_sem = 3840, 2160, "side_a_to_b_in"
+    if not yaml_path.exists():
+        return default_w, default_h, default_sem
+    try:
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        norm_id = cam_id.lower().replace("-", "").strip()
+        for cid, ccfg in (data.get("cameras") or {}).items():
+            if cid.lower().replace("-", "").strip() == norm_id:
+                exp = ccfg.get("expected") or {}
+                geom = ccfg.get("geometry") or {}
+                w = int(exp.get("width") or default_w)
+                h = int(exp.get("height") or default_h)
+                sem = str(geom.get("direction_semantics") or default_sem)
+                return w, h, sem
+    except Exception as e:
+        logger.warning(f"Failed reading camera dimensions from {yaml_path}: {e}")
+    return default_w, default_h, default_sem
+
+
+def _sync_line_to_pipeline_yaml(cam_id: str, p1: tuple[int, int], p2: tuple[int, int], semantics: str) -> bool:
+    """Persist updated line coordinates into active pipeline YAML."""
+    yaml_path = _get_active_pipeline_yaml_path()
     if not yaml_path.exists():
         logger.warning(f"pipeline.yaml not found at {yaml_path}")
         return False
@@ -53,7 +86,6 @@ def _sync_line_to_pipeline_yaml(cam_id: str, p1: tuple[int, int], p2: tuple[int,
             data = yaml.safe_load(f) or {}
 
         norm_id = cam_id.lower().replace("-", "").strip()
-        semantics = "side_a_to_b_in" if "IN" in direction else "side_b_to_a_in"
 
         if "cameras" in data and isinstance(data["cameras"], dict):
             matched = False
@@ -69,7 +101,7 @@ def _sync_line_to_pipeline_yaml(cam_id: str, p1: tuple[int, int], p2: tuple[int,
             if matched:
                 with open(yaml_path, "w", encoding="utf-8") as f:
                     yaml.safe_dump(data, f, sort_keys=False)
-                logger.info(f"Persisted new crossing line for {cam_id} into {yaml_path}")
+                logger.info(f"Persisted new crossing line for {cam_id} into {yaml_path}: {p1} -> {p2} ({semantics})")
                 return True
     except Exception as e:
         logger.error(f"Failed to update {yaml_path}: {e}")
@@ -88,8 +120,8 @@ def _process_line_save(cam_id: str, req: LineConfigRequest) -> Dict[str, Any]:
     x1, y1 = coords[0][0], coords[0][1]
     x2, y2 = coords[1][0], coords[1][1]
 
-    # Convert normalized (0.0 to 1.0) to native 4K (3840x2160)
-    native_w, native_h = 3840, 2160
+    # Convert normalized (0.0 to 1.0) to camera's active expected frame resolution
+    native_w, native_h, existing_sem = _get_camera_yaml_dims_and_semantics(cam_id)
     if 0.0 <= x1 <= 1.0 and 0.0 <= x2 <= 1.0 and 0.0 <= y1 <= 1.0 and 0.0 <= y2 <= 1.0:
         px1 = round(x1 * native_w)
         py1 = round(y1 * native_h)
@@ -101,7 +133,15 @@ def _process_line_save(cam_id: str, req: LineConfigRequest) -> Dict[str, Any]:
         px2 = round(x2)
         py2 = round(y2)
 
-    semantics = "side_a_to_b_in" if "IN" in req.direction else "side_b_to_a_in"
+    raw_dir = (req.direction or "").strip()
+    if raw_dir in ("side_a_to_b_in", "side_b_to_a_in"):
+        semantics = raw_dir
+    elif raw_dir == "OUT->IN":
+        semantics = "side_b_to_a_in"
+    elif existing_sem in ("side_a_to_b_in", "side_b_to_a_in"):
+        semantics = existing_sem
+    else:
+        semantics = "side_a_to_b_in" if "IN" in raw_dir else "side_b_to_a_in"
 
     # 1. Dynamically update live crossing line in CameraManager / AttendanceEngine
     cm = get_camera_manager()
@@ -116,8 +156,8 @@ def _process_line_save(cam_id: str, req: LineConfigRequest) -> Dict[str, Any]:
     except Exception as e:
         logger.warning(f"Could not update live CameraManager: {e}")
 
-    # 2. Persist updated line coordinates into pipeline.yaml
-    yaml_saved = _sync_line_to_pipeline_yaml(cam_id, (px1, py1), (px2, py2), req.direction)
+    # 2. Persist updated line coordinates into active pipeline YAML
+    yaml_saved = _sync_line_to_pipeline_yaml(cam_id, (px1, py1), (px2, py2), semantics)
     norm_cam_id = cam_id.lower().strip()
 
     return {
@@ -125,8 +165,11 @@ def _process_line_save(cam_id: str, req: LineConfigRequest) -> Dict[str, Any]:
         "camera_id": norm_cam_id,
         "line": [[px1, py1], [px2, py2]],
         "pixel_line": [[px1, py1], [px2, py2]],
+        "frame_width": native_w,
+        "frame_height": native_h,
         "normalized_line": [[round(px1 / native_w, 4), round(py1 / native_h, 4)], [round(px2 / native_w, 4), round(py2 / native_h, 4)]],
         "direction": req.direction,
+        "direction_semantics": semantics,
         "live_engine_updated": cm_updated,
         "yaml_persisted": yaml_saved,
         "message": f"Crossing line for {norm_cam_id} successfully updated and persisted."
@@ -150,7 +193,7 @@ async def save_line_alias(req: LineConfigRequest):
 async def get_camera_line(camera_id: str):
     """Retrieve current crossing line for a camera."""
     norm_id = camera_id.lower().replace("-", "").strip()
-    yaml_path = Path("pipeline_engine/config/pipeline.yaml")
+    yaml_path = _get_active_pipeline_yaml_path()
     if yaml_path.exists():
         try:
             with open(yaml_path, "r", encoding="utf-8") as f:
@@ -158,18 +201,24 @@ async def get_camera_line(camera_id: str):
             cams = data.get("cameras", {})
             for cid, ccfg in cams.items():
                 if cid.lower().replace("-", "").strip() == norm_id:
-                    geom = ccfg.get("geometry", {})
-                    p1 = geom.get("line_start", [0, 1080])
-                    p2 = geom.get("line_end", [3840, 1080])
+                    exp = ccfg.get("expected", {}) or {}
+                    fw = max(1, int(exp.get("width", 3840)))
+                    fh = max(1, int(exp.get("height", 2160)))
+                    geom = ccfg.get("geometry", {}) or {}
+                    p1 = geom.get("line_start", [0, fh // 2])
+                    p2 = geom.get("line_end", [fw, fh // 2])
                     direction = geom.get("direction_semantics", "side_a_to_b_in")
                     return {
                         "camera_id": cid.lower().strip(),
                         "line": [p1, p2],
-                        "normalized_line": [[p1[0] / 3840, p1[1] / 2160], [p2[0] / 3840, p2[1] / 2160]],
-                        "direction": "IN->OUT" if "a_to_b" in direction else "OUT->IN"
+                        "frame_width": fw,
+                        "frame_height": fh,
+                        "normalized_line": [[p1[0] / fw, p1[1] / fh], [p2[0] / fw, p2[1] / fh]],
+                        "direction": "IN->OUT" if "a_to_b" in direction else "OUT->IN",
+                        "direction_semantics": direction,
                     }
         except Exception as e:
-            logger.warning(f"Error reading line from pipeline.yaml: {e}")
+            logger.warning(f"Error reading line from {yaml_path}: {e}")
 
     # Default fallback
     return {

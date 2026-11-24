@@ -7,6 +7,7 @@ Provides event ingestion, health reporting, and control endpoints.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import secrets
 import time
@@ -636,9 +637,9 @@ async def ingest_attendance_event(event: CrossingEventRequest) -> CrossingEventR
         resolver = get_resolver()
         resolution_result = resolver.resolve_single(raw_event)
         
-        # Persist resolved transition into AttendanceRepository (Phase 25)
+        # Persist resolved transition into AttendanceRepository (Phase 25) off event loop
         try:
-            get_repository().persist_single_resolution(resolution_result)
+            await asyncio.to_thread(get_repository().persist_single_resolution, resolution_result)
         except Exception as persist_err:
             logger.warning(f"Attendance persistence warning for {event.event_id}: {persist_err}")
         
@@ -683,7 +684,8 @@ async def backfill_attendance_identity(req: BackfillIdentityRequest) -> Dict[str
     if req.pending_id:
         _pending_backfill_by_pid[str(req.pending_id)] = bf_info
 
-    updated = get_repository().storage.backfill_pending_identity(
+    updated = await asyncio.to_thread(
+        get_repository().storage.backfill_pending_identity,
         camera_id=norm_cam,
         local_track_id=tid_str,
         pending_id=req.pending_id,

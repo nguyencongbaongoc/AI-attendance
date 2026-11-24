@@ -144,6 +144,8 @@ class CameraMetrics:
     vram_total: float = 0.0
     decoder_state: str = "stopped"
     encoder_state: str = "stopped"
+    codec: str = ""
+    last_reconnect_recovery_s: float = 0.0
 
 
 class CameraManager:
@@ -486,11 +488,12 @@ class CameraManager:
         
         # Initialize and start decoder
         frame_pool = self._frame_pools.get_pool(camera_id) if self._frame_pools else None
+        expected_codec = camera["config"].get("expected", {}).get("codec", "h264")
         decoder_config = NVDECDecoderConfig(
             camera_id=camera_id,
             packet_source=rtsp_source,
             gpu_device=camera["config"].get("decode", {}).get("gpu_device", 0),
-            codec=camera["config"].get("decode", {}).get("codec", "h264"),
+            codec=camera["config"].get("decode", {}).get("codec", expected_codec),
             width=camera["config"].get("expected", {}).get("width", 3840),
             height=camera["config"].get("expected", {}).get("height", 2160),
             max_surfaces=camera["config"].get("decode", {}).get("surfaces", 32),
@@ -506,6 +509,11 @@ class CameraManager:
                 camera["metrics"].last_error = "Decoder start failed"
             return False
         camera["decoder"] = decoder
+        camera["metrics"].codec = decoder.detected_codec
+        camera["metrics"].rtsp_state = RTSPState.CONNECTED
+        logger.info(
+            f"CameraManager({camera_id}): CONNECTED | codec: {decoder.detected_codec} | rtsp_transport: tcp"
+        )
         
         # AI models are shared singletons - already initialized by PipelineEngine
         # Just verify they are available
@@ -680,6 +688,7 @@ class CameraManager:
         frame_counter = 0
         stream_epoch = 0
         epoch_start_time = time.time()
+        last_decoded_mono = time.monotonic()
         
         # FPS calculation
         fps_window_size = 30
@@ -689,7 +698,7 @@ class CameraManager:
         camera["frame_times"] = frame_timestamps
         
         try:
-            while self._running and camera["state"] in (CameraState.RUNNING, CameraState.DEGRADED):
+            while self._running and camera["state"] in (CameraState.RUNNING, CameraState.DEGRADED, CameraState.RECONNECTING):
                 loop_start = time.perf_counter()
                 
                 # ========== STAGE 1: DECODE (Latest-Only Frame Drop Policy) ==========
@@ -698,10 +707,88 @@ class CameraManager:
                 decode_ms = (time.perf_counter() - decode_start) * 1000
                 
                 if gpu_frame is None:
+                    # Detect RTSP drop / decoder EOF and run bounded auto-reconnect loop
+                    if not decoder.is_stream_active() or (
+                        frame_counter > 0 and (time.monotonic() - last_decoded_mono) > 2.2
+                    ):
+                        drop_mono = time.monotonic()
+                        with self._lock:
+                            camera["state"] = CameraState.RECONNECTING
+                            camera["metrics"].rtsp_state = RTSPState.DISCONNECTED
+                        logger.warning(
+                            f"CameraManager({camera_id}): RTSP stream interrupted -> "
+                            f"status: DISCONNECTED -> RECONNECTING (codec: {camera['metrics'].codec or 'h264'})"
+                        )
+                        try:
+                            rtsp_source.stop()
+                        except Exception:
+                            pass
+                        attempt = 0
+                        while self._running and camera["state"] != CameraState.STOPPED:
+                            attempt += 1
+                            cam_counts = attendance.get_camera_counts(camera_id) if hasattr(attendance, "get_camera_counts") else {"in": 0, "out": 0}
+                            now_ts = time.time()
+                            self._dispatch_metadata({
+                                "camera_id": camera_id.lower().strip(),
+                                "frame_sequence": int(frame_counter),
+                                "timestamp": now_ts,
+                                "pts_ns": int(now_ts * 1_000_000_000),
+                                "capture_timestamp": now_ts,
+                                "persons": [],
+                                "counts": {"in": int(cam_counts.get("in", 0)), "out": int(cam_counts.get("out", 0))},
+                                "codec": camera["metrics"].codec or "h264",
+                                "stream_state": "RECONNECTING",
+                                "stream_epoch": int(stream_epoch),
+                            })
+                            delay = min(0.35 * (1.35 ** (attempt - 1)), 0.75)
+                            end_sleep = time.monotonic() + delay
+                            while time.monotonic() < end_sleep and self._running and camera["state"] != CameraState.STOPPED:
+                                time.sleep(0.1)
+                            if not self._running or camera["state"] == CameraState.STOPPED:
+                                break
+                            logger.info(
+                                f"CameraManager({camera_id}): Reconnect attempt {attempt} (DISCONNECTED -> RECONNECTING)..."
+                            )
+                            if decoder.try_reconnect_once():
+                                try:
+                                    rtsp_source._close_internal()
+                                except Exception:
+                                    pass
+                                stream_epoch += 1
+                                rec_s = time.monotonic() - drop_mono
+                                with self._lock:
+                                    camera["metrics"].reconnect_count += 1
+                                    camera["metrics"].last_reconnect_recovery_s = rec_s
+                                    camera["metrics"].codec = decoder.detected_codec
+                                    camera["metrics"].rtsp_state = RTSPState.CONNECTED
+                                    camera["state"] = CameraState.RUNNING
+                                last_decoded_mono = time.monotonic()
+                                logger.info(
+                                    f"CameraManager({camera_id}): RTSP status transition: DISCONNECTED -> RECONNECTING -> CONNECTED | "
+                                    f"epoch={stream_epoch} | codec: {decoder.detected_codec} | recovery_s={rec_s:.2f}s"
+                                )
+                                rec_ts = time.time()
+                                self._dispatch_metadata({
+                                    "camera_id": camera_id.lower().strip(),
+                                    "frame_sequence": int(frame_counter),
+                                    "timestamp": rec_ts,
+                                    "pts_ns": int(rec_ts * 1_000_000_000),
+                                    "capture_timestamp": rec_ts,
+                                    "persons": [],
+                                    "counts": {"in": int(cam_counts.get("in", 0)), "out": int(cam_counts.get("out", 0))},
+                                    "codec": decoder.detected_codec,
+                                    "stream_state": "CONNECTED",
+                                    "stream_epoch": int(stream_epoch),
+                                })
+                                break
+                        continue
+
                     # No valid frame available - brief sleep to prevent tight loop
                     time.sleep(0.001)
                     continue
                 
+                last_decoded_mono = time.monotonic()
+                camera["metrics"].codec = decoder.detected_codec
                 camera["metrics"].frames_decoded += 1
                 
                 # Transfer ownership to decoder
@@ -979,6 +1066,9 @@ class CameraManager:
                         "capture_timestamp": now_ts,
                         "persons": persons_data,
                         "counts": {"in": int(in_c), "out": int(out_c)},
+                        "codec": camera["metrics"].codec or "h264",
+                        "stream_state": "CONNECTED",
+                        "stream_epoch": int(stream_epoch),
                     }
 
                     # Non-blocking async dispatch - never blocks AI pipeline

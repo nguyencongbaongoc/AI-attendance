@@ -101,6 +101,7 @@ class RTSPSource:
         # Connection
         self._container: Optional[av.container.InputContainer] = None
         self._stream: Optional[av.stream.Stream] = None
+        self.detected_codec: str = ""
         self._state = RTSPState.DISCONNECTED
         self._metrics = RTSPSourceMetrics(camera_id=config.camera_id)
         
@@ -137,12 +138,19 @@ class RTSPSource:
                 logger.info(f"RTSPSource({self.camera_id}): {old.value} -> {state.value}")
     
     def _build_ffmpeg_options(self) -> Dict[str, str]:
-        """Build FFmpeg options for RTSP connection."""
+        """Build FFmpeg options for RTSP connection (enforces TCP transport)."""
+        transport = (self.config.transport or "tcp").lower()
+        if transport != "tcp":
+            transport = "tcp"
         options = {
-            "rtsp_transport": "tcp",
-            "buffer_size": "10240000",
-            "max_delay": "500000",
-            "stimeout": "5000000",
+            "rtsp_transport": transport,
+            "fflags": "nobuffer",
+            "flags": "low_delay",
+            "probesize": "500000",
+            "analyzeduration": "500000",
+            "buffer_size": "4096000",
+            "max_delay": "250000",
+            "stimeout": "2000000",
             "reorder_queue_size": "0",
         }
         return options
@@ -151,13 +159,14 @@ class RTSPSource:
         """Open RTSP container with FFmpeg."""
         options = self._build_ffmpeg_options()
         
-        logger.info(f"RTSPSource({self.camera_id}): Connecting to {self.config.url}")
+        logger.info(f"RTSPSource({self.camera_id}): Connecting to {self.config.url} (rtsp_transport=tcp)")
         
+        open_timeout = min(float(self.config.timeout), 3.0)
         self._container = av.open(
             self.config.url,
             format="rtsp",
             options=options,
-            timeout=int(self.config.timeout * 1_000_000),
+            timeout=(open_timeout, 3.0),
         )
         
         # Find video stream
@@ -174,11 +183,14 @@ class RTSPSource:
             # Try to get framerate from codec context
             fps = float(self._stream.codec_context.framerate) if self._stream.codec_context.framerate else 30.0
         
+        raw_codec = (self._stream.codec_context.name or "h264").lower()
+        self.detected_codec = "hevc" if ("hevc" in raw_codec or "265" in raw_codec) else "h264"
         logger.info(
             f"RTSPSource({self.camera_id}): Connected - "
             f"{self._stream.width}x{self._stream.height} "
-            f"@{fps:.1f}fps "
-            f"codec={self._stream.codec_context.name}"
+            f"@{fps:.1f}fps | "
+            f"codec: {self.detected_codec} | "
+            f"rtsp_transport: tcp"
         )
     
     def start(self) -> bool:
@@ -359,6 +371,7 @@ class RTSPSource:
                 self._set_state(RTSPState.STOPPED)
                 return
             
+            self._set_state(RTSPState.DISCONNECTED)
             if self.config.reconnect_enabled and self._retry_count < self.config.max_retries:
                 self._schedule_reconnect()
             else:
@@ -403,6 +416,7 @@ class RTSPSource:
             
             with self._lock:
                 self._stop_event.clear()
+                self._retry_count = 0
                 self._read_thread = threading.Thread(
                     target=self._read_loop,
                     name=f"rtsp-read-{self.camera_id}",
@@ -415,8 +429,9 @@ class RTSPSource:
                 self._metrics.last_bytes_check = time.time()
                 self._metrics.last_bytes_value = 0
             
+            self._set_state(RTSPState.CONNECTED)
             self._set_state(RTSPState.READING)
-            logger.info(f"RTSPSource({self.camera_id}): Reconnected successfully")
+            logger.info(f"RTSPSource({self.camera_id}): Reconnected successfully (DISCONNECTED -> RECONNECTING -> CONNECTED)")
             return True
             
         except Exception as e:

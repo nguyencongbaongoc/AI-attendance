@@ -105,6 +105,9 @@ class FrameMetadata:
     event_type: Optional[str] = None  # "in" or "out"
     student_id: Optional[str] = None
     student_name: Optional[str] = None
+    codec: Optional[str] = None
+    stream_state: Optional[str] = None
+    stream_epoch: int = 0
 
     def __post_init__(self) -> None:
         self.camera_id = self.camera_id.lower().strip()
@@ -164,6 +167,9 @@ class FrameMetadata:
             "event_type": self.event_type,
             "student_id": self.student_id,
             "student_name": self.student_name,
+            "codec": self.codec,
+            "stream_state": self.stream_state or "CONNECTED",
+            "stream_epoch": int(self.stream_epoch or 0),
         }
 
 
@@ -693,6 +699,9 @@ class MetadataIngestRequest(BaseModel):
     event_type: Optional[str] = None  # "in" or "out"
     student_id: Optional[str] = None
     student_name: Optional[str] = None
+    codec: Optional[str] = None
+    stream_state: Optional[str] = None
+    stream_epoch: int = 0
 
     @field_validator("camera_id", mode="before")
     @classmethod
@@ -776,6 +785,9 @@ async def ingest_metadata(request: MetadataIngestRequest):
         student_name=request.student_name or (
             request.persons[0].get("identity_candidate") if request.persons else None
         ),
+        codec=request.codec,
+        stream_state=request.stream_state,
+        stream_epoch=int(request.stream_epoch or 0),
     )
     
     await broadcaster.broadcast_metadata(request.camera_id, metadata)
