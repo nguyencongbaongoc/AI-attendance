@@ -124,6 +124,8 @@ class GPUFrame:
     
     # Media timing
     timestamp: float = 0.0                 # Wall-clock time (time.time())
+    capture_mono_ns: int = 0               # Monotonic capture/demux timestamp (ns)
+    stream_epoch: int = 0                  # RTSP reconnect epoch
     pts: Optional[int] = None              # Presentation timestamp from stream
     dts: Optional[int] = None              # Decode timestamp from stream
     time_base: Optional[float] = None      # Stream time base (e.g., 1/90000)

@@ -111,6 +111,10 @@ class FrameMetadata:
     frame_width: int = 1920
     frame_height: int = 1080
     capture_ts_ms: float = 0.0
+    overlay_mode: str = "canvas"
+    ai_stream_path: Optional[str] = None
+    capture_to_inference_ms: float = 0.0
+    nvenc_active: bool = False
 
     def __post_init__(self) -> None:
         self.camera_id = self.camera_id.lower().strip()
@@ -180,6 +184,10 @@ class FrameMetadata:
             "frame_width": int(self.frame_width or 1920),
             "frame_height": int(self.frame_height or 1080),
             "capture_ts_ms": float(self.capture_ts_ms or 0.0),
+            "overlay_mode": str(self.overlay_mode or "canvas"),
+            "ai_stream_path": self.ai_stream_path or f"live/{self.camera_id}_ai",
+            "capture_to_inference_ms": float(self.capture_to_inference_ms or 0.0),
+            "nvenc_active": bool(self.nvenc_active),
         }
 
 
@@ -564,7 +572,7 @@ async def metadata_websocket_endpoint(
         return
     
     # Validate normalized camera_id
-    if camera_id not in ("cam1", "cam2", "cam1-ai", "cam2-ai"):
+    if camera_id not in ("cam1", "cam2", "cam1-ai", "cam2-ai", "cam1_ai", "cam2_ai"):
         await websocket.close(code=4002, reason=f"Invalid camera_id: {camera_id}")
         return
     
@@ -638,7 +646,7 @@ async def metadata_sse_endpoint(
     # Normalize camera_id to lowercase
     camera_id = camera_id.lower().strip()
     
-    if camera_id not in ("cam1", "cam2", "cam1-ai", "cam2-ai"):
+    if camera_id not in ("cam1", "cam2", "cam1-ai", "cam2-ai", "cam1_ai", "cam2_ai"):
         from fastapi import HTTPException, status
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid camera_id: {camera_id}")
     
@@ -715,6 +723,10 @@ class MetadataIngestRequest(BaseModel):
     frame_width: int = Field(default=1920, ge=1)
     frame_height: int = Field(default=1080, ge=1)
     capture_ts_ms: Optional[float] = None
+    overlay_mode: str = "canvas"
+    ai_stream_path: Optional[str] = None
+    capture_to_inference_ms: float = 0.0
+    nvenc_active: bool = False
 
     @field_validator("camera_id", mode="before")
     @classmethod
@@ -783,7 +795,7 @@ async def ingest_metadata(request: MetadataIngestRequest):
                 identity_source=str(p.get("identity_source", "unknown")),
             )
             for p in request.persons
-            if str(p.get("state", "active")).lower() == "active"
+            if str(p.get("state", "active")).lower() in ("active", "new")
             and int(p.get("time_since_update", 0) or 0) == 0
             and int(p.get("missed_frames", 0) or 0) == 0
         ],
@@ -807,6 +819,10 @@ async def ingest_metadata(request: MetadataIngestRequest):
         frame_width=int(request.frame_width or 1920),
         frame_height=int(request.frame_height or 1080),
         capture_ts_ms=float(request.capture_ts_ms) if request.capture_ts_ms is not None else round(time.monotonic() * 1000.0, 2),
+        overlay_mode=str(request.overlay_mode or "canvas"),
+        ai_stream_path=request.ai_stream_path or f"live/{request.camera_id}_ai",
+        capture_to_inference_ms=float(request.capture_to_inference_ms or 0.0),
+        nvenc_active=bool(request.nvenc_active),
     )
     
     await broadcaster.broadcast_metadata(request.camera_id, metadata)

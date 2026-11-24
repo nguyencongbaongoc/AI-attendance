@@ -25,8 +25,13 @@ from pipeline_engine.inference.face_detection import SCRFDDetector, SCRFDConfig,
 from pipeline_engine.inference.face_recognition import ArcFaceRecognizer, ArcFaceConfig, FaceEmbedding, align_face_5pt_rgb
 from pipeline_engine.inference.person_detection import YOLOPersonDetector, YOLOConfig, PersonDetection
 from pipeline_engine.inference.body_reid import ReIDDetector, ReIDConfig
-from pipeline_engine.tracking.tracker import Tracker, TrackingConfig, TrackingResult, TrackLifecycleState
+from pipeline_engine.tracking.tracker import Tracker, TrackingConfig, TrackingResult, TrackLifecycleState, compute_iou
 from pipeline_engine.vision.face_quality import QualityAssessor
+from pipeline_engine.streaming.nvenc_publisher import (
+    NvencAnnotatedPublisher,
+    NvencPublisherConfig,
+    nv12_gpu_to_bgr_resized_cpu,
+)
 from app.runtime.gpu_vram_safety import VRAMMonitor, VRAMBudget, GPUVRAMSafety
 from app.identity.global_identity_service import create_global_identity_service
 from pipeline_engine.attendance.attendance_engine import AttendanceEngine, create_attendance_engine
@@ -332,7 +337,7 @@ class CameraManager:
                 track_buffer=track_buffer,
                 max_age=int(track_cfg.get("max_age", track_buffer)),
                 max_lost_frames=track_buffer,
-                high_det_thresh=float(track_cfg.get("high_det_thresh", 0.50)),
+                high_det_thresh=float(track_cfg.get("high_det_thresh", 0.38)),
                 low_det_thresh=float(track_cfg.get("low_det_thresh", 0.18)),
                 inner_box_ioa_threshold=float(track_cfg.get("inner_box_ioa_threshold", 0.55)),
                 camera_role=camera_role,
@@ -375,6 +380,7 @@ class CameraManager:
             "quality_assessor": quality_assessor,
             "encoder": None,
             "publisher": None,
+            "nvenc_publisher": None,
             # Dedicated CUDA stream for this camera
             "cuda_stream": cuda_stream,
             # Telemetry
@@ -497,7 +503,7 @@ class CameraManager:
             width=camera["config"].get("expected", {}).get("width", 3840),
             height=camera["config"].get("expected", {}).get("height", 2160),
             max_surfaces=camera["config"].get("decode", {}).get("surfaces", 32),
-            max_queue_size=8,
+            max_queue_size=1,
             frame_pool=frame_pool,
         )
         decoder = NVDECDecoder(decoder_config, frame_pool)
@@ -588,6 +594,24 @@ class CameraManager:
             logger.info(f"CameraManager({camera_id}): Encoder/publisher disabled by config")
             camera["encoder"] = None
             camera["publisher"] = None
+
+        stream_cfg = self._get_streaming_config()
+        if stream_cfg["overlay_mode"] == "nvenc":
+            nvenc_pub = NvencAnnotatedPublisher(
+                NvencPublisherConfig(
+                    camera_id=camera_id,
+                    width=stream_cfg["nvenc_width"],
+                    height=stream_cfg["nvenc_height"],
+                    fps=stream_cfg["nvenc_fps"],
+                    bitrate=stream_cfg["nvenc_bitrate"],
+                    mediamtx_rtsp_base=stream_cfg["mediamtx_rtsp_base"],
+                )
+            )
+            if not nvenc_pub.start():
+                logger.warning(f"CameraManager({camera_id}): NvencAnnotatedPublisher start deferred")
+            camera["nvenc_publisher"] = nvenc_pub
+        else:
+            camera["nvenc_publisher"] = None
         
         # Start pipeline thread
         with self._lock:
@@ -618,6 +642,11 @@ class CameraManager:
             logger.info(f"CameraManager: Stopping camera {camera_id}")
             camera["state"] = CameraState.STOPPED
         
+        # Stop NVENC annotated publisher
+        nvenc_pub = camera.get("nvenc_publisher")
+        if nvenc_pub:
+            nvenc_pub.stop()
+
         # Stop publisher
         publisher = camera.get("publisher")
         if publisher:
@@ -652,6 +681,7 @@ class CameraManager:
             camera["decoder"] = None
             camera["encoder"] = None
             camera["publisher"] = None
+            camera["nvenc_publisher"] = None
         
         logger.info(f"CameraManager: Camera {camera_id} stopped")
         return True
@@ -662,6 +692,21 @@ class CameraManager:
         time.sleep(1.0)
         return self.start_camera(camera_id)
     
+    def _get_streaming_config(self) -> Dict[str, Any]:
+        """Resolve normalized hybrid streaming/overlay configuration."""
+        stream_cfg = getattr(self.config, "streaming", None) or {}
+        mode = str(stream_cfg.get("overlay_mode", "nvenc")).lower().strip()
+        if mode not in ("nvenc", "canvas"):
+            mode = "nvenc"
+        return {
+            "overlay_mode": mode,
+            "nvenc_width": int(stream_cfg.get("nvenc_width", 1280)),
+            "nvenc_height": int(stream_cfg.get("nvenc_height", 720)),
+            "nvenc_fps": int(stream_cfg.get("nvenc_fps", 30)),
+            "nvenc_bitrate": str(stream_cfg.get("nvenc_bitrate", "2800k")),
+            "mediamtx_rtsp_base": str(stream_cfg.get("mediamtx_rtsp_base", "rtsp://127.0.0.1:8554/live")),
+        }
+
     def _camera_pipeline_loop(self, camera_id: str) -> None:
         """Main pipeline loop for a camera."""
         camera = self._cameras.get(camera_id)
@@ -673,6 +718,10 @@ class CameraManager:
         decoder = camera["decoder"]
         encoder = camera["encoder"]
         publisher = camera["publisher"]
+        nvenc_pub = camera.get("nvenc_publisher")
+        stream_cfg = self._get_streaming_config()
+        overlay_mode = stream_cfg["overlay_mode"]
+        ai_stream_path = nvenc_pub.ai_stream_path if nvenc_pub is not None else f"live/{camera_id}_ai"
         scrfd = camera["scrfd"]
         arcface = camera["arcface"]
         yolo = camera["yolo"]
@@ -701,9 +750,9 @@ class CameraManager:
             while self._running and camera["state"] in (CameraState.RUNNING, CameraState.DEGRADED, CameraState.RECONNECTING):
                 loop_start = time.perf_counter()
                 
-                # ========== STAGE 1: DECODE (Latest-Only Frame Drop Policy) ==========
+                # ========== STAGE 1: DECODE (Zero-Backlog Single-Slot Grabber) ==========
                 decode_start = time.perf_counter()
-                gpu_frame = self._drain_to_latest_frame(decoder, max_age_ms=500.0)
+                gpu_frame = decoder.get_latest_frame(timeout=0.05, max_age_ms=500.0)
                 decode_ms = (time.perf_counter() - decode_start) * 1000
                 
                 if gpu_frame is None:
@@ -719,6 +768,8 @@ class CameraManager:
                             f"CameraManager({camera_id}): RTSP stream interrupted -> "
                             f"status: DISCONNECTED -> RECONNECTING (codec: {camera['metrics'].codec or 'h264'})"
                         )
+                        if nvenc_pub is not None:
+                            nvenc_pub.stop()
                         try:
                             rtsp_source.stop()
                         except Exception:
@@ -744,6 +795,10 @@ class CameraManager:
                                 "codec": camera["metrics"].codec or "h264",
                                 "stream_state": "RECONNECTING",
                                 "stream_epoch": int(stream_epoch),
+                                "overlay_mode": overlay_mode,
+                                "ai_stream_path": ai_stream_path,
+                                "capture_to_inference_ms": 0.0,
+                                "nvenc_active": False,
                             })
                             delay = min(0.35 * (1.35 ** (attempt - 1)), 0.75)
                             end_sleep = time.monotonic() + delay
@@ -760,6 +815,8 @@ class CameraManager:
                                 except Exception:
                                     pass
                                 stream_epoch += 1
+                                if overlay_mode == "nvenc" and nvenc_pub is not None:
+                                    nvenc_pub.start()
                                 rec_s = time.monotonic() - drop_mono
                                 with self._lock:
                                     camera["metrics"].reconnect_count += 1
@@ -789,6 +846,10 @@ class CameraManager:
                                     "codec": decoder.detected_codec,
                                     "stream_state": "CONNECTED",
                                     "stream_epoch": int(stream_epoch),
+                                    "overlay_mode": overlay_mode,
+                                    "ai_stream_path": ai_stream_path,
+                                    "capture_to_inference_ms": 0.0,
+                                    "nvenc_active": bool(nvenc_pub and nvenc_pub.is_active),
                                 })
                                 break
                         continue
@@ -820,10 +881,7 @@ class CameraManager:
                 ai_start = time.perf_counter()
                 
                 with torch.cuda.stream(cuda_stream):
-                    # Run face detection
-                    face_detections = scrfd.detect(gpu_frame)
-                    
-                    # Run person detection
+                    # Run person detection first so we can skip SCRFD/ArcFace when all tracks are face-locked
                     person_detections = yolo.detect(gpu_frame)
 
                     # Optional ROI polygon filtering (e.g., exclude static stacked-desk zone)
@@ -837,14 +895,55 @@ class CameraManager:
                                 roi_polygon,
                             )
                         ]
-                        face_detections = [
-                            f for f in face_detections
-                            if _point_in_polygon(
-                                (f.bbox[0] + f.bbox[2]) * 0.5,
-                                (f.bbox[1] + f.bbox[3]) * 0.5,
-                                roi_polygon,
-                            )
-                        ]
+
+                    prev_active_tracks = [
+                        tr for tr in getattr(tracker, "_tracks", [])
+                        if getattr(tr, "missed_frames", 0) == 0 and not tr.is_closed
+                    ]
+                    locked_map = getattr(tracker, "_locked_track_identities", {})
+                    verified_prev_tracks = [
+                        tr for tr in prev_active_tracks
+                        if tr.track_id in locked_map and bool(locked_map[tr.track_id].get("face_verified", False))
+                    ]
+                    unverified_prev_tracks = [
+                        tr for tr in prev_active_tracks
+                        if not (tr.track_id in locked_map and bool(locked_map[tr.track_id].get("face_verified", False)))
+                    ]
+
+                    verified_det_ids = set()
+                    det_has_body_emb: Dict[str, bool] = {}
+                    for pdet in person_detections:
+                        matches_verified = any(
+                            compute_iou(pdet.bbox, tr.bbox_original_frame) >= 0.45
+                            for tr in verified_prev_tracks
+                        )
+                        overlaps_unverified = any(
+                            compute_iou(pdet.bbox, tr.bbox_original_frame) >= 0.30
+                            for tr in unverified_prev_tracks
+                        )
+                        if matches_verified and not overlaps_unverified:
+                            verified_det_ids.add(pdet.detection_id)
+                        det_has_body_emb[pdet.detection_id] = any(
+                            compute_iou(pdet.bbox, tr.bbox_original_frame) >= 0.40
+                            and tr.body_embedding is not None
+                            for tr in prev_active_tracks
+                        )
+
+                    # Skip SCRFD + ArcFace completely when no person or all persons match face-verified locked tracks
+                    need_face_pipeline = bool(person_detections) and (len(verified_det_ids) < len(person_detections))
+                    if need_face_pipeline:
+                        face_detections = scrfd.detect(gpu_frame)
+                        if isinstance(roi_polygon, list) and len(roi_polygon) >= 3:
+                            face_detections = [
+                                f for f in face_detections
+                                if _point_in_polygon(
+                                    (f.bbox[0] + f.bbox[2]) * 0.5,
+                                    (f.bbox[1] + f.bbox[3]) * 0.5,
+                                    roi_polygon,
+                                )
+                            ]
+                    else:
+                        face_detections = []
                     
                     # Check VRAM pressure & enforce backpressure
                     skip_heavy_inference = False
@@ -854,7 +953,7 @@ class CameraManager:
                             tot_mb = torch.cuda.get_device_properties(device_id).total_memory / (1024 * 1024)
                             util_pct = (res_mb / tot_mb) * 100.0 if tot_mb > 0 else 0.0
 
-                            # Trim PyTorch caching allocator before reserved VRAM approaches 2.6 GB
+                            # Trim PyTorch caching allocator before reserved VRAM approaches 2.5 GB
                             if res_mb >= 2500.0:
                                 torch.cuda.empty_cache()
 
@@ -882,13 +981,34 @@ class CameraManager:
                     except Exception as ve:
                         logger.debug(f"VRAM check error: {ve}")
                     
-                    # Run face recognition for each face detection
+                    # Run ArcFace only for faces not strictly inside an already face-verified locked person box
                     face_embeddings = {}
-                    if not skip_heavy_inference:
-                        for face_det in face_detections:
-                            # Extract face crop and align (simplified - using face bbox for now)
-                            # In production, would extract aligned 112x112 crop
-                            aligned_face = self._extract_aligned_face(gpu_frame, face_det)
+                    unverified_person_boxes = [
+                        p.bbox for p in person_detections if p.detection_id not in verified_det_ids
+                    ]
+                    verified_person_boxes = [
+                        p.bbox for p in person_detections if p.detection_id in verified_det_ids
+                    ]
+                    faces_for_arcface = []
+                    for fdet in face_detections:
+                        fcx, fcy = fdet.center
+                        in_unverified = any(
+                            pb[0] <= fcx <= pb[2] and pb[1] <= fcy <= pb[3]
+                            for pb in unverified_person_boxes
+                        )
+                        in_verified = any(
+                            pb[0] <= fcx <= pb[2] and pb[1] <= fcy <= pb[3]
+                            for pb in verified_person_boxes
+                        )
+                        if in_unverified or not in_verified:
+                            faces_for_arcface.append(fdet)
+
+                    if not skip_heavy_inference and faces_for_arcface:
+                        with torch.no_grad():
+                            y_t, uv_t = gpu_frame.get_tensors()
+                            bgr_full_cuda = nv12_to_bgr_cuda(y_t, uv_t)
+                        for face_det in faces_for_arcface:
+                            aligned_face = self._extract_aligned_face(gpu_frame, face_det, bgr_cuda=bgr_full_cuda)
                             if aligned_face is not None:
                                 embedding = arcface.infer_embedding(aligned_face)
                                 embedding.detection_id = face_det.detection_id
@@ -896,22 +1016,28 @@ class CameraManager:
                                 embedding.source_id = gpu_frame.camera_id
                                 face_embeddings[face_det.detection_id] = embedding
                     
-                    # Run ReID for each person detection
+                    # Throttle ResNet50 BodyReID to every 5th frame (except brand-new unverified tracks without embedding)
                     body_embeddings = {}
-                    if not skip_heavy_inference:
+                    if not skip_heavy_inference and person_detections:
+                        reid_refresh_tick = (frame_counter % 5 == 0)
                         for person_det in person_detections:
-                            body_embedding = reid.infer_embedding(
-                                frame=gpu_frame,
-                                person_bbox=person_det.bbox,
-                                detection_id=person_det.detection_id,
-                                frame_index=gpu_frame.frame_id,
-                                source_id=gpu_frame.camera_id,
+                            needs_initial_body = (
+                                person_det.detection_id not in verified_det_ids
+                                and not det_has_body_emb.get(person_det.detection_id, False)
                             )
-                            body_embeddings[person_det.detection_id] = body_embedding
+                            if reid_refresh_tick or needs_initial_body:
+                                body_embedding = reid.infer_embedding(
+                                    frame=gpu_frame,
+                                    person_bbox=person_det.bbox,
+                                    detection_id=person_det.detection_id,
+                                    frame_index=gpu_frame.frame_id,
+                                    source_id=gpu_frame.camera_id,
+                                )
+                                body_embeddings[person_det.detection_id] = body_embedding
                     
-                    # Quality assessment
+                    # Quality assessment (only for computed embeddings)
                     quality_assessor = camera["quality_assessor"]
-                    for face_det in face_detections:
+                    for face_det in faces_for_arcface:
                         if face_det.detection_id in face_embeddings:
                             face_quality = quality_assessor.assess_face(
                                 gpu_frame, 
@@ -1018,7 +1144,7 @@ class CameraManager:
                         if (
                             getattr(track, "time_since_update", 0) != 0
                             or getattr(track, "missed_frames", 0) != 0
-                            or getattr(track, "lifecycle_state", None) != TrackLifecycleState.ACTIVE
+                            or getattr(track, "lifecycle_state", None) not in (TrackLifecycleState.ACTIVE, TrackLifecycleState.NEW)
                         ):
                             continue
                         bx1, by1, bx2, by2 = track.bbox_original_frame
@@ -1067,11 +1193,34 @@ class CameraManager:
                             "identity_candidate": identity_cand,
                             "identity_confidence": round(identity_conf, 4),
                             "state": track_state,
+                            "time_since_update": 0,
+                            "missed_frames": 0,
                             "face_verified": is_face_verified,
                             "pending_global_id": pending_gid,
                             "bridged_from_cam": bridged_from,
                             "identity_source": id_source,
                         })
+
+                    cap_ns = int(getattr(gpu_frame, "capture_mono_ns", 0) or 0)
+                    capture_to_inference_ms = (
+                        round(max(0.0, (time.monotonic_ns() - cap_ns) / 1_000_000.0), 2)
+                        if cap_ns > 0
+                        else round(decode_ms + ai_ms + tracking_ms, 2)
+                    )
+
+                    # Hybrid NVENC: render boxes + cached Vietnamese labels directly on exact inferred frame
+                    if overlay_mode == "nvenc" and nvenc_pub is not None:
+                        if not nvenc_pub.is_active:
+                            nvenc_pub.start()
+                        y_t, uv_t = gpu_frame.get_tensors()
+                        bgr_720p = nv12_gpu_to_bgr_resized_cpu(
+                            y_t,
+                            uv_t,
+                            stream_cfg["nvenc_width"],
+                            stream_cfg["nvenc_height"],
+                            cuda_stream=cuda_stream,
+                        )
+                        nvenc_pub.submit_frame(bgr_720p, persons_data)
 
                     now_ts = float(gpu_frame.timestamp) if getattr(gpu_frame, "timestamp", 0.0) else time.time()
                     payload = {
@@ -1088,6 +1237,10 @@ class CameraManager:
                         "codec": camera["metrics"].codec or "h264",
                         "stream_state": "CONNECTED",
                         "stream_epoch": int(stream_epoch),
+                        "overlay_mode": overlay_mode,
+                        "ai_stream_path": ai_stream_path,
+                        "capture_to_inference_ms": capture_to_inference_ms,
+                        "nvenc_active": bool(nvenc_pub and nvenc_pub.is_active),
                     }
 
                     # Non-blocking async dispatch - never blocks AI pipeline
@@ -1098,31 +1251,25 @@ class CameraManager:
                     logger.error(f"Metadata broadcast error: {e}")
                     logger.error(traceback.format_exc())
                 
-                # ========== STAGE 5: ANNOTATION ==========
-                annotation_start = time.perf_counter()
-                
-                # Prepare frame metrics for annotation
-                frame_metrics = {
-                    "fps": camera["metrics"].decoded_fps,
-                    "latency_ms": camera["metrics"].latency_ms,
-                    "gpu_memory_mb": camera["metrics"].gpu_memory_mb,
-                }
-                
-                annotated_frame = annotator.annotate(
-                    frame=gpu_frame,
-                    tracks=tracking_result.get_active_tracks(),
-                    camera_id=camera_id,
-                    frame_metrics=frame_metrics,
-                )
-                annotation_ms = (time.perf_counter() - annotation_start) * 1000
-                gpu_frame.annotation_time_ms = annotation_ms
-                
-                # Transfer ownership to annotation
-                annotated_frame.transfer_ownership(FrameOwnership.ANNOTATION)
-                annotated_frame.set_status(FrameStatus.ANNOTATING)
-                
-                # ========== STAGE 6: ENCODE (if enabled) ==========
+                # ========== STAGE 5 & 6: LEGACY ANNOTATION + ENCODE (skip when legacy encoder is disabled) ==========
                 if encoder is not None:
+                    annotation_start = time.perf_counter()
+                    frame_metrics = {
+                        "fps": camera["metrics"].decoded_fps,
+                        "latency_ms": camera["metrics"].latency_ms,
+                        "gpu_memory_mb": camera["metrics"].gpu_memory_mb,
+                    }
+                    annotated_frame = annotator.annotate(
+                        frame=gpu_frame,
+                        tracks=tracking_result.get_active_tracks(),
+                        camera_id=camera_id,
+                        frame_metrics=frame_metrics,
+                    )
+                    annotation_ms = (time.perf_counter() - annotation_start) * 1000
+                    gpu_frame.annotation_time_ms = annotation_ms
+                    annotated_frame.transfer_ownership(FrameOwnership.ANNOTATION)
+                    annotated_frame.set_status(FrameStatus.ANNOTATING)
+
                     encode_start = time.perf_counter()
                     if encoder.submit_frame(annotated_frame):
                         encode_ms = (time.perf_counter() - encode_start) * 1000
@@ -1133,16 +1280,12 @@ class CameraManager:
                         if frame_pool:
                             frame_pool.return_to_pool(annotated_frame)
                         continue
-                    
-                    # Transfer ownership to encoder
                     annotated_frame.transfer_ownership(FrameOwnership.ENCODER)
                     annotated_frame.set_status(FrameStatus.ENCODED)
-                    
-                    # Encoder will return frame to pool via callback
                 else:
-                    # No encoder - return frame to pool directly
+                    gpu_frame.annotation_time_ms = 0.0
                     if frame_pool:
-                        frame_pool.return_to_pool(annotated_frame)
+                        frame_pool.return_to_pool(gpu_frame)
                 
                 # ========== STAGE 7: PUBLISH (if enabled) ==========
                 # Publisher is handled asynchronously by encoder output
@@ -1257,12 +1400,15 @@ class CameraManager:
         return latest_frame
 
     def _extract_aligned_face(
-        self, frame: GPUFrame, face_det: FaceDetection
+        self, frame: GPUFrame, face_det: FaceDetection, bgr_cuda: Optional[torch.Tensor] = None
     ) -> Optional[torch.Tensor]:
         """Extract and 5-point similarity-align 112x112 RGB face crop from GPUFrame."""
         try:
-            y_tensor, uv_tensor = frame.get_tensors()
-            bgr = nv12_to_bgr_cuda(y_tensor, uv_tensor)  # (H, W, 3) uint8
+            if bgr_cuda is None:
+                y_tensor, uv_tensor = frame.get_tensors()
+                bgr = nv12_to_bgr_cuda(y_tensor, uv_tensor)  # (H, W, 3) uint8
+            else:
+                bgr = bgr_cuda
             H, W = bgr.shape[:2]
 
             fx1, fy1, fx2, fy2 = [float(c) for c in face_det.bbox]
@@ -1452,8 +1598,11 @@ class CameraManager:
             if camera["state"] in (CameraState.ERROR, CameraState.STOPPED):
                 return False
             decoder = camera.get("decoder")
-            if decoder and hasattr(decoder, "is_degraded") and decoder.is_degraded():
-                return False
+            if decoder is not None:
+                if hasattr(decoder, "is_degraded") and decoder.is_degraded():
+                    return False
+                if hasattr(decoder, "is_stream_active") and decoder.is_stream_active():
+                    return True
             rtsp_source = camera.get("rtsp_source")
             if rtsp_source:
                 return rtsp_source.is_healthy()

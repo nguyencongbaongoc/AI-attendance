@@ -593,6 +593,8 @@ function showToast(message, type = 'success') {
 window.metadataRingBuffer = window.metadataRingBuffer || { cam1: [], cam2: [] };
 window.streamPlayers = window.streamPlayers || {};
 window.cameraStreamModes = window.cameraStreamModes || {};
+window.cameraStreamPaths = window.cameraStreamPaths || {};
+window.cameraOverlayModes = window.cameraOverlayModes || {};
 
 window.getRenderedVideoRect = function(videoEl, canvasEl) {
   const boxW = (canvasEl && canvasEl.width > 0) ? canvasEl.width : 640;
@@ -924,6 +926,8 @@ class CanvasOverlayRenderer {
     this.lastDetectionTime = 0;
     this.lastStreamState = null;
     this.lastStreamEpoch = 0;
+    this.overlayMode = (window.cameraOverlayModes && window.cameraOverlayModes[this.cameraId]) || 'nvenc';
+    this.nvencActive = false;
 
     // Visual styling
     this.personBoxColor = '#10b981';
@@ -1035,9 +1039,38 @@ class CanvasOverlayRenderer {
       }
 
       const camNum = this.cameraId.includes('2') ? '2' : '1';
+      if (meta.overlay_mode) {
+        this.overlayMode = String(meta.overlay_mode).toLowerCase().trim();
+      } else if (meta.nvenc_active) {
+        this.overlayMode = 'nvenc';
+      }
+      this.nvencActive = Boolean(meta.nvenc_active);
+      window.cameraOverlayModes = window.cameraOverlayModes || {};
+      window.cameraOverlayModes[this.cameraId] = this.overlayMode;
+
+      const curPlayer = window.streamPlayers && window.streamPlayers[this.videoId];
+      const expectedAiPath = meta.ai_stream_path || `live/${this.cameraId}_ai`;
+      if (
+        this.overlayMode === 'nvenc' &&
+        this.nvencActive &&
+        (meta.stream_state || 'CONNECTED') === 'CONNECTED' &&
+        curPlayer &&
+        !curPlayer.destroyed &&
+        curPlayer.streamPath !== expectedAiPath &&
+        !this._upgradingToAi
+      ) {
+        this._upgradingToAi = true;
+        if (typeof window.rebindLiveHlsPlayer === 'function') {
+          window.rebindLiveHlsPlayer(this.cameraId);
+        }
+        setTimeout(() => { this._upgradingToAi = false; }, 2000);
+      }
+
       if (meta.codec) {
         const isHevc = String(meta.codec).toLowerCase().includes('hevc') || String(meta.codec).toLowerCase().includes('265');
-        const codecText = isHevc ? '1080p • H.265/HEVC' : '1080p • H.264';
+        const codecText = (this.overlayMode === 'nvenc')
+          ? (isHevc ? 'HEVC -> NVENC WHEP' : 'H.264 -> NVENC WHEP')
+          : (isHevc ? '1080p • H.265/HEVC' : '1080p • H.264');
         const badgeEl = document.getElementById(`codecBadge${camNum}`);
         if (badgeEl && badgeEl.textContent !== codecText) {
           badgeEl.textContent = codecText;
@@ -1060,6 +1093,12 @@ class CanvasOverlayRenderer {
           window.metadataRingBuffer[this.cameraId].length = 0;
         }
         this.lastMetadata = null;
+        this.lastMediaAdvancePerfMs = 0;
+        if (typeof window.destroyStreamPlayer === 'function') {
+          const vids = this.cameraId.includes('2') ? ['video2', 'preview2'] : ['video1', 'preview1'];
+          vids.forEach((vidId) => window.destroyStreamPlayer(vidId));
+        }
+        this.clearCanvas(true);
         if (cardStatusBadge) {
           cardStatusBadge.textContent = 'RECONNECTING';
           cardStatusBadge.className = 'px-2 py-1 rounded-full bg-amber-400 text-black text-[10px] font-mono font-bold animate-pulse';
@@ -1173,6 +1212,16 @@ class CanvasOverlayRenderer {
     if (!forceBlank && (this.canvasId === 'canvas1' || this.canvasId === 'canvas2') && typeof drawSavedCrossingLine === 'function') {
       drawSavedCrossingLine(this.cameraId);
     }
+    if (!forceBlank && (this.canvasId === 'canvas-cam1' || this.canvasId === 'canvas-cam2')) {
+      const cfgLine = (this.crossingLine && this.crossingLine.coords)
+        ? this.crossingLine
+        : (appState?.geometryConfigs?.[this.cameraId]?.normalized_line
+          ? { coords: appState.geometryConfigs[this.cameraId].normalized_line, status: 'NORMAL' }
+          : null);
+      if (cfgLine && cfgLine.coords) {
+        this.drawCrossingLine(ctx, cfgLine);
+      }
+    }
   }
 
   syncCanvasDimensions() {
@@ -1221,10 +1270,10 @@ class CanvasOverlayRenderer {
   }
 
   _computeActiveDelayMs() {
-    if (!this.video) return 120;
+    if (!this.video) return 0;
     const player = window.streamPlayers && window.streamPlayers[this.videoId];
     if (this.video.srcObject && (!player || player.mode === 'whep')) {
-      return (player && Number.isFinite(player.jitterDelayMs)) ? player.jitterDelayMs : 120;
+      return 0;
     }
     if (this.video.buffered && this.video.buffered.length > 0) {
       const bufEnd = this.video.buffered.end(this.video.buffered.length - 1);
@@ -1272,7 +1321,10 @@ class CanvasOverlayRenderer {
     }
 
     const delayMs = this._computeActiveDelayMs();
-    const metadata = this.metadataWS.getMetadataForDelay(delayMs, 450);
+    let metadata = this.metadataWS.getMetadataForDelay(delayMs, 450);
+    if (!metadata && this.overlayMode === 'nvenc') {
+      metadata = this.metadataWS.getLatestMetadata();
+    }
 
     if (!metadata) {
       this.lastMetadata = null;
@@ -1303,16 +1355,23 @@ class CanvasOverlayRenderer {
       drawSavedCrossingLine(this.cameraId);
     }
 
+    const effectiveOverlayMode = String(
+      metadata.overlay_mode || this.overlayMode || (metadata.nvenc_active ? 'nvenc' : 'canvas')
+    ).toLowerCase();
+
     const activePersons = [];
     if (metadata.persons && Array.isArray(metadata.persons)) {
       for (const person of metadata.persons) {
-        if (person.state && String(person.state).toLowerCase() !== 'active') continue;
+        const st = String(person.state || 'active').toLowerCase();
+        if (st !== 'active' && st !== 'new') continue;
         activePersons.push(person);
-        this.drawPersonBox(ctx, person, metadata);
+        if (effectiveOverlayMode !== 'nvenc') {
+          this.drawPersonBox(ctx, person, metadata);
+        }
       }
     }
 
-    if (metadata.faces && Array.isArray(metadata.faces)) {
+    if (effectiveOverlayMode !== 'nvenc' && metadata.faces && Array.isArray(metadata.faces)) {
       for (const face of metadata.faces) {
         this.drawFaceBox(ctx, face, metadata);
       }
@@ -1439,9 +1498,17 @@ class CanvasOverlayRenderer {
     const pulseAlpha = this.linePulseActive ? (0.5 + 0.5 * Math.sin(this.linePulsePhase)) : 0.75;
 
     ctx.save();
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx.lineWidth = 4 * dpr;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+
     ctx.strokeStyle = this.linePulseActive ? this.linePulseColor : '#10b981';
     ctx.globalAlpha = pulseAlpha;
-    ctx.lineWidth = 2 * dpr;
+    ctx.lineWidth = 2.2 * dpr;
     ctx.setLineDash([6 * dpr, 4 * dpr]);
     ctx.beginPath();
     ctx.moveTo(p1.x, p1.y);
@@ -1449,6 +1516,29 @@ class CanvasOverlayRenderer {
     ctx.stroke();
     ctx.globalAlpha = 1.0;
     ctx.setLineDash([]);
+
+    const mx = (p1.x + p2.x) * 0.5;
+    const my = (p1.y + p2.y) * 0.5;
+    const label = 'LINE IN → OUT';
+    ctx.font = `700 ${10 * dpr}px JetBrains Mono, monospace`;
+    const tw = ctx.measureText(label).width;
+    const bw = tw + 10 * dpr;
+    const bh = 16 * dpr;
+    ctx.fillStyle = 'rgba(6, 78, 59, 0.90)';
+    ctx.strokeStyle = '#34d399';
+    ctx.lineWidth = 1 * dpr;
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(mx - bw / 2, my - bh - 5 * dpr, bw, bh, 4 * dpr);
+    } else {
+      ctx.rect(mx - bw / 2, my - bh - 5 * dpr, bw, bh);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ecfdf5';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, mx, my - bh / 2 - 5 * dpr);
     ctx.restore();
   }
 }
@@ -3696,9 +3786,46 @@ window.attachHlsFallback = function(camId, videoEl, hlsUrl) {
   }
 };
 
-window.attachWhepPlayer = async function(camId, videoEl, whepUrl, fallbackHlsUrl) {
+window.resolveCameraStreamTargets = function(camId, meta = null) {
+  const normCam = String(camId || 'cam1').toLowerCase().trim();
+  const whepBase = _getMediaHostBase(8889);
+  const hlsBase = _getMediaHostBase(8888);
+  const latestMeta = meta || (window.latestMetadataByCam && window.latestMetadataByCam[normCam]) || null;
+  const overlayMode = String(
+    (latestMeta && latestMeta.overlay_mode) ||
+    (window.cameraOverlayModes && window.cameraOverlayModes[normCam]) ||
+    'nvenc'
+  ).toLowerCase();
+  const aiPath = String((latestMeta && latestMeta.ai_stream_path) || `live/${normCam}_ai`).replace(/^\/+/, '');
+  const rawPath = `live/${normCam}`;
+  const rawWhepUrl = `${whepBase}/${rawPath}/whep`;
+  const hlsUrl = `${hlsBase}/${rawPath}/index.m3u8`;
+  if (overlayMode === 'nvenc') {
+    return {
+      overlayMode,
+      streamPath: aiPath,
+      whepUrl: `${whepBase}/${aiPath}/whep`,
+      rawWhepUrl,
+      hlsUrl,
+    };
+  }
+  return {
+    overlayMode,
+    streamPath: rawPath,
+    whepUrl: rawWhepUrl,
+    rawWhepUrl: null,
+    hlsUrl,
+  };
+};
+
+window.attachWhepPlayer = async function(camId, videoEl, whepUrl, fallbackHlsUrl, options = {}) {
   if (!videoEl || videoEl.tagName !== 'VIDEO') return;
   const normCam = String(camId || 'cam1').toLowerCase().trim();
+  const streamPath = options.streamPath || (whepUrl.includes('_ai/') ? `live/${normCam}_ai` : `live/${normCam}`);
+  const rawWhepUrl = options.rawWhepUrl || null;
+  const maxAiRetries = Number.isFinite(options.maxAiRetries) ? options.maxAiRetries : (streamPath.endsWith('_ai') ? 6 : 0);
+  const aiAttempt = Number(options._attempt || 0);
+
   window.destroyStreamPlayer(videoEl.id);
 
   videoEl.muted = true;
@@ -3713,9 +3840,10 @@ window.attachWhepPlayer = async function(camId, videoEl, whepUrl, fallbackHlsUrl
     camId: normCam,
     videoId: videoEl.id,
     mode: 'whep',
+    streamPath,
     pc: null,
     hls: null,
-    jitterDelayMs: 120,
+    jitterDelayMs: 0,
     statsTimer: null,
     fallbackTimer: null,
     destroyed: false,
@@ -3725,6 +3853,8 @@ window.attachWhepPlayer = async function(camId, videoEl, whepUrl, fallbackHlsUrl
   window.streamPlayers[videoEl.id] = playerState;
   window.cameraStreamModes = window.cameraStreamModes || {};
   window.cameraStreamModes[normCam] = 'whep';
+  window.cameraStreamPaths = window.cameraStreamPaths || {};
+  window.cameraStreamPaths[normCam] = streamPath;
 
   let pc;
   try {
@@ -3749,6 +3879,10 @@ window.attachWhepPlayer = async function(camId, videoEl, whepUrl, fallbackHlsUrl
           window.metadataRingBuffer[normCam].length = 0;
         }
         try { videoEl.srcObject = null; } catch (e) {}
+        const latestMeta = window.latestMetadataByCam && window.latestMetadataByCam[normCam];
+        if (latestMeta && latestMeta.stream_state === 'RECONNECTING') {
+          return;
+        }
         if (typeof window.rebindLiveHlsPlayer === 'function') {
           window.rebindLiveHlsPlayer(normCam);
         }
@@ -3817,27 +3951,55 @@ window.attachWhepPlayer = async function(camId, videoEl, whepUrl, fallbackHlsUrl
       } catch (e) {}
     }, 500);
 
-    // Fallback to low-latency HLS if WebRTC video never decodes frames (e.g. HEVC unsupported in WebRTC)
+    // Fallback if WebRTC video never decodes frames
     playerState.fallbackTimer = setTimeout(() => {
       if (playerState.destroyed || playerState.mode !== 'whep') return;
       if (videoEl.videoWidth === 0 || videoEl.readyState < 2) {
-        console.warn(`[WHEP] No decoded video frames on ${normCam}/${videoEl.id} after 2500ms, falling back to HLS`);
-        window.attachHlsFallback(normCam, videoEl, fallbackHlsUrl);
+        if (rawWhepUrl && whepUrl !== rawWhepUrl) {
+          console.warn(`[WHEP] No decoded frames on ${streamPath}/${videoEl.id}, falling back to raw WHEP`);
+          window.attachWhepPlayer(normCam, videoEl, rawWhepUrl, fallbackHlsUrl, {
+            streamPath: `live/${normCam}`,
+            maxAiRetries: 0,
+          });
+        } else {
+          console.warn(`[WHEP] No decoded video frames on ${normCam}/${videoEl.id} after 2500ms, falling back to HLS`);
+          window.attachHlsFallback(normCam, videoEl, fallbackHlsUrl);
+        }
       }
     }, 2500);
   } catch (err) {
-    if (!playerState.destroyed) {
-      console.warn(`[WHEP] Fallback to HLS for ${normCam}/${videoEl.id}:`, err.message || err);
-      window.attachHlsFallback(normCam, videoEl, fallbackHlsUrl);
+    if (playerState.destroyed) return;
+    const latestMeta = window.latestMetadataByCam && window.latestMetadataByCam[normCam];
+    if (latestMeta && latestMeta.stream_state === 'RECONNECTING') {
+      window.destroyStreamPlayer(videoEl.id);
+      return;
     }
+    if (streamPath.endsWith('_ai') && aiAttempt < maxAiRetries) {
+      setTimeout(() => {
+        if (!playerState.destroyed) {
+          window.attachWhepPlayer(normCam, videoEl, whepUrl, fallbackHlsUrl, {
+            ...options,
+            _attempt: aiAttempt + 1,
+          });
+        }
+      }, 350);
+      return;
+    }
+    if (rawWhepUrl && whepUrl !== rawWhepUrl) {
+      console.warn(`[WHEP] ${streamPath} unavailable (${err.message || err}), falling back to raw WHEP`);
+      window.attachWhepPlayer(normCam, videoEl, rawWhepUrl, fallbackHlsUrl, {
+        streamPath: `live/${normCam}`,
+        maxAiRetries: 0,
+      });
+      return;
+    }
+    console.warn(`[WHEP] Fallback to HLS for ${normCam}/${videoEl.id}:`, err.message || err);
+    window.attachHlsFallback(normCam, videoEl, fallbackHlsUrl);
   }
 };
 
 function setupVideoStreams() {
   if (new URLSearchParams(window.location.search).get('offline') === '1') return;
-
-  const whepBase = _getMediaHostBase(8889);
-  const hlsBase = _getMediaHostBase(8888);
 
   ['cam1', 'cam2'].forEach(cam => {
     let videoEl = document.getElementById(cam === 'cam1' ? 'video1' : 'video2');
@@ -3862,11 +4024,13 @@ function setupVideoStreams() {
       return;
     }
 
+    const targets = window.resolveCameraStreamTargets(cam);
     window.attachWhepPlayer(
       cam,
       videoEl,
-      `${whepBase}/live/${cam}/whep`,
-      `${hlsBase}/live/${cam}/index.m3u8`
+      targets.whepUrl,
+      targets.hlsUrl,
+      { streamPath: targets.streamPath, rawWhepUrl: targets.rawWhepUrl }
     );
   });
 }
@@ -3881,10 +4045,7 @@ window.rebindLiveHlsPlayer = function(cam) {
     window.metadataRingBuffer[normCam].length = 0;
   }
 
-  const whepBase = _getMediaHostBase(8889);
-  const hlsBase = _getMediaHostBase(8888);
-  const whepUrl = `${whepBase}/live/${normCam}/whep`;
-  const hlsUrl = `${hlsBase}/live/${normCam}/index.m3u8`;
+  const targets = window.resolveCameraStreamTargets(normCam);
 
   setTimeout(() => {
     try {
@@ -3892,7 +4053,10 @@ window.rebindLiveHlsPlayer = function(cam) {
       ids.forEach((vidId) => {
         const videoEl = document.getElementById(vidId);
         if (videoEl && videoEl.tagName === 'VIDEO') {
-          window.attachWhepPlayer(normCam, videoEl, whepUrl, hlsUrl);
+          window.attachWhepPlayer(normCam, videoEl, targets.whepUrl, targets.hlsUrl, {
+            streamPath: targets.streamPath,
+            rawWhepUrl: targets.rawWhepUrl,
+          });
         }
       });
     } finally {
@@ -6118,6 +6282,16 @@ async function onPageSwitch(page) {
   switch (page) {
     case 'dashboard':
       loadInitialHealthData();
+      ['preview1', 'preview2'].forEach((pid) => {
+        const pv = document.getElementById(pid);
+        if (pv && pv.tagName === 'VIDEO' && pv.paused) {
+          pv.play().catch(() => {});
+        }
+      });
+      requestAnimationFrame(() => {
+        syncCanvasSize('cam1');
+        syncCanvasSize('cam2');
+      });
       break;
     case 'live':
       if (!appState.cameras.cam1) initLiveMonitoring();
@@ -6299,11 +6473,13 @@ function initDashboardHlsPlayers() {
     const isOfflineMode = new URLSearchParams(window.location.search).get('offline') === '1';
     if (isOfflineMode) return;
 
+    const targets = window.resolveCameraStreamTargets(cam);
     window.attachWhepPlayer(
       cam,
       videoEl,
-      `${whepBase}/live/${cam}/whep`,
-      `${hlsBase}/live/${cam}/index.m3u8`
+      targets.whepUrl,
+      targets.hlsUrl,
+      { streamPath: targets.streamPath, rawWhepUrl: targets.rawWhepUrl }
     );
   });
 }

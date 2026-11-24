@@ -233,7 +233,7 @@ tracking:
   track_buffer: 45
   max_age: 45
   max_lost_frames: 45
-  high_det_thresh: 0.50
+  high_det_thresh: 0.38
   low_det_thresh: 0.18
   inner_box_ioa_threshold: 0.55
   max_active_tracks: 50
@@ -327,6 +327,13 @@ output:
     check_interval_seconds: 10.0
     min_fps_threshold: 15.0
     max_latency_ms: 5000
+streaming:
+  overlay_mode: "nvenc"
+  nvenc_width: 1280
+  nvenc_height: 720
+  nvenc_fps: 30
+  nvenc_bitrate: "2800k"
+  mediamtx_rtsp_base: "rtsp://127.0.0.1:8554/live"
 backend:
   host: 0.0.0.0
   port: 8000

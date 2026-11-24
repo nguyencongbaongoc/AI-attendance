@@ -28,6 +28,7 @@ class PipelineConfig(BaseModel):
     annotation: Dict[str, Any] = Field(default_factory=dict)
     encode: Dict[str, Any] = Field(default_factory=dict)
     output: Dict[str, Any] = Field(default_factory=dict)
+    streaming: Dict[str, Any] = Field(default_factory=dict)
     backend: Dict[str, Any] = Field(default_factory=dict)
     frontend: Dict[str, Any] = Field(default_factory=dict)
     monitoring: Dict[str, Any] = Field(default_factory=dict)

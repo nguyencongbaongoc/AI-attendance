@@ -58,8 +58,8 @@ class RTSPSourceConfig:
     readiness_timeout: float = 30.0
     min_bytes_progress_interval: float = 5.0
     consecutive_increases_required: int = 3
-    # Packet queue for threaded demuxing
-    packet_queue_size: int = 120
+    # Packet queue for threaded demuxing (1 = single-slot overwrite)
+    packet_queue_size: int = 1
 
 
 @dataclass
@@ -108,8 +108,11 @@ class RTSPSource:
         # Threading
         self._stop_event = threading.Event()
         self._read_thread: Optional[threading.Thread] = None
-        # Bounded packet queue - critical for preventing TCP buffer buildup
-        self._packet_queue: Queue = Queue(maxsize=config.packet_queue_size)
+        # Atomic single-slot overwrite grabber - prevents FIFO latency backlog
+        self._latest_lock = threading.Lock()
+        self._latest_cond = threading.Condition(self._latest_lock)
+        self._latest_packet: Optional[av.Packet] = None
+        self._latest_packet_mono_ns: int = 0
         
         # Reconnection
         self._retry_count = 0
@@ -144,12 +147,12 @@ class RTSPSource:
             transport = "tcp"
         options = {
             "rtsp_transport": transport,
-            "fflags": "nobuffer",
+            "fflags": "nobuffer+discardcorrupt",
             "flags": "low_delay",
             "probesize": "500000",
             "analyzeduration": "500000",
             "buffer_size": "4096000",
-            "max_delay": "250000",
+            "max_delay": "0",
             "stimeout": "2000000",
             "reorder_queue_size": "0",
         }
@@ -270,66 +273,17 @@ class RTSPSource:
             self._handle_read_loop_exit()
 
     def _queue_packet(self, packet) -> None:
-        """Queue packet with intelligent backpressure - drop oldest non-keyframe when full."""
-        try:
-            self._packet_queue.put_nowait(packet)
+        """Atomically overwrite the single latest-packet slot (zero FIFO backlog)."""
+        now_ns = time.monotonic_ns()
+        with self._latest_cond:
+            if self._latest_packet is not None:
+                with self._lock:
+                    self._metrics.packets_dropped += 1
+            self._latest_packet = packet
+            self._latest_packet_mono_ns = now_ns
             with self._lock:
-                self._metrics.packets_queued = self._packet_queue.qsize()
-        except Exception:
-            # Queue full - implement smart dropping: drop oldest non-keyframe first
-            dropped = False
-            try:
-                # Peek at queue to find non-keyframe packets
-                # We can't easily peek at Queue, so we'll try get and re-put
-                # Strategy: try to drop one packet, preferring non-keyframes
-                temp_packets = []
-                found_non_keyframe = False
-                
-                # Try to extract a non-keyframe
-                for _ in range(min(5, self._packet_queue.qsize())):
-                    try:
-                        old_packet = self._packet_queue.get_nowait()
-                        # Check if it's a keyframe (I-frame)
-                        is_keyframe = bool(old_packet.is_keyframe)
-                        if not is_keyframe and not found_non_keyframe:
-                            # Drop this non-keyframe packet
-                            with self._lock:
-                                self._metrics.packets_dropped += 1
-                            dropped = True
-                            found_non_keyframe = True
-                            logger.debug(f"RTSPSource({self.camera_id}): Dropped non-keyframe packet (backpressure)")
-                        else:
-                            temp_packets.append(old_packet)
-                    except Empty:
-                        break
-                
-                # Re-queue the packets we peeked at
-                for p in temp_packets:
-                    try:
-                        self._packet_queue.put_nowait(p)
-                    except Exception:
-                        pass
-                
-                # If we couldn't drop a non-keyframe, drop the oldest anyway
-                if not dropped:
-                    try:
-                        self._packet_queue.get_nowait()
-                        with self._lock:
-                            self._metrics.packets_dropped += 1
-                        dropped = True
-                        logger.debug(f"RTSPSource({self.camera_id}): Dropped oldest packet (backpressure)")
-                    except Empty:
-                        pass
-                
-                # Now try to add the new packet
-                if dropped:
-                    try:
-                        self._packet_queue.put_nowait(packet)
-                    except Exception:
-                        pass
-                        
-            except Exception as e:
-                logger.debug(f"RTSPSource({self.camera_id}): Backpressure handling error: {e}")
+                self._metrics.packets_queued = 1
+            self._latest_cond.notify()
     
     def _check_readiness(self) -> None:
         """Check readiness gate based on bytes progress."""
@@ -458,12 +412,12 @@ class RTSPSource:
                 self._container = None
                 self._stream = None
         
-        # Clear queue
-        while True:
-            try:
-                self._packet_queue.get_nowait()
-            except Empty:
-                break
+        # Clear single-slot packet buffer
+        with self._latest_cond:
+            self._latest_packet = None
+            self._latest_packet_mono_ns = 0
+            self._metrics.packets_queued = 0
+            self._latest_cond.notify_all()
     
     def stop(self) -> None:
         """Stop RTSP source."""
@@ -477,11 +431,19 @@ class RTSPSource:
             logger.info(f"RTSPSource({self.camera_id}): Stopped")
     
     def get_packet(self, timeout: float = 1.0) -> Optional[av.Packet]:
-        """Get next packet from queue."""
-        try:
-            return self._packet_queue.get(timeout=timeout)
-        except Empty:
-            return None
+        """Pop the latest packet from the single-slot grabber."""
+        deadline = time.monotonic() + max(0.0, float(timeout))
+        with self._latest_cond:
+            while self._latest_packet is None and not self._stop_event.is_set():
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return None
+                self._latest_cond.wait(timeout=remaining)
+            pkt = self._latest_packet
+            self._latest_packet = None
+            with self._lock:
+                self._metrics.packets_queued = 0
+            return pkt
     
     def iter_packets(self) -> Iterator[av.Packet]:
         """Iterate packets from stream."""
@@ -492,7 +454,8 @@ class RTSPSource:
             yield packet
     
     def get_queue_depth(self) -> int:
-        return self._packet_queue.qsize()
+        with self._latest_lock:
+            return 1 if self._latest_packet is not None else 0
     
     def get_stream_info(self) -> Dict[str, Any]:
         """Get stream information."""

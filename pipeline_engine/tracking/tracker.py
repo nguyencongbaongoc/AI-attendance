@@ -121,6 +121,10 @@ class Track:
         return self.frame_index
 
     @property
+    def time_since_update(self) -> int:
+        return int(self.missed_frames)
+
+    @property
     def bbox(self) -> Tuple[float, float, float, float]:
         return self.bbox_original_frame
 
@@ -237,6 +241,7 @@ class Track:
             "age": self.age,
             "hits": self.hits,
             "missed_frames": self.missed_frames,
+            "time_since_update": self.missed_frames,
             "person_id": self.person_id,
             "person_name": self.person_name,
             "identity_confidence": self.identity_confidence,
@@ -257,7 +262,7 @@ class TrackingConfig:
     track_buffer: int = 45
     max_age: int = 45
     max_lost_frames: int = 45
-    high_det_thresh: float = 0.50
+    high_det_thresh: float = 0.38
     low_det_thresh: float = 0.18
     inner_box_ioa_threshold: float = 0.55
     max_active_tracks: int = 50
@@ -307,6 +312,10 @@ class TrackingResult:
     @property
     def frame_sequence(self) -> int:
         return self.frame_index
+
+    @property
+    def time_since_update(self) -> int:
+        return int(self.missed_frames)
     
     def get_active_tracks(self) -> List[Track]:
         return [t for t in self.tracks if t.is_active or t.is_new]
@@ -433,10 +442,12 @@ def suppress_inner_duplicate_boxes(
         det_area = max(1e-6, float(det.area))
         suppressed = False
         for k_det, k_tid in zip(kept, kept_track_ids):
-            if compute_ioa(det.bbox, k_det.bbox) >= ioa_threshold:
+            ioa = compute_ioa(det.bbox, k_det.bbox)
+            if ioa >= ioa_threshold:
                 k_area = max(1e-6, float(k_det.area))
                 distinct_active = (
-                    det_tid is not None
+                    ioa < 0.72
+                    and det_tid is not None
                     and k_tid is not None
                     and det_tid != k_tid
                     and det_area >= 0.45 * k_area
@@ -1432,6 +1443,23 @@ def update_tracks(
         new_tracks.append(new_track)
         updated_tracks.append(new_track)
     
+    # Deduplicate any overlapping active/new track where one bbox is heavily contained (>= 72% IoA)
+    current_visible = [
+        t for t in updated_tracks
+        if (t.is_active or t.is_new) and t.missed_frames == 0
+    ]
+    current_visible.sort(
+        key=lambda t: (bool(t.face_verified), float(t.area), int(t.hits)),
+        reverse=True,
+    )
+    kept_visible: List[Track] = []
+    for tr in current_visible:
+        if any(compute_ioa(tr.bbox_original_frame, kv.bbox_original_frame) >= 0.72 for kv in kept_visible):
+            tr.lifecycle_state = TrackLifecycleState.CLOSED
+            newly_closed.append(tr)
+        else:
+            kept_visible.append(tr)
+
     # Enforce memory bounds
     active_tracks = [t for t in updated_tracks if t.is_active]
     lost_tracks = [t for t in updated_tracks if t.is_lost]

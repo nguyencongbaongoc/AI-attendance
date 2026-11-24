@@ -63,8 +63,8 @@ class NVDECDecoderConfig:
     width: int = 3840
     height: int = 2160
     max_surfaces: int = 32
-    # Output queue
-    max_queue_size: int = 8
+    # Output queue (1 = single-slot overwrite)
+    max_queue_size: int = 1
     # Timing
     timeout: float = 10.0
     # Retry
@@ -131,7 +131,11 @@ class NVDECDecoder:
         # Threading
         self._stop_event = threading.Event()
         self._reader_thread: Optional[threading.Thread] = None
-        self._frame_queue: Queue = Queue(maxsize=config.max_queue_size)
+        # Atomic single-slot overwrite grabber - zero multi-frame FIFO backlog
+        self._latest_lock = threading.Lock()
+        self._latest_cond = threading.Condition(self._latest_lock)
+        self._latest_frame: Optional[GPUFrame] = None
+        self._latest_capture_mono_ns: int = 0
         self._frame_id = 0
         self._error: Optional[Exception] = None
         self._lock = threading.RLock()
@@ -217,13 +221,14 @@ class NVDECDecoder:
             format_name = "rtsp"
             options = {
                 "rtsp_transport": "tcp",
-                "fflags": "nobuffer",
+                "fflags": "nobuffer+discardcorrupt",
                 "flags": "low_delay",
                 "probesize": "500000",
                 "analyzeduration": "500000",
                 "buffer_size": "4096000",
-                "max_delay": "250000",
+                "max_delay": "0",
                 "stimeout": "2000000",
+                "reorder_queue_size": "0",
             }
         
         import av
@@ -375,6 +380,7 @@ class NVDECDecoder:
             while not self._stop_event.is_set():
                 try:
                     raw_packet = next(demux_iter)
+                    pkt_capture_mono_ns = time.monotonic_ns()
                 except StopIteration:
                     break
                 except Exception as e:
@@ -551,6 +557,7 @@ class NVDECDecoder:
                                 gpu_frame.pts = pts if pts is not None else self._frame_id
                                 gpu_frame.dts = pts if pts is not None else self._frame_id
                                 gpu_frame.time_base = self._time_base
+                                gpu_frame.capture_mono_ns = pkt_capture_mono_ns
                                 gpu_frame.width = width
                                 gpu_frame.height = height
                                 gpu_frame.actual_width = width
@@ -570,6 +577,7 @@ class NVDECDecoder:
                                 frame_id=self._frame_id,
                                 source_provenance="rtsp",
                                 timestamp=timestamp,
+                                capture_mono_ns=pkt_capture_mono_ns,
                                 pts=pts if pts is not None else self._frame_id,
                                 dts=pts if pts is not None else self._frame_id,
                                 time_base=self._time_base,
@@ -587,24 +595,17 @@ class NVDECDecoder:
                         decode_ms = (time.perf_counter() - decode_start) * 1000
                         gpu_frame.decode_time_ms = decode_ms
                     
-                        # Queue frame
-                        try:
-                            self._frame_queue.put_nowait(gpu_frame)
-                        except Full:
-                            self._metrics.queue_full_drops += 1
-                            # Drop oldest
-                            try:
-                                old_frame = self._frame_queue.get_nowait()
+                        # Atomically overwrite single-slot latest frame (zero FIFO backlog)
+                        with self._latest_cond:
+                            if self._latest_frame is not None:
+                                old_frame = self._latest_frame
+                                self._metrics.queue_full_drops += 1
+                                self._metrics.frames_dropped += 1
                                 if self._frame_pool:
                                     self._frame_pool.return_to_pool(old_frame)
-                            except Empty:
-                                pass
-                            try:
-                                self._frame_queue.put_nowait(gpu_frame)
-                            except Full:
-                                if self._frame_pool:
-                                    self._frame_pool.return_to_pool(gpu_frame)
-                                self._metrics.frames_dropped += 1
+                            self._latest_frame = gpu_frame
+                            self._latest_capture_mono_ns = pkt_capture_mono_ns
+                            self._latest_cond.notify()
                     
                         self._frame_id += 1
                         self._metrics.frames_decoded += 1
@@ -690,19 +691,35 @@ class NVDECDecoder:
                 self._set_state(DecoderState.ERROR)
                 return False
 
-    def get_frame(self, timeout: float = 1.0) -> Optional[GPUFrame]:
-        """Get next decoded GPUFrame."""
+    def get_latest_frame(
+        self, timeout: float = 0.05, max_age_ms: Optional[float] = None
+    ) -> Optional[GPUFrame]:
+        """Atomically pop the latest decoded GPUFrame from the single-slot grabber (non-reconnecting)."""
         if self._state != DecoderState.DECODING:
-            if self._state == DecoderState.STOPPED:
-                self.start()
-            elif self._state == DecoderState.ERROR:
-                if not self.reconnect():
-                    return None
-        
-        try:
-            return self._frame_queue.get(timeout=timeout)
-        except Empty:
             return None
+
+        deadline = time.monotonic() + max(0.0, float(timeout))
+        with self._latest_cond:
+            while self._latest_frame is None and not self._stop_event.is_set() and self._state == DecoderState.DECODING:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return None
+                self._latest_cond.wait(timeout=remaining)
+            frame = self._latest_frame
+            self._latest_frame = None
+
+        if frame is not None and max_age_ms is not None and getattr(frame, "capture_mono_ns", 0) > 0:
+            age_ms = (time.monotonic_ns() - frame.capture_mono_ns) / 1_000_000.0
+            if age_ms > max_age_ms:
+                if self._frame_pool:
+                    self._frame_pool.return_to_pool(frame)
+                self._metrics.frames_dropped += 1
+                return None
+        return frame
+
+    def get_frame(self, timeout: float = 1.0) -> Optional[GPUFrame]:
+        """Get latest decoded GPUFrame."""
+        return self.get_latest_frame(timeout=timeout)
 
     def iter_frames(self) -> Iterator[GPUFrame]:
         """Iterate decoded frames."""
@@ -780,14 +797,14 @@ class NVDECDecoder:
                 self._hwaccel = None
                 self._codec_context = None
         
-        # Clear queue and return frames to pool
-        while True:
-            try:
-                frame = self._frame_queue.get_nowait()
+        # Clear single-slot frame and return to pool
+        with self._latest_cond:
+            if self._latest_frame is not None:
                 if self._frame_pool:
-                    self._frame_pool.return_to_pool(frame)
-            except Empty:
-                break
+                    self._frame_pool.return_to_pool(self._latest_frame)
+                self._latest_frame = None
+            self._latest_capture_mono_ns = 0
+            self._latest_cond.notify_all()
 
     def stop(self) -> None:
         """Stop the decoder."""
@@ -801,7 +818,8 @@ class NVDECDecoder:
             logger.info(f"NVDECDecoder({self.camera_id}): stopped")
 
     def get_queue_depth(self) -> int:
-        return self._frame_queue.qsize()
+        with self._latest_lock:
+            return 1 if self._latest_frame is not None else 0
 
     def get_stats(self) -> Dict[str, Any]:
         with self._lock:
@@ -812,7 +830,7 @@ class NVDECDecoder:
                 "frames_dropped": self._metrics.frames_dropped,
                 "decode_errors": self._metrics.decode_errors,
                 "queue_full_drops": self._metrics.queue_full_drops,
-                "queue_depth": self._frame_queue.qsize(),
+                "queue_depth": self.get_queue_depth(),
                 "avg_decode_ms": self._metrics.avg_decode_ms,
                 "reconnect_count": self._metrics.reconnect_count,
                 "last_error": self._metrics.last_error,
@@ -850,7 +868,7 @@ def create_nvdec_decoder(
         width=config.get("expected", {}).get("width", 3840),
         height=config.get("expected", {}).get("height", 2160),
         max_surfaces=config.get("decode", {}).get("surfaces", 32),
-        max_queue_size=8,
+        max_queue_size=1,
         timeout=config.get("input", {}).get("timeout_seconds", 10.0),
     )
     

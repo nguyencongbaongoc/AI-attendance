@@ -387,8 +387,8 @@ def _prepare_adverse_streams_and_config() -> Dict[str, Any]:
     seg_a_ts = ARTIFACTS / "_cam1_seg_a.ts"
     seg_b_ts = ARTIFACTS / "_cam1_seg_b_degraded.ts"
 
-    # Segment A: Standard bitrate H.264 (~17.3s)
-    fc_a = _build_concat_filter([p1, p2, p3])
+    # Segment A: Standard bitrate H.264 (~55.5s so 00:00..00:09.5 is sharp and 440kbps hits 00:09.5..00:33)
+    fc_a = _build_concat_filter([p2, p3, p4, p5, p2, p3, p1, p2, p3, p2])
     cmd_a = [
         "ffmpeg", "-y", "-i", str(SOURCE_MP4),
         "-filter_complex", fc_a, "-map", "[outv]",
@@ -401,8 +401,10 @@ def _prepare_adverse_streams_and_config() -> Dict[str, Any]:
     if proc_a.returncode != 0:
         raise RuntimeError(f"FFmpeg seg_a failed: {proc_a.stderr[-600:]}")
 
-    # Segment B: Simulated low-bitrate Wi-Fi degradation window (~18.5s)
-    fc_b = _build_concat_filter([p4, p5, p1])
+    seg_a_probe = _ffprobe_info(seg_a_ts)
+
+    # Segment B: Simulated low-bitrate Wi-Fi degradation window (~23.4s of entering students)
+    fc_b = _build_concat_filter([p4, p5, p4, p5])
     cmd_b = [
         "ffmpeg", "-y", "-i", str(SOURCE_MP4),
         "-filter_complex", fc_b, "-map", "[outv]",
@@ -500,6 +502,20 @@ def _prepare_adverse_streams_and_config() -> Dict[str, Any]:
         cam_cfg["crossing_policy"]["reference_point"] = "adaptive"
 
     base_cfg.setdefault("models", {}).setdefault("arcface", {})["similarity_threshold"] = 0.56
+    base_cfg.setdefault("models", {}).setdefault("yolo", {})["confidence_threshold"] = 0.22
+    base_cfg.setdefault("tracking", {}).update({
+        "high_det_thresh": 0.38,
+        "low_det_thresh": 0.18,
+        "inner_box_ioa_threshold": 0.55,
+    })
+    base_cfg["streaming"] = {
+        "overlay_mode": "nvenc",
+        "nvenc_width": 1280,
+        "nvenc_height": 720,
+        "nvenc_fps": 30,
+        "nvenc_bitrate": "2800k",
+        "mediamtx_rtsp_base": "rtsp://127.0.0.1:8554/live",
+    }
     CFG_PATH.write_text(yaml.safe_dump(base_cfg, sort_keys=False), encoding="utf-8")
 
     # Pre-extract 3 real doorway frames per camera once so Phase 4 DB attachment stays <5ms
@@ -532,6 +548,7 @@ def _prepare_adverse_streams_and_config() -> Dict[str, Any]:
     )
     return {
         "cam1_probe": cam1_probe,
+        "cam1_seg_a_duration_s": seg_a_probe["duration_s"],
         "cam1_degraded_bitrate_kbps": degraded_probe["bitrate_kbps"],
         "cam2_probe": cam2_probe,
     }
@@ -624,6 +641,10 @@ async def _collect_ws_metadata(
                             "codec": data.get("codec", ""),
                             "stream_state": data.get("stream_state", "CONNECTED"),
                             "stream_epoch": int(data.get("stream_epoch", 0)),
+                            "overlay_mode": data.get("overlay_mode", "canvas"),
+                            "ai_stream_path": data.get("ai_stream_path", ""),
+                            "capture_to_inference_ms": float(data.get("capture_to_inference_ms", 0.0) or 0.0),
+                            "nvenc_active": bool(data.get("nvenc_active", False)),
                             "persons": data.get("persons", []),
                             "counts": data.get("counts", {"in": 0, "out": 0}),
                         }
@@ -725,12 +746,12 @@ def _assemble_constant_fps_mp4(
 
 def _extract_check_frames(video_path: pathlib.Path) -> List[str]:
     targets = [
-        ("01_04s", 4.0),
-        ("02_08s", 8.0),
-        ("03_14s", 14.0),
-        ("04_29s", 29.0),
-        ("05_32s", 32.0),
-        ("06_37s", 37.0),
+        ("01_01_5s", 1.5),
+        ("02_02_5s", 2.5),
+        ("03_05_5s", 5.5),
+        ("04_22_0s", 22.0),
+        ("05_29_0s", 29.0),
+        ("06_37_5s", 37.5),
     ]
     extracted: List[str] = []
     for tag, ts in targets:
@@ -763,7 +784,9 @@ def _verify_excel_and_logs(worker_log_path: pathlib.Path, xlsx_path: pathlib.Pat
     ws2 = wb["Tong_Hop_Si_So"]
     rows2 = list(ws2.iter_rows(values_only=True))
     summary_row = list(rows2[1]) if len(rows2) > 1 else []
-    assert len(summary_row) == 5 and int(summary_row[0]) == 3, f"Unexpected Tong_Hop_Si_So row: {summary_row}"
+    assert len(summary_row) == 5 and int(summary_row[0]) == 3 and int(summary_row[1]) == 3 and float(summary_row[4]) >= 100.0, (
+        f"Expected 3/3 (100%) in Tong_Hop_Si_So, got: {summary_row}"
+    )
 
     log_txt = worker_log_path.read_text(encoding="utf-8", errors="replace") if worker_log_path.exists() else ""
     has_h264_log = "codec: h264" in log_txt
@@ -864,6 +887,7 @@ async def run_stress_test() -> Dict[str, Any]:
             await _wait_http_200(session, "http://127.0.0.1:8000/api/v1/health/live", timeout=30.0)
             await _wait_http_200(session, "http://127.0.0.1:8000/api/v1/health/system", timeout=35.0)
 
+            cam1_ffmpeg_start_mono = time.monotonic()
             ffmpeg1_proc = subprocess.Popen(
                 [
                     "ffmpeg", "-re", "-stream_loop", "-1", "-i", str(CAM1_ADVERSE_MP4),
@@ -887,7 +911,7 @@ async def run_stress_test() -> Dict[str, Any]:
             await _wait_http_200(session, "http://127.0.0.1:8888/live/cam1/index.m3u8", timeout=20.0)
             await _wait_http_200(session, "http://127.0.0.1:8888/live/cam2/index.m3u8", timeout=20.0)
 
-            print("[STEP 3] Starting AIWorker (NVDEC H.264 + HEVC, TensorRT 11.3 FP16)...")
+            print("[STEP 3] Starting AIWorker (NVDEC H.264 + HEVC, TensorRT 11.3 FP16, NVENC WHEP)...")
             worker_proc = subprocess.Popen(
                 [PYTHON_EXE, "-m", "pipeline_engine.core.worker"],
                 cwd=str(ROOT),
@@ -911,6 +935,8 @@ async def run_stress_test() -> Dict[str, Any]:
                             break
                 await asyncio.sleep(0.5)
             assert worker_ready, "AIWorker did not register cam1 & cam2 within 75s"
+            await _wait_mediamtx_path_ready(session, "live/cam1_ai", timeout=25.0)
+            await _wait_mediamtx_path_ready(session, "live/cam2_ai", timeout=25.0)
 
         ws1_task = asyncio.create_task(_collect_ws_metadata("cam1", stop_monitors, cam1_pkts))
         ws2_task = asyncio.create_task(_collect_ws_metadata("cam2", stop_monitors, cam2_pkts))
@@ -1058,14 +1084,22 @@ async def run_stress_test() -> Dict[str, Any]:
                             v1Ready: document.getElementById('video1')?.readyState || 0,
                             v2Ready: document.getElementById('video2')?.readyState || 0,
                             streamModes: window.cameraStreamModes || {},
+                            streamPaths: window.cameraStreamPaths || {},
+                            overlayModes: window.cameraOverlayModes || {},
                         })"""
                     )
                     print(f"[PHASE 1] UI snapshot @08s: {phase1_ui}")
                     assert phase1_ui["streamModes"].get("cam1") == "whep", (
                         f"Expected cam1 to play via WebRTC WHEP, got {phase1_ui['streamModes']}"
                     )
-                    assert phase1_ui["streamModes"].get("cam2") in ("whep", "hls"), (
-                        f"Unexpected cam2 playback mode: {phase1_ui['streamModes']}"
+                    assert phase1_ui["streamModes"].get("cam2") == "whep", (
+                        f"Expected cam2 to play via WebRTC WHEP, got {phase1_ui['streamModes']}"
+                    )
+                    assert phase1_ui["streamPaths"].get("cam1") == "live/cam1_ai", (
+                        f"Expected cam1 on live/cam1_ai, got {phase1_ui['streamPaths']}"
+                    )
+                    assert phase1_ui["streamPaths"].get("cam2") == "live/cam2_ai", (
+                        f"Expected cam2 on live/cam2_ai, got {phase1_ui['streamPaths']}"
                     )
                     await _sleep_until(t_start + 14.0)
 
@@ -1131,13 +1165,14 @@ async def run_stress_test() -> Dict[str, Any]:
                     # --------------------------------------------------------------
                     # PHASE 3 (24s - 35s): Mid-Stream RTSP Disconnect & Auto-Reconnect
                     # --------------------------------------------------------------
-                    print("[PHASE 3] 24s-35s: Simulating 4.0s cam1 RTSP dropout & auto-reconnect...")
+                    print("[PHASE 3] 25.5s-35s: Simulating 4.0s cam1 RTSP dropout & auto-reconnect...")
+                    await _sleep_until(t_start + 25.5)
                     counts_at_drop = dict(cam1_pkts[-1]["counts"])
                     drop_mono = time.monotonic()
                     _terminate_proc(ffmpeg1_proc, "ffmpeg_cam1_drop")
                     ffmpeg1_proc = None
 
-                    await _sleep_until(t_start + 28.0)
+                    await _sleep_until(t_start + 29.5)
                     restart_mono = time.monotonic()
                     outage_duration_s = restart_mono - drop_mono
 
@@ -1254,10 +1289,6 @@ async def run_stress_test() -> Dict[str, Any]:
         outage_end_mono = (recovered_mono or (restart_mono + 6.0 if restart_mono is not None else 0.0)) + 4.0
         unexpected_console_errors = []
         for ts, text, loc_url in console_errors:
-            is_expected_hevc_whep_fallback = (
-                ":8889/live/cam2/whep" in loc_url
-                and ("400" in text or "404" in text or "Failed to load resource" in text)
-            )
             is_expected_media_outage_err = (
                 ":8000" not in loc_url
                 and "API Error" not in text
@@ -1267,7 +1298,7 @@ async def run_stress_test() -> Dict[str, Any]:
                     or (drop_mono is not None and (drop_mono - 0.5) <= ts <= outage_end_mono)
                 )
             )
-            if not is_expected_hevc_whep_fallback and not is_expected_media_outage_err:
+            if not is_expected_media_outage_err:
                 unexpected_console_errors.append(f"[{ts:.2f}] {text} ({loc_url})")
 
         assert not unexpected_console_errors, (
@@ -1309,6 +1340,36 @@ async def run_stress_test() -> Dict[str, Any]:
         avg_ipc_ms = round(sum(all_ipc) / max(len(all_ipc), 1), 2)
         p95_ipc_ms = round(float(np.percentile(all_ipc, 95)), 2) if all_ipc else 0.0
 
+        c2i_samples = [
+            p["capture_to_inference_ms"]
+            for p in (cam1_pkts + cam2_pkts)
+            if p.get("stream_state") == "CONNECTED" and p.get("capture_to_inference_ms", 0.0) > 0
+        ]
+        capture_to_inference_avg_ms = round(sum(c2i_samples) / max(len(c2i_samples), 1), 2)
+        assert c2i_samples and capture_to_inference_avg_ms < 75.0, (
+            f"capture_to_inference_avg_ms={capture_to_inference_avg_ms}ms exceeded 75.0ms threshold (samples={len(c2i_samples)})"
+        )
+
+        nvenc_cam1_active = any(p.get("nvenc_active") and p.get("overlay_mode") == "nvenc" for p in cam1_pkts)
+        nvenc_cam2_active = any(p.get("nvenc_active") and p.get("overlay_mode") == "nvenc" for p in cam2_pkts)
+        assert nvenc_cam1_active and nvenc_cam2_active, (
+            f"Expected nvenc_active=True on both cams: cam1={nvenc_cam1_active}, cam2={nvenc_cam2_active}"
+        )
+
+        cam1_dur = max(1.0, float(stream_info["cam1_probe"]["duration_s"]))
+        seg_a_dur = float(stream_info["cam1_seg_a_duration_s"])
+        degraded_440kbps_tracked_packets = sum(
+            1
+            for p in cam1_pkts
+            if (drop_mono is None or p["mono_ts"] < drop_mono)
+            and p.get("stream_state") == "CONNECTED"
+            and ((p["mono_ts"] - cam1_ffmpeg_start_mono) % cam1_dur) >= seg_a_dur
+            and len(p.get("persons", [])) > 0
+        )
+        assert degraded_440kbps_tracked_packets > 0, (
+            f"Expected active person tracking during 440kbps degraded segment, got {degraded_440kbps_tracked_packets}"
+        )
+
         cam1_codecs = sorted({p["codec"] for p in cam1_pkts if p["codec"]})
         cam2_codecs = sorted({p["codec"] for p in cam2_pkts if p["codec"]})
         assert "h264" in cam1_codecs, f"cam1 did not report h264 codec: {cam1_codecs}"
@@ -1341,12 +1402,16 @@ async def run_stress_test() -> Dict[str, Any]:
         summary = {
             "status": "PASS",
             "rtsp_transport": "tcp",
+            "overlay_mode": "nvenc",
+            "nvenc_active": {"cam1": nvenc_cam1_active, "cam2": nvenc_cam2_active},
             "stream_modes": phase1_ui.get("streamModes", {}),
+            "stream_paths": phase1_ui.get("streamPaths", {}),
             "codecs": {
                 "cam1": {
                     "expected": "h264",
                     "observed_ws_codecs": cam1_codecs,
                     "degraded_window_bitrate_kbps": stream_info["cam1_degraded_bitrate_kbps"],
+                    "degraded_440kbps_tracked_packets": degraded_440kbps_tracked_packets,
                     "recognized_subjects": recognized_cam1,
                 },
                 "cam2": {
@@ -1374,6 +1439,7 @@ async def run_stress_test() -> Dict[str, Any]:
                 "worker_crashes": 0,
             },
             "performance": {
+                "capture_to_inference_avg_ms": capture_to_inference_avg_ms,
                 "ipc_latency_avg_ms": avg_ipc_ms,
                 "ipc_latency_p95_ms": p95_ipc_ms,
                 "worker_peak_vram_mb": round(worker_peak_vram_mb, 1),
