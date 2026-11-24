@@ -108,6 +108,21 @@ def _is_port_open(port: int, host: str = "127.0.0.1") -> bool:
         return sock.connect_ex((host, port)) == 0
 
 
+def _is_udp_port_open(port: int, host: str = "127.0.0.1") -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        try:
+            sock.bind((host, port))
+            return False
+        except OSError:
+            return True
+
+
+def _check_all_ports_closed() -> List[int]:
+    open_tcp = [p for p in (8000, 8554, 8888, 8889, 9229, 9997) if _is_port_open(p)]
+    open_udp = [8189] if _is_udp_port_open(8189) else []
+    return sorted(open_tcp + open_udp)
+
+
 def _terminate_proc(proc: Optional[subprocess.Popen[Any]], name: str) -> None:
     if proc is None or proc.poll() is not None:
         return
@@ -710,10 +725,12 @@ def _assemble_constant_fps_mp4(
 
 def _extract_check_frames(video_path: pathlib.Path) -> List[str]:
     targets = [
-        ("01_08s", 8.0),
-        ("02_20s", 20.0),
-        ("03_32s", 32.5),
-        ("04_42s", 42.0),
+        ("01_04s", 4.0),
+        ("02_08s", 8.0),
+        ("03_14s", 14.0),
+        ("04_29s", 29.0),
+        ("05_32s", 32.0),
+        ("06_37s", 37.0),
     ]
     extracted: List[str] = []
     for tag, ts in targets:
@@ -781,8 +798,8 @@ def _check_monotonic_counts(packets: List[Dict[str, Any]]) -> Tuple[bool, int, i
 
 
 async def run_stress_test() -> Dict[str, Any]:
-    for p in (8000, 8554, 8888, 9229, 9997):
-        assert not _is_port_open(p), f"Port {p} already open before test start!"
+    pre_open = _check_all_ports_closed()
+    assert not pre_open, f"Ports already open before test start: {pre_open}"
 
     backups = _seed_enrolled_subjects()
     _reset_attendance_dbs()
@@ -1040,9 +1057,16 @@ async def run_stress_test() -> Dict[str, Any]:
                             ai2: document.getElementById('aiTrackingText2')?.textContent || '',
                             v1Ready: document.getElementById('video1')?.readyState || 0,
                             v2Ready: document.getElementById('video2')?.readyState || 0,
+                            streamModes: window.cameraStreamModes || {},
                         })"""
                     )
                     print(f"[PHASE 1] UI snapshot @08s: {phase1_ui}")
+                    assert phase1_ui["streamModes"].get("cam1") == "whep", (
+                        f"Expected cam1 to play via WebRTC WHEP, got {phase1_ui['streamModes']}"
+                    )
+                    assert phase1_ui["streamModes"].get("cam2") in ("whep", "hls"), (
+                        f"Unexpected cam2 playback mode: {phase1_ui['streamModes']}"
+                    )
                     await _sleep_until(t_start + 14.0)
 
                     # --------------------------------------------------------------
@@ -1230,16 +1254,20 @@ async def run_stress_test() -> Dict[str, Any]:
         outage_end_mono = (recovered_mono or (restart_mono + 6.0 if restart_mono is not None else 0.0)) + 4.0
         unexpected_console_errors = []
         for ts, text, loc_url in console_errors:
-            is_expected_hls_outage_404 = (
-                "404" in text
-                and ":8000" not in loc_url
+            is_expected_hevc_whep_fallback = (
+                ":8889/live/cam2/whep" in loc_url
+                and ("400" in text or "404" in text or "Failed to load resource" in text)
+            )
+            is_expected_media_outage_err = (
+                ":8000" not in loc_url
                 and "API Error" not in text
                 and (
                     ":8888/live/cam1" in loc_url
+                    or ":8889/live/cam1" in loc_url
                     or (drop_mono is not None and (drop_mono - 0.5) <= ts <= outage_end_mono)
                 )
             )
-            if not is_expected_hls_outage_404:
+            if not is_expected_hevc_whep_fallback and not is_expected_media_outage_err:
                 unexpected_console_errors.append(f"[{ts:.2f}] {text} ({loc_url})")
 
         assert not unexpected_console_errors, (
@@ -1313,6 +1341,7 @@ async def run_stress_test() -> Dict[str, Any]:
         summary = {
             "status": "PASS",
             "rtsp_transport": "tcp",
+            "stream_modes": phase1_ui.get("streamModes", {}),
             "codecs": {
                 "cam1": {
                     "expected": "h264",
@@ -1399,9 +1428,9 @@ async def run_stress_test() -> Dict[str, Any]:
 
 def main() -> int:
     summary = asyncio.run(run_stress_test())
-    open_ports = [p for p in (8000, 8554, 8888, 9229, 9997) if _is_port_open(p)]
+    open_ports = _check_all_ports_closed()
     assert not open_ports, f"Ports still open after teardown: {open_ports}"
-    print("[CLEANUP] Verified ports 8000, 8554, 8888, 9229, 9997 are all CLOSED.")
+    print("[CLEANUP] Verified ports 8000, 8189, 8554, 8888, 8889, 9229, 9997 are all CLOSED.")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
 

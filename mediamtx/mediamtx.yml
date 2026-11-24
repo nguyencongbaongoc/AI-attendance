@@ -125,10 +125,10 @@ hlsServerCert: server.crt
 hlsAllowOrigins: ['*']
 hlsTrustedProxies: []
 hlsAlwaysRemux: yes
-hlsVariant: fmp4
-hlsSegmentCount: 24
-hlsSegmentDuration: 2s
-hlsPartDuration: 500ms
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 500ms
+hlsPartDuration: 100ms
 hlsSegmentMaxSize: 200M
 hlsDirectory: ''
 hlsMuxerCloseAfter: 60s

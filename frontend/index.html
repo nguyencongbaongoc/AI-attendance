@@ -13,9 +13,9 @@
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;
     style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;
     font-src 'self' data: https://fonts.gstatic.com;
-    img-src 'self' data: blob: http://localhost:8000 http://127.0.0.1:8000 http://localhost:8888 http://127.0.0.1:8888 https:;
-    media-src 'self' blob: http://localhost:8888 http://127.0.0.1:8888 http://localhost:8000 http://127.0.0.1:8000;
-    connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 http://localhost:8888 http://127.0.0.1:8888 ws://localhost:8000 ws://127.0.0.1:8000 https://cdn.jsdelivr.net https://cdn.tailwindcss.com;
+    img-src 'self' data: blob: http://localhost:8000 http://127.0.0.1:8000 http://localhost:8888 http://127.0.0.1:8888 http://localhost:8889 http://127.0.0.1:8889 https:;
+    media-src 'self' blob: http://localhost:8888 http://127.0.0.1:8888 http://localhost:8889 http://127.0.0.1:8889 http://localhost:8000 http://127.0.0.1:8000;
+    connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 http://localhost:8888 http://127.0.0.1:8888 http://localhost:8889 http://127.0.0.1:8889 ws://localhost:8000 ws://127.0.0.1:8000 https://cdn.jsdelivr.net https://cdn.tailwindcss.com;
 ">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
@@ -588,21 +588,85 @@ function showToast(message, type = 'success') {
 }
 
 // ============================================================
+// Per-Camera Metadata Ring Buffer, Rendered Video Rect & WebRTC/HLS State
+// ============================================================
+window.metadataRingBuffer = window.metadataRingBuffer || { cam1: [], cam2: [] };
+window.streamPlayers = window.streamPlayers || {};
+window.cameraStreamModes = window.cameraStreamModes || {};
+
+window.getRenderedVideoRect = function(videoEl, canvasEl) {
+  const boxW = (canvasEl && canvasEl.width > 0) ? canvasEl.width : 640;
+  const boxH = (canvasEl && canvasEl.height > 0) ? canvasEl.height : 360;
+  const rect = canvasEl ? canvasEl.getBoundingClientRect() : null;
+  const dpr = (rect && rect.width > 0 && canvasEl && canvasEl.width > 0)
+    ? (canvasEl.width / rect.width)
+    : (window.devicePixelRatio || 1);
+  const vw = (videoEl && videoEl.videoWidth > 0) ? videoEl.videoWidth : 1920;
+  const vh = (videoEl && videoEl.videoHeight > 0) ? videoEl.videoHeight : 1080;
+  const videoAspect = vw / vh;
+  const boxAspect = boxW / boxH;
+  let renderW, renderH, offsetX, offsetY;
+  if (Math.abs(videoAspect - boxAspect) < 1e-4) {
+    renderW = boxW;
+    renderH = boxH;
+    offsetX = 0;
+    offsetY = 0;
+  } else if (videoAspect > boxAspect) {
+    renderW = boxW;
+    renderH = boxW / videoAspect;
+    offsetX = 0;
+    offsetY = (boxH - renderH) * 0.5;
+  } else {
+    renderH = boxH;
+    renderW = boxH * videoAspect;
+    offsetX = (boxW - renderW) * 0.5;
+    offsetY = 0;
+  }
+  return { offsetX, offsetY, renderW, renderH, dpr, boxW, boxH, videoWidth: vw, videoHeight: vh };
+};
+
+window.observeCanvasContainer = function(videoEl, canvasEl) {
+  if (!canvasEl || canvasEl.dataset.roAttached === '1') return;
+  const container = canvasEl.parentElement || videoEl || canvasEl;
+  const syncSize = () => {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = container.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      const targetW = Math.round(rect.width * dpr);
+      const targetH = Math.round(rect.height * dpr);
+      if (canvasEl.width !== targetW || canvasEl.height !== targetH) {
+        canvasEl.width = targetW;
+        canvasEl.height = targetH;
+      }
+      canvasEl.style.width = `${rect.width}px`;
+      canvasEl.style.height = `${rect.height}px`;
+    }
+  };
+  syncSize();
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(() => syncSize());
+    ro.observe(container);
+    canvasEl._resizeObserver = ro;
+  }
+  canvasEl.dataset.roAttached = '1';
+};
+
+// ============================================================
 // WebSocket Client for Real-time Metadata Streaming (Canvas Overlay)
 // ============================================================
 class MetadataWebSocket {
   constructor() {
     this.ws = null;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
-    this.reconnectDelays = [1000, 2000, 5000, 5000, 5000];
+    this.maxReconnectAttempts = 10;
+    this.reconnectDelays = [500, 1000, 2000, 3000, 5000];
     this.isExplicitDisconnect = false;
     this.handlers = new Map();
     this.sequence = 0;
     this.connectionId = null;
     this.cameraId = null;
     this.metadataBuffer = [];
-    this.maxBufferSize = 5; // Keep last 5 frames for interpolation
+    this.maxBufferSize = 180;
     this.lastRenderTime = 0;
     this.frameInterval = 0;
     this.reconnectTimeout = null;
@@ -613,7 +677,7 @@ class MetadataWebSocket {
   }
 
   connect(cameraId) {
-    if (cameraId) this.cameraId = cameraId;
+    if (cameraId) this.cameraId = String(cameraId).toLowerCase().trim();
     this.isExplicitDisconnect = false;
     
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
@@ -687,18 +751,24 @@ class MetadataWebSocket {
     }
 
     switch (msg.type) {
-      case 'metadata':
-        // Add to buffer for smooth rendering
-        this.metadataBuffer.push(msg.data);
-        if (this.metadataBuffer.length > this.maxBufferSize) {
-          this.metadataBuffer.shift();
+      case 'metadata': {
+        const pkt = msg.data || {};
+        const cid = String(this.cameraId || pkt.camera_id || 'cam1').toLowerCase().trim();
+        pkt.recvPerfMs = performance.now();
+        window.metadataRingBuffer[cid] = window.metadataRingBuffer[cid] || [];
+        const ring = window.metadataRingBuffer[cid];
+        if (pkt.stream_state === 'RECONNECTING') {
+          ring.length = 0;
+          this.metadataBuffer.length = 0;
+        } else {
+          ring.push(pkt);
+          while (ring.length > 180) ring.shift();
+          this.metadataBuffer.push(pkt);
+          while (this.metadataBuffer.length > this.maxBufferSize) this.metadataBuffer.shift();
         }
-        // Debug log for received persons
-        if (msg.data && msg.data.persons && msg.data.persons.length > 0) {
-          console.log('[BBOX_RECV]', this.cameraId, msg.data.persons);
-        }
-        this.emit('metadata', msg.data);
+        this.emit('metadata', pkt);
         break;
+      }
       case 'welcome':
         this.connectionId = msg.connection_id;
         this.emit('welcome', msg);
@@ -767,7 +837,7 @@ class MetadataWebSocket {
       return;
     }
 
-    const delay = this.reconnectDelays[this.reconnectAttempts] || 5000;
+    const delay = this.reconnectDelays[Math.min(this.reconnectAttempts, this.reconnectDelays.length - 1)] || 5000;
     this.reconnectAttempts++;
     console.log(`[META_WS] Reconnecting to ${this.cameraId} in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
     
@@ -800,27 +870,29 @@ class MetadataWebSocket {
     return this.metadataBuffer[this.metadataBuffer.length - 1] || null;
   }
 
-  getMetadataForTime(targetTime) {
-    // Find metadata frame closest to target video time
-    if (this.metadataBuffer.length === 0) return null;
+  getMetadataForDelay(delayMs, maxDriftMs = 450) {
+    const cid = String(this.cameraId || 'cam1').toLowerCase().trim();
+    const ring = (window.metadataRingBuffer && window.metadataRingBuffer[cid]) || this.metadataBuffer;
+    if (!ring || ring.length === 0) return null;
+    const targetPerfMs = performance.now() - delayMs;
     let closest = null;
     let minDiff = Infinity;
-    for (const meta of this.metadataBuffer) {
-      const metaSec = (meta.pts_ns !== undefined && meta.pts_ns !== null) ? (meta.pts_ns / 1e9) : Number(meta.timestamp || 0);
-      if (!Number.isFinite(metaSec)) continue;
-      const diff = Math.abs(metaSec - targetTime);
+    for (let i = ring.length - 1; i >= 0; i--) {
+      const meta = ring[i];
+      if (!meta || typeof meta.recvPerfMs !== 'number') continue;
+      const diff = Math.abs(meta.recvPerfMs - targetPerfMs);
       if (diff < minDiff) {
         minDiff = diff;
         closest = meta;
       }
     }
-    if (!closest || minDiff > 0.3) return null;
+    if (!closest || minDiff > maxDriftMs) return null;
     return closest;
   }
 }
 
 // ============================================================
-// Canvas Overlay Renderer
+// Canvas Overlay Renderer (Timestamp-Aligned + Blank Guard + Exact Video Rect)
 // ============================================================
 class CanvasOverlayRenderer {
   constructor(canvasId, videoId, cameraId) {
@@ -830,7 +902,6 @@ class CanvasOverlayRenderer {
     this.video = document.getElementById(videoId);
     this.cameraId = String(cameraId || 'cam1').toLowerCase().trim();
 
-    // Per-canvas overlay registry so dashboard & live canvases coexist cleanly
     window.overlayRenderers = window.overlayRenderers || {};
     if (window.overlayRenderers[this.canvasId] && window.overlayRenderers[this.canvasId] !== this) {
       window.overlayRenderers[this.canvasId].destroy();
@@ -839,77 +910,101 @@ class CanvasOverlayRenderer {
 
     this.metadataWS = new MetadataWebSocket();
     this.isRendering = false;
-    this.sourceWidth = 3840;
-    this.sourceHeight = 2160;
+    this.sourceWidth = 1920;
+    this.sourceHeight = 1080;
     this.animationFrameId = null;
     this.showAnnotations = true;
     this.lastMetadata = null;
     this.crossingLine = null;
-    
-    // Detection timestamp tracking for anti-ghosting
+
+    // Strict media-advance & anti-ghost tracking
+    this.lastMediaTime = -1;
+    this.lastMediaAdvancePerfMs = 0;
+    this._rvfcHandle = null;
     this.lastDetectionTime = 0;
-    this.detectionWatchdogId = null;
     this.lastStreamState = null;
     this.lastStreamEpoch = 0;
-    
+
     // Visual styling
-    this.personBoxColor = '#00ff00';
-    this.faceBoxColor = '#00ff00';
-    this.unknownFaceColor = '#ff6b6b';
+    this.personBoxColor = '#10b981';
+    this.faceBoxColor = '#10b981';
+    this.unknownFaceColor = '#ef4444';
     this.trackIdColor = '#ffffff';
     this.confidenceColor = '#ffff00';
     this.lineColor = '#ffffff';
-    this.linePulseColor = '#00ff00';
+    this.linePulseColor = '#10b981';
     this.lineWidth = 2;
-    this.boxLineWidth = 2;
+    this.boxLineWidth = 3;
     this.fontSize = 13;
     this.fontFamily = 'JetBrains Mono, monospace';
-    
-    // Line pulse animation
+
     this.linePulsePhase = 0;
     this.linePulseActive = false;
-    
+
+    window.observeCanvasContainer(this.video, this.canvas);
     this.bindMetadataEvents();
     this.attachVideo();
     this.bindVisibilityChange();
   }
 
+  _scheduleVideoFrameTracker() {
+    if (!this.video || typeof this.video.requestVideoFrameCallback !== 'function') return;
+    if (this._rvfcHandle !== null) return;
+    const onFrame = () => {
+      this._rvfcHandle = null;
+      this.lastMediaAdvancePerfMs = performance.now();
+      if (this.video && !this.video.paused && !this.video.ended && this.isRendering) {
+        this._rvfcHandle = this.video.requestVideoFrameCallback(onFrame);
+      }
+    };
+    this._rvfcHandle = this.video.requestVideoFrameCallback(onFrame);
+  }
+
   attachVideo() {
     if (!this.video) return;
-    
-    const startIfReady = () => {
-      if (this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && !this.video.paused) {
-        this.start();
+
+    const onMediaReady = () => {
+      this.lastMediaTime = Number.isFinite(this.video.currentTime) ? this.video.currentTime : -1;
+      if (this.video.readyState >= 2 && !this.video.paused && this.video.videoWidth > 0) {
+        this.lastMediaAdvancePerfMs = performance.now();
+        this._scheduleVideoFrameTracker();
       }
+      if (!this.isRendering) this.start();
     };
-    
-    // Video event listeners
-    this._videoLoadedDataHandler = () => startIfReady();
-    this._videoCanPlayHandler = () => startIfReady();
-    this._videoPlayingHandler = () => this.start();
-    this._videoPlayHandler = () => {
-      if (this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        this.start();
+
+    const onMediaClear = () => {
+      this.lastMediaAdvancePerfMs = 0;
+      this.lastMetadata = null;
+      if (window.metadataRingBuffer && window.metadataRingBuffer[this.cameraId]) {
+        window.metadataRingBuffer[this.cameraId].length = 0;
       }
+      this.clearCanvas(true);
     };
+
+    this._videoLoadedDataHandler = onMediaReady;
+    this._videoCanPlayHandler = onMediaReady;
+    this._videoPlayingHandler = onMediaReady;
+    this._videoPlayHandler = onMediaReady;
+    this._videoEmptiedHandler = onMediaClear;
+    this._videoEndedHandler = onMediaClear;
     this._videoPauseHandler = () => {
-      if (this.lastMetadata && this.showAnnotations) {
-        this.drawFrame(this.lastMetadata);
-      }
+      this.lastMediaAdvancePerfMs = 0;
+      this.clearCanvas(true);
     };
-    
+
     this.video.addEventListener('loadeddata', this._videoLoadedDataHandler);
     this.video.addEventListener('canplay', this._videoCanPlayHandler);
     this.video.addEventListener('playing', this._videoPlayingHandler);
     this.video.addEventListener('play', this._videoPlayHandler);
+    this.video.addEventListener('emptied', this._videoEmptiedHandler);
+    this.video.addEventListener('ended', this._videoEndedHandler);
     this.video.addEventListener('pause', this._videoPauseHandler);
-    
-    startIfReady();
+
+    onMediaReady();
   }
 
   bindVisibilityChange() {
     if (this._visibilityHandler) return;
-    
     this._visibilityHandler = () => {
       if (!document.hidden && !this.isRendering) {
         this.start();
@@ -921,9 +1016,11 @@ class CanvasOverlayRenderer {
   bindMetadataEvents() {
     this.metadataWS.on('metadata', (meta) => {
       if (!meta) return;
-      this.lastMetadata = meta;
       window.latestMetadataByCam = window.latestMetadataByCam || {};
       window.latestMetadataByCam[this.cameraId] = meta;
+
+      if (meta.frame_width > 0) this.sourceWidth = meta.frame_width;
+      if (meta.frame_height > 0) this.sourceHeight = meta.frame_height;
 
       const hasDetections = (meta.persons && meta.persons.length > 0) || (meta.faces && meta.faces.length > 0);
       if (hasDetections) {
@@ -959,6 +1056,10 @@ class CanvasOverlayRenderer {
       const cardEl = document.getElementById(`camCard${camNum}`);
       const cardStatusBadge = cardEl ? cardEl.querySelector('.px-2.py-1.rounded-full') : null;
       if (streamState === 'RECONNECTING') {
+        if (window.metadataRingBuffer && window.metadataRingBuffer[this.cameraId]) {
+          window.metadataRingBuffer[this.cameraId].length = 0;
+        }
+        this.lastMetadata = null;
         if (cardStatusBadge) {
           cardStatusBadge.textContent = 'RECONNECTING';
           cardStatusBadge.className = 'px-2 py-1 rounded-full bg-amber-400 text-black text-[10px] font-mono font-bold animate-pulse';
@@ -977,15 +1078,11 @@ class CanvasOverlayRenderer {
       this.lastStreamState = streamState;
       this.lastStreamEpoch = Math.max(this.lastStreamEpoch || 0, streamEpoch);
 
-      // Auto-start and draw immediately (works offline even when video is paused or empty)
       if (!this.isRendering) {
         this.start();
       }
-      if (this.showAnnotations) {
-        this.drawFrame(meta);
-      }
     });
-    
+
     this.metadataWS.on('connected', () => {
       console.log(`[CANVAS] Metadata WebSocket connected for ${this.cameraId} (${this.canvasId})`);
       const camNum = this.cameraId.includes('2') ? '2' : '1';
@@ -1000,40 +1097,19 @@ class CanvasOverlayRenderer {
         wsStatus.className = 'text-emerald-400';
       }
     });
-    
+
     this.metadataWS.on('disconnected', () => {
       console.log(`[CANVAS] Metadata WebSocket disconnected for ${this.cameraId} (${this.canvasId})`);
     });
   }
 
   async start() {
-    if (!this.lastMetadata && window.latestMetadataByCam && window.latestMetadataByCam[this.cameraId]) {
-      this.lastMetadata = window.latestMetadataByCam[this.cameraId];
-      this.lastDetectionTime = performance.now();
-    }
-
-    if (this.isRendering) {
-      if (this.lastMetadata && this.showAnnotations) {
-        this.drawFrame(this.lastMetadata);
-      }
-      return;
-    }
-    
+    if (this.isRendering) return;
     try {
       await this.metadataWS.connect(this.cameraId);
       this.isRendering = true;
+      this._scheduleVideoFrameTracker();
       this.renderLoop();
-      
-      // Generous watchdog for offline/injected frames (clear if no detections for 15s)
-      this.detectionWatchdogId = setInterval(() => {
-        const now = performance.now();
-        if (this.lastDetectionTime > 0 && (now - this.lastDetectionTime) > 15000) {
-          this.lastMetadata = null;
-          this.lastDetectionTime = 0;
-          this.clearCanvas();
-        }
-      }, 1000);
-      
       console.log(`[CANVAS] Started overlay renderer for ${this.cameraId} on ${this.canvasId}`);
     } catch (error) {
       console.error(`[CANVAS] Failed to start for ${this.cameraId}:`, error);
@@ -1046,15 +1122,17 @@ class CanvasOverlayRenderer {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
-    if (this.detectionWatchdogId) {
-      clearInterval(this.detectionWatchdogId);
-      this.detectionWatchdogId = null;
+    if (this._rvfcHandle !== null && this.video && typeof this.video.cancelVideoFrameCallback === 'function') {
+      try { this.video.cancelVideoFrameCallback(this._rvfcHandle); } catch (e) {}
+      this._rvfcHandle = null;
     }
     if (this.video) {
       this.video.removeEventListener('loadeddata', this._videoLoadedDataHandler);
       this.video.removeEventListener('canplay', this._videoCanPlayHandler);
       this.video.removeEventListener('playing', this._videoPlayingHandler);
       this.video.removeEventListener('play', this._videoPlayHandler);
+      this.video.removeEventListener('emptied', this._videoEmptiedHandler);
+      this.video.removeEventListener('ended', this._videoEndedHandler);
       this.video.removeEventListener('pause', this._videoPauseHandler);
     }
     if (this._visibilityHandler) {
@@ -1064,11 +1142,10 @@ class CanvasOverlayRenderer {
     if (this.metadataWS) {
       this.metadataWS.disconnect();
     }
-    this.clearCanvas();
+    this.clearCanvas(true);
     if (window.overlayRenderers && window.overlayRenderers[this.canvasId] === this) {
       delete window.overlayRenderers[this.canvasId];
     }
-    console.log(`[CANVAS] Overlay renderer destroyed for ${this.cameraId} (${this.canvasId})`);
   }
 
   stop() {
@@ -1082,107 +1159,81 @@ class CanvasOverlayRenderer {
   setShowAnnotations(show) {
     this.showAnnotations = show;
     if (!show) {
-      this.clearCanvas();
-    } else if (this.lastMetadata) {
-      this.drawFrame(this.lastMetadata);
+      this.clearCanvas(false);
     }
   }
 
-  clearCanvas() {
+  clearCanvas(forceBlank = false) {
     if (window.isDrawing || window.isDraggingHandle) return;
-    if (this.canvas) {
-      const ctx = this.canvas.getContext('2d');
-      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      if ((this.canvasId === 'canvas1' || this.canvasId === 'canvas2') && typeof drawSavedCrossingLine === 'function') {
-        drawSavedCrossingLine(this.cameraId);
-      }
+    if (!this.canvas) return;
+    this.syncCanvasDimensions();
+    if (this.canvas.width <= 0 || this.canvas.height <= 0) return;
+    const ctx = this.canvas.getContext('2d');
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    if (!forceBlank && (this.canvasId === 'canvas1' || this.canvasId === 'canvas2') && typeof drawSavedCrossingLine === 'function') {
+      drawSavedCrossingLine(this.cameraId);
     }
   }
 
   syncCanvasDimensions() {
     if (!this.canvas) return;
-    const canvasRect = this.canvas.getBoundingClientRect();
-    const videoRect = this.video ? this.video.getBoundingClientRect() : null;
-    const w = Math.round(canvasRect.width || (videoRect ? videoRect.width : 0));
-    const h = Math.round(canvasRect.height || (videoRect ? videoRect.height : 0));
+    const container = this.canvas.parentElement || this.video || this.canvas;
+    const rect = container.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.round(rect.width * dpr);
+    const h = Math.round(rect.height * dpr);
     if (w > 0 && h > 0 && (this.canvas.width !== w || this.canvas.height !== h)) {
       this.canvas.width = w;
       this.canvas.height = h;
+      this.canvas.style.width = `${rect.width}px`;
+      this.canvas.style.height = `${rect.height}px`;
     }
   }
 
-  getScaleFactors() {
-    if (!this.canvas) return { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 };
-    const canvasRect = this.canvas.getBoundingClientRect();
-    const cW = this.canvas.width || canvasRect.width || 640;
-    const cH = this.canvas.height || canvasRect.height || 360;
-
-    // In offline/mock video mode or matching 16:9 container, map normalized [0..1] onto full canvas
-    if (!this.video || !this.video.videoWidth || !this.video.videoHeight) {
-      return {
-        scaleX: cW / this.sourceWidth,
-        scaleY: cH / this.sourceHeight,
-        offsetX: 0,
-        offsetY: 0
-      };
-    }
-
-    const videoRect = this.video.getBoundingClientRect();
-    const targetW = videoRect.width || cW;
-    const targetH = videoRect.height || cH;
-    const videoAspect = this.sourceWidth / this.sourceHeight;
-    const containerAspect = targetW / targetH;
-    let renderedWidth, renderedHeight, offsetX, offsetY;
-    if (Math.abs(videoAspect - containerAspect) < 0.02) {
-      renderedWidth = targetW;
-      renderedHeight = targetH;
-      offsetX = 0;
-      offsetY = 0;
-    } else if (videoAspect > containerAspect) {
-      renderedHeight = targetH;
-      renderedWidth = targetH * videoAspect;
-      offsetX = (targetW - renderedWidth) / 2;
-      offsetY = 0;
-    } else {
-      renderedWidth = targetW;
-      renderedHeight = targetW / videoAspect;
-      offsetX = 0;
-      offsetY = (targetH - renderedHeight) / 2;
-    }
-    return {
-      scaleX: renderedWidth / this.sourceWidth,
-      scaleY: renderedHeight / this.sourceHeight,
-      offsetX,
-      offsetY
-    };
-  }
-
-  mapCoordinates(x, y) {
-    const { scaleX, scaleY, offsetX, offsetY } = this.getScaleFactors();
-    return {
-      x: x * scaleX + offsetX,
-      y: y * scaleY + offsetY
-    };
-  }
-
-  mapBBox(bbox) {
-    if (!bbox || !Array.isArray(bbox) || bbox.length < 4) return null;
+  mapBBox(bbox, packet = null) {
+    if (!bbox || !Array.isArray(bbox) || bbox.length < 4 || !this.canvas) return null;
     const [c1, c2, c3, c4] = bbox.map(Number);
-    const isNorm = (c1 <= 1.0 && c2 <= 1.0 && c3 <= 1.0 && c4 <= 1.0);
-    const sW = this.sourceWidth;
-    const sH = this.sourceHeight;
-    let xmin = c1, ymin = c2, xmax = c3, ymax = c4;
-    if (isNorm) {
-      xmin *= sW; ymin *= sH; xmax *= sW; ymax *= sH;
-    }
-    const p1 = this.mapCoordinates(xmin, ymin);
-    const p2 = this.mapCoordinates(xmax, ymax);
+    const maxCoord = Math.max(c1, c2, c3, c4);
+    const srcW = (packet && packet.frame_width > 0)
+      ? Number(packet.frame_width)
+      : ((this.video && this.video.videoWidth > 0) ? this.video.videoWidth : (this.sourceWidth || 1920));
+    const srcH = (packet && packet.frame_height > 0)
+      ? Number(packet.frame_height)
+      : ((this.video && this.video.videoHeight > 0) ? this.video.videoHeight : (this.sourceHeight || 1080));
+    const clamp01 = (v) => Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
+    const nx1 = clamp01(maxCoord > 1.5 ? c1 / srcW : c1);
+    const ny1 = clamp01(maxCoord > 1.5 ? c2 / srcH : c2);
+    const nx2 = clamp01(maxCoord > 1.5 ? c3 / srcW : c3);
+    const ny2 = clamp01(maxCoord > 1.5 ? c4 / srcH : c4);
+
+    const vRect = window.getRenderedVideoRect(this.video, this.canvas);
+    const x1 = vRect.offsetX + Math.min(nx1, nx2) * vRect.renderW;
+    const y1 = vRect.offsetY + Math.min(ny1, ny2) * vRect.renderH;
+    const x2 = vRect.offsetX + Math.max(nx1, nx2) * vRect.renderW;
+    const y2 = vRect.offsetY + Math.max(ny1, ny2) * vRect.renderH;
     return {
-      x: Math.min(p1.x, p2.x),
-      y: Math.min(p1.y, p2.y),
-      width: Math.abs(p2.x - p1.x),
-      height: Math.abs(p2.y - p1.y)
+      x: x1,
+      y: y1,
+      width: x2 - x1,
+      height: y2 - y1,
+      dpr: vRect.dpr
     };
+  }
+
+  _computeActiveDelayMs() {
+    if (!this.video) return 120;
+    const player = window.streamPlayers && window.streamPlayers[this.videoId];
+    if (this.video.srcObject && (!player || player.mode === 'whep')) {
+      return (player && Number.isFinite(player.jitterDelayMs)) ? player.jitterDelayMs : 120;
+    }
+    if (this.video.buffered && this.video.buffered.length > 0) {
+      const bufEnd = this.video.buffered.end(this.video.buffered.length - 1);
+      const rawMs = (bufEnd - (this.video.currentTime || 0)) * 1000;
+      if (Number.isFinite(rawMs)) {
+        return Math.max(150, Math.min(2500, rawMs));
+      }
+    }
+    return 250;
   }
 
   renderLoop() {
@@ -1191,20 +1242,50 @@ class CanvasOverlayRenderer {
       this.animationFrameId = requestAnimationFrame(() => this.renderLoop());
       return;
     }
+
     const now = performance.now();
-    let metadata = null;
-    if (this.video && !isNaN(this.video.currentTime) && this.video.currentTime > 0) {
-      metadata = this.metadataWS.getMetadataForTime(this.video.currentTime);
+    if (this.video && Number.isFinite(this.video.currentTime) && this.video.currentTime > 0 && this.video.currentTime !== this.lastMediaTime) {
+      this.lastMediaTime = this.video.currentTime;
+      this.lastMediaAdvancePerfMs = now;
     }
-    if (!metadata) {
-      metadata = this.metadataWS.getLatestMetadata() || this.lastMetadata || (window.latestMetadataByCam && window.latestMetadataByCam[this.cameraId]);
-    }
-    if (metadata && this.showAnnotations) {
-      this.drawFrame(metadata);
-    } else if (!metadata) {
-      if (this.lastRenderTime > 0 && (now - this.lastRenderTime) > 1000) {
-        this.clearCanvas();
+
+    const videoActive = Boolean(
+      this.video &&
+      this.video.readyState >= 2 &&
+      !this.video.paused &&
+      !this.video.ended &&
+      this.video.videoWidth > 0 &&
+      this.video.videoHeight > 0 &&
+      this.lastMediaAdvancePerfMs > 0 &&
+      (now - this.lastMediaAdvancePerfMs) < 450 &&
+      this.lastStreamState !== 'RECONNECTING'
+    );
+
+    if (!videoActive) {
+      if (window.metadataRingBuffer && window.metadataRingBuffer[this.cameraId]) {
+        window.metadataRingBuffer[this.cameraId].length = 0;
       }
+      this.lastMetadata = null;
+      this.clearCanvas(true);
+      this.animationFrameId = requestAnimationFrame(() => this.renderLoop());
+      return;
+    }
+
+    const delayMs = this._computeActiveDelayMs();
+    const metadata = this.metadataWS.getMetadataForDelay(delayMs, 450);
+
+    if (!metadata) {
+      this.lastMetadata = null;
+      this.clearCanvas(false);
+      this.animationFrameId = requestAnimationFrame(() => this.renderLoop());
+      return;
+    }
+
+    this.lastMetadata = metadata;
+    if (this.showAnnotations) {
+      this.drawFrame(metadata);
+    } else {
+      this.clearCanvas(false);
     }
     this.lastRenderTime = now;
     this.animationFrameId = requestAnimationFrame(() => this.renderLoop());
@@ -1222,24 +1303,34 @@ class CanvasOverlayRenderer {
       drawSavedCrossingLine(this.cameraId);
     }
 
+    const activePersons = [];
     if (metadata.persons && Array.isArray(metadata.persons)) {
       for (const person of metadata.persons) {
-        this.drawPersonBox(ctx, person);
+        if (person.state && String(person.state).toLowerCase() !== 'active') continue;
+        activePersons.push(person);
+        this.drawPersonBox(ctx, person, metadata);
       }
     }
 
     if (metadata.faces && Array.isArray(metadata.faces)) {
       for (const face of metadata.faces) {
-        this.drawFaceBox(ctx, face);
+        this.drawFaceBox(ctx, face, metadata);
       }
     }
 
-    if (this.crossingLine && this.crossingLine.coords) {
-      this.drawCrossingLine(ctx, this.crossingLine);
+    if (this.canvasId === 'canvas-cam1' || this.canvasId === 'canvas-cam2') {
+      const cfgLine = this.crossingLine && this.crossingLine.coords
+        ? this.crossingLine
+        : (appState?.geometryConfigs?.[this.cameraId]?.normalized_line
+          ? { coords: appState.geometryConfigs[this.cameraId].normalized_line, status: 'NORMAL' }
+          : null);
+      if (cfgLine && cfgLine.coords) {
+        this.drawCrossingLine(ctx, cfgLine);
+      }
     }
 
     const camNum = String(this.cameraId).toLowerCase().includes('2') ? '2' : '1';
-    const personsLen = (metadata.persons && Array.isArray(metadata.persons)) ? metadata.persons.length : 0;
+    const personsLen = activePersons.length;
     const inCount = (metadata.counts && metadata.counts.in !== undefined) ? metadata.counts.in : 0;
     const outCount = (metadata.counts && metadata.counts.out !== undefined) ? metadata.counts.out : 0;
 
@@ -1259,13 +1350,14 @@ class CanvasOverlayRenderer {
     }
   }
 
-  drawPersonBox(ctx, person) {
-    const box = this.mapBBox(person.bbox);
+  drawPersonBox(ctx, person, packet = null) {
+    const box = this.mapBBox(person.bbox, packet);
     if (!box || box.width <= 0 || box.height <= 0) return;
 
+    const dpr = box.dpr || 1;
     ctx.save();
     ctx.strokeStyle = '#10b981';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 3 * dpr;
     ctx.setLineDash([]);
     ctx.strokeRect(box.x, box.y, box.width, box.height);
 
@@ -1273,18 +1365,19 @@ class CanvasOverlayRenderer {
     const candidateName = person.identity_candidate || person.person_name || person.face_name || person.name || 'Unknown';
     const label = `ID: ${trackId} | ${candidateName}`;
 
-    ctx.font = `600 ${this.fontSize || 13}px ${this.fontFamily || 'JetBrains Mono, monospace'}`;
+    const fontPx = (this.fontSize || 13) * dpr;
+    ctx.font = `600 ${fontPx}px ${this.fontFamily || 'JetBrains Mono, monospace'}`;
     const textMetrics = ctx.measureText(label);
-    const padding = 6;
+    const padding = 6 * dpr;
     const badgeW = textMetrics.width + padding * 2;
-    const badgeH = (this.fontSize || 13) + padding + 3;
-    const badgeX = Math.max(2, Math.min(box.x, this.canvas.width - badgeW - 2));
-    const badgeY = Math.max(2, box.y - badgeH - 2);
+    const badgeH = fontPx + padding + 3 * dpr;
+    const badgeX = Math.max(2 * dpr, Math.min(box.x, this.canvas.width - badgeW - 2 * dpr));
+    const badgeY = Math.max(2 * dpr, box.y - badgeH - 2 * dpr);
 
     ctx.fillStyle = 'rgba(16, 185, 129, 0.94)';
     if (ctx.roundRect) {
       ctx.beginPath();
-      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4 * dpr);
       ctx.fill();
     } else {
       ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
@@ -1297,25 +1390,27 @@ class CanvasOverlayRenderer {
     ctx.restore();
   }
 
-  drawFaceBox(ctx, face) {
-    const box = this.mapBBox(face.bbox);
+  drawFaceBox(ctx, face, packet = null) {
+    const box = this.mapBBox(face.bbox, packet);
     if (!box || box.width <= 0 || box.height <= 0) return;
 
+    const dpr = box.dpr || 1;
     ctx.save();
     const faceName = face.identity_candidate || face.name || 'Unknown';
     const isUnknown = faceName === 'Unknown' || face.confidence < 0.5;
     ctx.strokeStyle = isUnknown ? '#ef4444' : '#10b981';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 * dpr;
     ctx.setLineDash([]);
     ctx.strokeRect(box.x, box.y, box.width, box.height);
 
     const label = `${faceName} ${(face.confidence * 100).toFixed(0)}%`;
-    ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+    const fontPx = (this.fontSize || 13) * dpr;
+    ctx.font = `${fontPx}px ${this.fontFamily}`;
     const textMetrics = ctx.measureText(label);
-    const padding = 5;
+    const padding = 5 * dpr;
     const labelWidth = textMetrics.width + padding * 2;
-    const labelHeight = this.fontSize + padding;
-    const badgeY = Math.max(2, box.y - labelHeight - 2);
+    const labelHeight = fontPx + padding;
+    const badgeY = Math.max(2 * dpr, box.y - labelHeight - 2 * dpr);
 
     ctx.fillStyle = isUnknown ? 'rgba(239, 68, 68, 0.9)' : 'rgba(16, 185, 129, 0.9)';
     ctx.fillRect(box.x, badgeY, labelWidth, labelHeight);
@@ -1329,30 +1424,31 @@ class CanvasOverlayRenderer {
 
   drawCrossingLine(ctx, crossingLine) {
     if (!crossingLine.coords || crossingLine.coords.length !== 2) return;
-
-    const p1 = this.mapCoordinates(crossingLine.coords[0][0] * this.sourceWidth, crossingLine.coords[0][1] * this.sourceHeight);
-    const p2 = this.mapCoordinates(crossingLine.coords[1][0] * this.sourceWidth, crossingLine.coords[1][1] * this.sourceHeight);
+    const vRect = window.getRenderedVideoRect(this.video, this.canvas);
+    const p1 = {
+      x: vRect.offsetX + Number(crossingLine.coords[0][0]) * vRect.renderW,
+      y: vRect.offsetY + Number(crossingLine.coords[0][1]) * vRect.renderH,
+    };
+    const p2 = {
+      x: vRect.offsetX + Number(crossingLine.coords[1][0]) * vRect.renderW,
+      y: vRect.offsetY + Number(crossingLine.coords[1][1]) * vRect.renderH,
+    };
+    const dpr = vRect.dpr || 1;
 
     this.linePulsePhase += 0.15;
-    const pulseAlpha = this.linePulseActive ? (0.5 + 0.5 * Math.sin(this.linePulsePhase)) : 0.35;
+    const pulseAlpha = this.linePulseActive ? (0.5 + 0.5 * Math.sin(this.linePulsePhase)) : 0.75;
 
     ctx.save();
-    ctx.strokeStyle = this.linePulseActive ? this.linePulseColor : this.lineColor;
+    ctx.strokeStyle = this.linePulseActive ? this.linePulseColor : '#10b981';
     ctx.globalAlpha = pulseAlpha;
-    ctx.lineWidth = this.lineWidth;
-    ctx.setLineDash([10, 5]);
+    ctx.lineWidth = 2 * dpr;
+    ctx.setLineDash([6 * dpr, 4 * dpr]);
     ctx.beginPath();
     ctx.moveTo(p1.x, p1.y);
     ctx.lineTo(p2.x, p2.y);
     ctx.stroke();
     ctx.globalAlpha = 1.0;
     ctx.setLineDash([]);
-
-    ctx.fillStyle = this.lineColor;
-    ctx.font = `${this.fontSize}px ${this.fontFamily}`;
-    const midX = (p1.x + p2.x) / 2;
-    const midY = (p1.y + p2.y) / 2 - 10;
-    ctx.fillText(`LINE ${crossingLine.status}`, midX, midY);
     ctx.restore();
   }
 }
@@ -1613,22 +1709,19 @@ window.attendanceWS = attendanceWS;
           </div>
           <div class="grid grid-cols-2 gap-px bg-[#1e1e21]">
             <div class="relative aspect-[16/9] bg-black overflow-hidden group cursor-pointer" onclick="switchPage('live')">
-              <video id="preview1" class="w-full h-full object-cover" autoplay playsinline muted></video>
+              <video id="preview1" class="w-full h-full object-contain" autoplay playsinline muted></video>
               <canvas id="canvas-cam1" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
               <div class="absolute inset-0 p-2 flex flex-col justify-between pointer-events-none z-30">
                 <div class="flex justify-between"><span class="px-2 py-1 rounded-full bg-black/70 backdrop-blur text-[10px] font-mono font-semibold border border-white/10">CAM-01 • LOBBY</span><span id="badgeCam1" class="px-1.5 py-1 rounded bg-white text-black text-[10px] font-mono font-bold">● CONNECTING</span></div>
                 <div class="flex gap-1"><span id="lineStatusCam1" class="px-2 py-1 rounded bg-white text-black text-[10px] font-mono font-semibold">LINE IN — 0 IN / 0 OUT</span></div>
               </div>
-              <!-- line -->
-              <svg class="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="10" y1="78" x2="90" y2="78" stroke="white" stroke-width="0.6" stroke-dasharray="2 1.5"/><text x="12" y="76" fill="white" font-size="3.2" font-family="JetBrains Mono" font-weight="600">LINE IN → OUT</text></svg>
             </div>
             <div class="relative aspect-[16/9] bg-black overflow-hidden group cursor-pointer" onclick="switchPage('live')">
-              <video id="preview2" class="w-full h-full object-cover" autoplay playsinline muted></video>
+              <video id="preview2" class="w-full h-full object-contain" autoplay playsinline muted></video>
               <canvas id="canvas-cam2" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
               <div class="absolute inset-0 p-2 flex flex-col justify-between pointer-events-none z-30">
                 <div class="flex justify-between"><span class="px-2 py-1 rounded-full bg-black/70 backdrop-blur text-[10px] font-mono font-semibold border border-white/10">CAM-02 • GATE B</span><span id="badgeCam2" class="px-1.5 py-1 rounded bg-white text-black text-[10px] font-mono font-bold">● CONNECTING</span></div>
               </div>
-              <svg class="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="8" y1="72" x2="92" y2="72" stroke="white" stroke-width="0.6" stroke-dasharray="2 1.5"/><text x="10" y="70" fill="white" font-size="3.2" font-family="JetBrains Mono" font-weight="600">LINE IN — GATE B</text></svg>
             </div>
           </div>
           <div class="px-4 py-2.5 flex items-center justify-between bg-[#0f0f10] text-[11px] font-mono">
@@ -1701,7 +1794,7 @@ window.attendanceWS = attendanceWS;
             </div>
           </div>
           <div class="relative aspect-[16/9] bg-black overflow-hidden video-grid select-none" id="wrap1">
-            <video id="video1" class="w-full h-full object-cover" autoplay playsinline muted></video>
+            <video id="video1" class="w-full h-full object-contain" autoplay playsinline muted></video>
             <canvas id="canvas1" class="absolute inset-0 w-full h-full cursor-crosshair pointer-events-none z-20"></canvas>
             <!-- bounding boxes html overlay -->
             <div id="bboxLayer1" class="absolute inset-0 pointer-events-none">
@@ -1734,7 +1827,7 @@ window.attendanceWS = attendanceWS;
             </div>
           </div>
           <div class="relative aspect-[16/9] bg-black overflow-hidden video-grid select-none" id="wrap2">
-            <video id="video2" class="w-full h-full object-cover" autoplay playsinline muted></video>
+            <video id="video2" class="w-full h-full object-contain" autoplay playsinline muted></video>
             <canvas id="canvas2" class="absolute inset-0 w-full h-full cursor-crosshair pointer-events-none z-20"></canvas>
             <div class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between px-3 pointer-events-none z-30">
               <span id="aiTrackingText2" class="text-[11px] font-mono text-white/90 flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> AI Tracking: 0 persons • IN: 0 / OUT: 0</span>
@@ -2466,14 +2559,22 @@ function syncCanvasSize(camId) {
   const pairs = is2
     ? [['preview2', 'canvas-cam2'], ['video2', 'canvas2']]
     : [['preview1', 'canvas-cam1'], ['video1', 'canvas1']];
+  const dpr = window.devicePixelRatio || 1;
   pairs.forEach(([vidId, canId]) => {
     const video = document.getElementById(vidId);
     const canvas = document.getElementById(canId);
     if (!video || !canvas) return;
-    const rect = video.getBoundingClientRect();
+    if (typeof window.observeCanvasContainer === 'function') {
+      window.observeCanvasContainer(video, canvas);
+    }
+    const rect = (canvas.parentElement || video).getBoundingClientRect();
     if (rect.width > 0 && rect.height > 0) {
-      canvas.width = Math.round(rect.width);
-      canvas.height = Math.round(rect.height);
+      const targetW = Math.round(rect.width * dpr);
+      const targetH = Math.round(rect.height * dpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
     }
@@ -2547,6 +2648,7 @@ function drawSavedCrossingLine(camId) {
   const isCam2 = idStr.includes('2');
   const normId = isCam2 ? 'cam2' : 'cam1';
   const canvas = document.getElementById(isCam2 ? 'canvas2' : 'canvas1');
+  const videoEl = document.getElementById(isCam2 ? 'video2' : 'video1');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const lines = isCam2 ? lines2 : lines1;
@@ -2561,6 +2663,12 @@ function drawSavedCrossingLine(camId) {
   const cHeight = canvas.height || rect.height || 360;
   if (cWidth <= 0 || cHeight <= 0) return;
 
+  const vRect = typeof window.getRenderedVideoRect === 'function'
+    ? window.getRenderedVideoRect(videoEl, canvas)
+    : { offsetX: 0, offsetY: 0, renderW: cWidth, renderH: cHeight, dpr: 1 };
+  const dpr = vRect.dpr || 1;
+  const clamp01 = (v) => Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
+
   const latestMeta =
     (window.overlayRenderers && window.overlayRenderers[isCam2 ? 'canvas2' : 'canvas1'] && window.overlayRenderers[isCam2 ? 'canvas2' : 'canvas1'].lastMetadata)
     || (window.latestMetadataByCam && window.latestMetadataByCam[normId]);
@@ -2570,24 +2678,25 @@ function drawSavedCrossingLine(camId) {
   lines.forEach((l) => {
     const isActive = (isCam2 ? activeCam === 'cam2' : activeCam === 'cam1');
 
-    // Always multiply normalized coordinates [nx, ny] by active canvas.width and canvas.height
-    let nx1 = l.nx1 !== undefined ? l.nx1 : (l.x1 > 1 ? l.x1 / cWidth : l.x1);
-    let ny1 = l.ny1 !== undefined ? l.ny1 : (l.y1 > 1 ? l.y1 / cHeight : l.y1);
-    let nx2 = l.nx2 !== undefined ? l.nx2 : (l.x2 > 1 ? l.x2 / cWidth : l.x2);
-    let ny2 = l.ny2 !== undefined ? l.ny2 : (l.y2 > 1 ? l.y2 / cHeight : l.y2);
+    // Forward-map normalized [nx, ny] strictly into the rendered video rect
+    const nx1 = clamp01(l.nx1 !== undefined ? Number(l.nx1) : ((l.x1 * dpr - vRect.offsetX) / vRect.renderW));
+    const ny1 = clamp01(l.ny1 !== undefined ? Number(l.ny1) : ((l.y1 * dpr - vRect.offsetY) / vRect.renderH));
+    const nx2 = clamp01(l.nx2 !== undefined ? Number(l.nx2) : ((l.x2 * dpr - vRect.offsetX) / vRect.renderW));
+    const ny2 = clamp01(l.ny2 !== undefined ? Number(l.ny2) : ((l.y2 * dpr - vRect.offsetY) / vRect.renderH));
 
-    const x1 = nx1 * cWidth;
-    const y1 = ny1 * cHeight;
-    const x2 = nx2 * cWidth;
-    const y2 = ny2 * cHeight;
-    l.x1 = x1; l.y1 = y1; l.x2 = x2; l.y2 = y2;
+    const x1 = vRect.offsetX + nx1 * vRect.renderW;
+    const y1 = vRect.offsetY + ny1 * vRect.renderH;
+    const x2 = vRect.offsetX + nx2 * vRect.renderW;
+    const y2 = vRect.offsetY + ny2 * vRect.renderH;
+    // Keep l.x1..l.y2 in CSS pixels relative to canvas.getBoundingClientRect() for mouse hit-testing
+    l.x1 = x1 / dpr; l.y1 = y1 / dpr; l.x2 = x2 / dpr; l.y2 = y2 / dpr;
     l.nx1 = nx1; l.ny1 = ny1; l.nx2 = nx2; l.ny2 = ny2;
 
     ctx.save();
 
     // Drop shadow / contrast edge + vivid emerald vector line
     ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 5 * dpr;
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.moveTo(x1, y1);
@@ -2595,17 +2704,17 @@ function drawSavedCrossingLine(camId) {
     ctx.stroke();
 
     ctx.strokeStyle = isActive ? '#10b981' : 'rgba(52,211,153,0.9)';
-    ctx.lineWidth = 2.6;
+    ctx.lineWidth = 2.6 * dpr;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
 
     // Endpoints
-    const handleRadius = (editMode && isActive) ? 7 : 5;
+    const handleRadius = ((editMode && isActive) ? 7 : 5) * dpr;
     ctx.fillStyle = '#10b981';
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 * dpr;
     ctx.beginPath();
     ctx.arc(x1, y1, handleRadius, 0, Math.PI * 2);
     ctx.fill();
@@ -2620,19 +2729,19 @@ function drawSavedCrossingLine(camId) {
     const mx = (x1 + x2) / 2;
     const my = (y1 + y2) / 2;
     const label = 'LINE IN → OUT';
-    ctx.font = '700 11px JetBrains Mono, monospace';
+    ctx.font = `700 ${11 * dpr}px JetBrains Mono, monospace`;
     const tw = ctx.measureText(label).width;
-    const badgeW = tw + 14;
-    const badgeH = 19;
+    const badgeW = tw + 14 * dpr;
+    const badgeH = 19 * dpr;
 
     ctx.fillStyle = 'rgba(6, 78, 59, 0.92)';
     ctx.strokeStyle = '#34d399';
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.2 * dpr;
     ctx.beginPath();
     if (ctx.roundRect) {
-      ctx.roundRect(mx - badgeW / 2, my - badgeH - 8, badgeW, badgeH, 4);
+      ctx.roundRect(mx - badgeW / 2, my - badgeH - 8 * dpr, badgeW, badgeH, 4 * dpr);
     } else {
-      ctx.rect(mx - badgeW / 2, my - badgeH - 8, badgeW, badgeH);
+      ctx.rect(mx - badgeW / 2, my - badgeH - 8 * dpr, badgeW, badgeH);
     }
     ctx.fill();
     ctx.stroke();
@@ -2640,7 +2749,7 @@ function drawSavedCrossingLine(camId) {
     ctx.fillStyle = '#ecfdf5';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, mx, my - badgeH / 2 - 8);
+    ctx.fillText(label, mx, my - badgeH / 2 - 8 * dpr);
 
     // Directional vector arrows + IN / OUT zone labels perpendicular to line
     const dx = x2 - x1;
@@ -2652,21 +2761,21 @@ function drawSavedCrossingLine(camId) {
       inNx = -inNx;
       inNy = -inNy;
     }
-    const arrowLen = 24;
+    const arrowLen = 24 * dpr;
     const arrowStartX = mx;
-    const arrowStartY = my + 3;
+    const arrowStartY = my + 3 * dpr;
     const arrowEndX = arrowStartX + inNx * arrowLen;
     const arrowEndY = arrowStartY + inNy * arrowLen;
 
     ctx.strokeStyle = '#34d399';
     ctx.fillStyle = '#34d399';
-    ctx.lineWidth = 2.4;
+    ctx.lineWidth = 2.4 * dpr;
     ctx.beginPath();
     ctx.moveTo(arrowStartX, arrowStartY);
     ctx.lineTo(arrowEndX, arrowEndY);
     ctx.stroke();
 
-    const headLen = 7;
+    const headLen = 7 * dpr;
     const arrowAngle = Math.atan2(inNy, inNx);
     ctx.beginPath();
     ctx.moveTo(arrowEndX, arrowEndY);
@@ -2676,41 +2785,41 @@ function drawSavedCrossingLine(camId) {
     ctx.fill();
 
     // OUT / IN zone pills
-    ctx.font = '700 10px JetBrains Mono, monospace';
+    ctx.font = `700 ${10 * dpr}px JetBrains Mono, monospace`;
     ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.fillRect(x1 + 4, y1 - 22, 34, 16);
+    ctx.fillRect(x1 + 4 * dpr, y1 - 22 * dpr, 34 * dpr, 16 * dpr);
     ctx.fillStyle = '#facc15';
-    ctx.fillText('OUT', x1 + 21, y1 - 14);
+    ctx.fillText('OUT', x1 + 21 * dpr, y1 - 14 * dpr);
 
     ctx.fillStyle = 'rgba(6, 78, 59, 0.9)';
-    ctx.fillRect(arrowEndX + 8, arrowEndY - 8, 28, 16);
+    ctx.fillRect(arrowEndX + 8 * dpr, arrowEndY - 8 * dpr, 28 * dpr, 16 * dpr);
     ctx.fillStyle = '#6ee7b7';
-    ctx.fillText('IN', arrowEndX + 22, arrowEndY);
+    ctx.fillText('IN', arrowEndX + 22 * dpr, arrowEndY);
 
     // Top-left live crossing counter badge on canvas
     const hudText = `LINE IN → OUT  |  IN: ${liveIn}  •  OUT: ${liveOut}`;
-    ctx.font = '700 11px JetBrains Mono, monospace';
-    const hudW = ctx.measureText(hudText).width + 16;
+    ctx.font = `700 ${11 * dpr}px JetBrains Mono, monospace`;
+    const hudW = ctx.measureText(hudText).width + 16 * dpr;
     ctx.fillStyle = 'rgba(6, 78, 59, 0.90)';
     ctx.strokeStyle = 'rgba(52, 211, 153, 0.85)';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
     if (ctx.roundRect) {
-      ctx.roundRect(10, 10, hudW, 24, 6);
+      ctx.roundRect(10 * dpr, 10 * dpr, hudW, 24 * dpr, 6 * dpr);
     } else {
-      ctx.rect(10, 10, hudW, 24);
+      ctx.rect(10 * dpr, 10 * dpr, hudW, 24 * dpr);
     }
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = '#d1fae5';
     ctx.textAlign = 'left';
-    ctx.fillText(hudText, 18, 22);
+    ctx.fillText(hudText, 18 * dpr, 22 * dpr);
 
     if (editMode && isActive) {
       ctx.fillStyle = '#00ffff';
       ctx.beginPath();
-      ctx.arc(x1, y1, 2.5, 0, Math.PI * 2);
-      ctx.arc(x2, y2, 2.5, 0, Math.PI * 2);
+      ctx.arc(x1, y1, 2.5 * dpr, 0, Math.PI * 2);
+      ctx.arc(x2, y2, 2.5 * dpr, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
@@ -2719,6 +2828,7 @@ function drawSavedCrossingLine(camId) {
 window.drawSavedCrossingLine = drawSavedCrossingLine;
 
 function drawAll() {
+  const now = performance.now();
   ['cam1', 'cam2'].forEach(cid => {
     const canvasId = cid === 'cam1' ? 'canvas1' : 'canvas2';
     const c = document.getElementById(canvasId);
@@ -2729,7 +2839,10 @@ function drawAll() {
     ctx.clearRect(0, 0, w, h);
     drawSavedCrossingLine(cid);
     const renderer = window.overlayRenderers && window.overlayRenderers[canvasId];
-    if (renderer && renderer.lastMetadata && renderer.showAnnotations) {
+    const hasFreshVideo = renderer && renderer.video && renderer.video.readyState >= 2 &&
+      renderer.video.videoWidth > 0 && (now - (renderer.lastMediaAdvancePerfMs || 0)) < 450 &&
+      renderer.lastStreamState !== 'RECONNECTING';
+    if (renderer && hasFreshVideo && renderer.lastMetadata && renderer.showAnnotations) {
       renderer.drawFrame(renderer.lastMetadata);
     }
   });
@@ -2794,6 +2907,10 @@ window.clearLines = function() {
     const lines = is1 ? lines1 : lines2;
     lines.length = 0;
     lines.push({
+      nx1: 0.15,
+      ny1: 0.75,
+      nx2: 0.85,
+      ny2: 0.75,
       x1: (r.width || 640) * 0.15,
       y1: (r.height || 360) * 0.75,
       x2: (r.width || 640) * 0.85,
@@ -2805,22 +2922,47 @@ window.clearLines = function() {
   showToast('Đã reset line về vị trí chuẩn', 'info');
 };
 
+function _inverseMapLinePoint(cssX, cssY, videoEl, canvasEl) {
+  const vRect = typeof window.getRenderedVideoRect === 'function'
+    ? window.getRenderedVideoRect(videoEl, canvasEl)
+    : { offsetX: 0, offsetY: 0, renderW: canvasEl.width || 640, renderH: canvasEl.height || 360, dpr: 1 };
+  const clamp01 = (v) => Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
+  const mx = cssX * vRect.dpr;
+  const my = cssY * vRect.dpr;
+  const nx = clamp01((mx - vRect.offsetX) / vRect.renderW);
+  const ny = clamp01((my - vRect.offsetY) / vRect.renderH);
+  return {
+    nx,
+    ny,
+    cssX: (vRect.offsetX + nx * vRect.renderW) / vRect.dpr,
+    cssY: (vRect.offsetY + ny * vRect.renderH) / vRect.dpr,
+  };
+}
+
 function updateGeometryDisplay(isSaved = false) {
   const pre = document.querySelector('#page-live pre');
   if (!pre) return;
   const lines = activeCam === 'cam1' ? lines1 : lines2;
   const canvas = document.getElementById(activeCam === 'cam1' ? 'canvas1' : 'canvas2');
+  const videoEl = document.getElementById(activeCam === 'cam1' ? 'video1' : 'video2');
   if (lines.length > 0 && canvas) {
-    const rect = canvas.getBoundingClientRect();
     const l = lines[lines.length - 1];
-    const nx1 = Number((l.x1 / rect.width).toFixed(3));
-    const ny1 = Number((l.y1 / rect.height).toFixed(3));
-    const nx2 = Number((l.x2 / rect.width).toFixed(3));
-    const ny2 = Number((l.y2 / rect.height).toFixed(3));
-    const px1 = Math.round(nx1 * 3840);
-    const py1 = Math.round(ny1 * 2160);
-    const px2 = Math.round(nx2 * 3840);
-    const py2 = Math.round(ny2 * 2160);
+    const p1 = (l.nx1 !== undefined && l.ny1 !== undefined)
+      ? { nx: Number(l.nx1), ny: Number(l.ny1) }
+      : _inverseMapLinePoint(l.x1, l.y1, videoEl, canvas);
+    const p2 = (l.nx2 !== undefined && l.ny2 !== undefined)
+      ? { nx: Number(l.nx2), ny: Number(l.ny2) }
+      : _inverseMapLinePoint(l.x2, l.y2, videoEl, canvas);
+    const nx1 = Number(p1.nx.toFixed(4));
+    const ny1 = Number(p1.ny.toFixed(4));
+    const nx2 = Number(p2.nx.toFixed(4));
+    const ny2 = Number(p2.ny.toFixed(4));
+    const srcW = (videoEl && videoEl.videoWidth > 0) ? videoEl.videoWidth : 1920;
+    const srcH = (videoEl && videoEl.videoHeight > 0) ? videoEl.videoHeight : 1080;
+    const px1 = Math.round(nx1 * srcW);
+    const py1 = Math.round(ny1 * srcH);
+    const px2 = Math.round(nx2 * srcW);
+    const py2 = Math.round(ny2 * srcH);
     pre.textContent = JSON.stringify({
       camera_id: activeCam,
       normalized_line: [[nx1, ny1], [nx2, ny2]],
@@ -2847,15 +2989,19 @@ window.saveLines = async function() {
     for (const cid of ['cam1', 'cam2']) {
       const lines = cid === 'cam1' ? lines1 : lines2;
       const canvas = document.getElementById(cid === 'cam1' ? 'canvas1' : 'canvas2');
+      const videoEl = document.getElementById(cid === 'cam1' ? 'video1' : 'video2');
       if (lines.length > 0 && canvas) {
-        const rect = canvas.getBoundingClientRect();
         const l = lines[lines.length - 1];
-        const w = rect.width || canvas.width || 640;
-        const h = rect.height || canvas.height || 360;
-        const nx1 = Number((l.x1 / w).toFixed(4));
-        const ny1 = Number((l.y1 / h).toFixed(4));
-        const nx2 = Number((l.x2 / w).toFixed(4));
-        const ny2 = Number((l.y2 / h).toFixed(4));
+        const p1 = (l.nx1 !== undefined && l.ny1 !== undefined)
+          ? { nx: Number(l.nx1), ny: Number(l.ny1) }
+          : _inverseMapLinePoint(l.x1, l.y1, videoEl, canvas);
+        const p2 = (l.nx2 !== undefined && l.ny2 !== undefined)
+          ? { nx: Number(l.nx2), ny: Number(l.ny2) }
+          : _inverseMapLinePoint(l.x2, l.y2, videoEl, canvas);
+        const nx1 = Number(p1.nx.toFixed(4));
+        const ny1 = Number(p1.ny.toFixed(4));
+        const nx2 = Number(p2.nx.toFixed(4));
+        const ny2 = Number(p2.ny.toFixed(4));
         const payload = {
           camera_id: cid,
           line: [[nx1, ny1], [nx2, ny2]],
@@ -2890,6 +3036,7 @@ window.saveLines = async function() {
 
 function setupCanvas(id, linesRef) {
   const c = document.getElementById(id);
+  const videoEl = document.getElementById(id === 'canvas1' ? 'video1' : 'video2');
   if (!c) return;
   c.style.pointerEvents = 'auto';
 
@@ -2951,30 +3098,31 @@ function setupCanvas(id, linesRef) {
     const p = getCanvasPos(e, c);
 
     if (isDraggingHandle && dragTarget) {
-      const rect = c.getBoundingClientRect();
-      const cW = c.width || rect.width || 640;
-      const cH = c.height || rect.height || 360;
       if (dragTarget.handle === 'p1') {
-        dragTarget.line.x1 = p.x;
-        dragTarget.line.y1 = p.y;
-        dragTarget.line.nx1 = p.x / cW;
-        dragTarget.line.ny1 = p.y / cH;
+        const mapped = _inverseMapLinePoint(p.x, p.y, videoEl, c);
+        dragTarget.line.x1 = mapped.cssX;
+        dragTarget.line.y1 = mapped.cssY;
+        dragTarget.line.nx1 = mapped.nx;
+        dragTarget.line.ny1 = mapped.ny;
       } else if (dragTarget.handle === 'p2') {
-        dragTarget.line.x2 = p.x;
-        dragTarget.line.y2 = p.y;
-        dragTarget.line.nx2 = p.x / cW;
-        dragTarget.line.ny2 = p.y / cH;
+        const mapped = _inverseMapLinePoint(p.x, p.y, videoEl, c);
+        dragTarget.line.x2 = mapped.cssX;
+        dragTarget.line.y2 = mapped.cssY;
+        dragTarget.line.nx2 = mapped.nx;
+        dragTarget.line.ny2 = mapped.ny;
       } else if (dragTarget.handle === 'body') {
         const dx = p.x - dragTarget.startX;
         const dy = p.y - dragTarget.startY;
-        dragTarget.line.x1 = dragTarget.origX1 + dx;
-        dragTarget.line.y1 = dragTarget.origY1 + dy;
-        dragTarget.line.x2 = dragTarget.origX2 + dx;
-        dragTarget.line.y2 = dragTarget.origY2 + dy;
-        dragTarget.line.nx1 = dragTarget.line.x1 / cW;
-        dragTarget.line.ny1 = dragTarget.line.y1 / cH;
-        dragTarget.line.nx2 = dragTarget.line.x2 / cW;
-        dragTarget.line.ny2 = dragTarget.line.y2 / cH;
+        const m1 = _inverseMapLinePoint(dragTarget.origX1 + dx, dragTarget.origY1 + dy, videoEl, c);
+        const m2 = _inverseMapLinePoint(dragTarget.origX2 + dx, dragTarget.origY2 + dy, videoEl, c);
+        dragTarget.line.x1 = m1.cssX;
+        dragTarget.line.y1 = m1.cssY;
+        dragTarget.line.x2 = m2.cssX;
+        dragTarget.line.y2 = m2.cssY;
+        dragTarget.line.nx1 = m1.nx;
+        dragTarget.line.ny1 = m1.ny;
+        dragTarget.line.nx2 = m2.nx;
+        dragTarget.line.ny2 = m2.ny;
       }
       drawAll();
       updateGeometryDisplay(false);
@@ -2995,13 +3143,14 @@ function setupCanvas(id, linesRef) {
     if (isDrawing) {
       drawAll();
       const ctx = c.getContext('2d');
+      const dpr = (c.width && c.getBoundingClientRect().width) ? (c.width / c.getBoundingClientRect().width) : 1;
       ctx.save();
       ctx.strokeStyle = '#00ffff';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 2 * dpr;
+      ctx.setLineDash([5 * dpr, 4 * dpr]);
       ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(p.x, p.y);
+      ctx.moveTo(start.x * dpr, start.y * dpr);
+      ctx.lineTo(p.x * dpr, p.y * dpr);
       ctx.stroke();
       ctx.restore();
     }
@@ -3024,15 +3173,14 @@ function setupCanvas(id, linesRef) {
       if (hint2) hint2.classList.add('hidden');
 
       const p = getCanvasPos(e, c);
-      const rect = c.getBoundingClientRect();
-      const cW = c.width || rect.width || 640;
-      const cH = c.height || rect.height || 360;
       const dx = Math.hypot(p.x - start.x, p.y - start.y);
       if (dx >= 15) {
+        const m1 = _inverseMapLinePoint(start.x, start.y, videoEl, c);
+        const m2 = _inverseMapLinePoint(p.x, p.y, videoEl, c);
         linesRef.length = 0;
         linesRef.push({
-          x1: start.x, y1: start.y, x2: p.x, y2: p.y,
-          nx1: start.x / cW, ny1: start.y / cH, nx2: p.x / cW, ny2: p.y / cH
+          x1: m1.cssX, y1: m1.cssY, x2: m2.cssX, y2: m2.cssY,
+          nx1: m1.nx, ny1: m1.ny, nx2: m2.nx, ny2: m2.ny
         });
         drawAll();
         updateGeometryDisplay(false);
@@ -3112,9 +3260,11 @@ function applyGeometryToCanvas(cameraId, canvasId, linesArray) {
   const config = appState.geometryConfigs[normId] || appState.geometryConfigs[normId.toUpperCase()];
   if (!config) return;
   const canvas = document.getElementById(canvasId);
+  const videoEl = document.getElementById(canvasId === 'canvas2' ? 'video2' : 'video1');
   const rect = canvas ? canvas.getBoundingClientRect() : { width: 0, height: 0 };
-  const cW = rect.width > 0 ? rect.width : ((canvas && canvas.width) || 640);
-  const cH = rect.height > 0 ? rect.height : ((canvas && canvas.height) || 360);
+  const vRect = (canvas && typeof window.getRenderedVideoRect === 'function')
+    ? window.getRenderedVideoRect(videoEl, canvas)
+    : { offsetX: 0, offsetY: 0, renderW: rect.width || 640, renderH: rect.height || 360, dpr: 1 };
 
   linesArray.length = 0;
   if (config.normalized_line && config.normalized_line.length === 2) {
@@ -3124,27 +3274,27 @@ function applyGeometryToCanvas(cameraId, canvasId, linesArray) {
     const ny2 = Number(config.normalized_line[1][1]);
     linesArray.push({
       nx1, ny1, nx2, ny2,
-      x1: nx1 * cW,
-      y1: ny1 * cH,
-      x2: nx2 * cW,
-      y2: ny2 * cH
+      x1: (vRect.offsetX + nx1 * vRect.renderW) / vRect.dpr,
+      y1: (vRect.offsetY + ny1 * vRect.renderH) / vRect.dpr,
+      x2: (vRect.offsetX + nx2 * vRect.renderW) / vRect.dpr,
+      y2: (vRect.offsetY + ny2 * vRect.renderH) / vRect.dpr
     });
   } else if (config.line && config.line.length === 2) {
     const p1 = config.line[0].map(Number);
     const p2 = config.line[1].map(Number);
     const isNorm = Math.max(p1[0], p1[1], p2[0], p2[1]) <= 1.01;
-    const srcW = Number(config.frame_width || (appState.cameras[normId] && appState.cameras[normId].width) || 3840);
-    const srcH = Number(config.frame_height || (appState.cameras[normId] && appState.cameras[normId].height) || 2160);
+    const srcW = Number(config.frame_width || (videoEl && videoEl.videoWidth > 0 ? videoEl.videoWidth : 1920));
+    const srcH = Number(config.frame_height || (videoEl && videoEl.videoHeight > 0 ? videoEl.videoHeight : 1080));
     const nx1 = isNorm ? p1[0] : p1[0] / srcW;
     const ny1 = isNorm ? p1[1] : p1[1] / srcH;
     const nx2 = isNorm ? p2[0] : p2[0] / srcW;
     const ny2 = isNorm ? p2[1] : p2[1] / srcH;
     linesArray.push({
       nx1, ny1, nx2, ny2,
-      x1: nx1 * cW,
-      y1: ny1 * cH,
-      x2: nx2 * cW,
-      y2: ny2 * cH
+      x1: (vRect.offsetX + nx1 * vRect.renderW) / vRect.dpr,
+      y1: (vRect.offsetY + ny1 * vRect.renderH) / vRect.dpr,
+      x2: (vRect.offsetX + nx2 * vRect.renderW) / vRect.dpr,
+      y2: (vRect.offsetY + ny2 * vRect.renderH) / vRect.dpr
     });
   }
   if (rect.width > 0 && rect.height > 0) {
@@ -3446,157 +3596,309 @@ function stopCanvasOverlays() {
   console.log('[LIVE] Canvas overlays kept warm');
 }
 
-function setupVideoStreams() {
-  if (new URLSearchParams(window.location.search).get('offline') === '1') return;
-  // For browser playback, we need HLS/WebRTC from MediaMTX
-  // MediaMTX provides HLS at http://localhost:8888/live/cam1/index.m3u8
-  // and WebRTC at webrtc://localhost:8889/cam1
-  
-  const hlsBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? 'http://localhost:8888' 
-    : `http://${window.location.hostname}:8888`;
-  
-  window.hlsPlayers = window.hlsPlayers || {};
-  // Try to use HLS.js for playback
+function _getMediaHostBase(port) {
+  const h = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? window.location.hostname
+    : (window.location.hostname || '127.0.0.1');
+  return `http://${h}:${port}`;
+}
+
+window.destroyStreamPlayer = function(videoId) {
+  window.streamPlayers = window.streamPlayers || {};
+  const st = window.streamPlayers[videoId];
+  if (!st) return;
+  st.destroyed = true;
+  if (st.statsTimer) {
+    clearInterval(st.statsTimer);
+    st.statsTimer = null;
+  }
+  if (st.fallbackTimer) {
+    clearTimeout(st.fallbackTimer);
+    st.fallbackTimer = null;
+  }
+  if (st.pc) {
+    try { st.pc.ontrack = null; st.pc.onconnectionstatechange = null; st.pc.oniceconnectionstatechange = null; st.pc.close(); } catch (e) {}
+    st.pc = null;
+  }
+  if (st.hls) {
+    try { st.hls.destroy(); } catch (e) {}
+    st.hls = null;
+  }
+  const el = document.getElementById(videoId);
+  if (el && el.tagName === 'VIDEO') {
+    try { el.srcObject = null; el.removeAttribute('src'); } catch (e) {}
+  }
+  delete window.streamPlayers[videoId];
+};
+
+window.attachHlsFallback = function(camId, videoEl, hlsUrl) {
+  if (!videoEl || videoEl.tagName !== 'VIDEO') return;
+  const normCam = String(camId || 'cam1').toLowerCase().trim();
+  window.destroyStreamPlayer(videoEl.id);
+
+  const playerState = {
+    camId: normCam,
+    videoId: videoEl.id,
+    mode: 'hls',
+    pc: null,
+    hls: null,
+    jitterDelayMs: 300,
+    statsTimer: null,
+    fallbackTimer: null,
+    destroyed: false,
+  };
+  window.streamPlayers[videoEl.id] = playerState;
+  window.cameraStreamModes = window.cameraStreamModes || {};
+  window.cameraStreamModes[normCam] = 'hls';
+
   if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-    ['cam1', 'cam2'].forEach(cam => {
-      const videoEl = document.getElementById(cam === 'cam1' ? 'video1' : 'video2');
-      if (!videoEl) return;
-      
-      // Ensure autoplay compliance
-      videoEl.muted = true;
-      videoEl.playsInline = true;
-      
-      // If it's still an img tag, replace with video
-      if (videoEl.tagName === 'IMG') {
-        const video = document.createElement('video');
-        video.id = videoEl.id;
-        video.className = videoEl.className;
-        video.controls = false;
-        video.muted = true;
-        video.playsInline = true;
-        video.style.width = '100%';
-        video.style.height = '100%';
-        video.style.objectFit = 'cover';
-        videoEl.parentNode.replaceChild(video, videoEl);
-        // Update reference to the new video element
-        const videoRef = video;
-        
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          manifestLoadingTimeOut: 3500,
-          manifestLoadingMaxRetry: 12,
-          manifestLoadingRetryDelay: 500,
-          levelLoadingTimeOut: 3500,
-          fragLoadingTimeOut: 4000
-        });
-        window.hlsPlayers[cam] = hls;
-        hls.loadSource(`${hlsBase}/live/${cam}/index.m3u8`);
-        hls.attachMedia(videoRef);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log(`[HLS] Stream ready for ${cam}`);
-          videoRef.play().catch(e => console.log('Auto-play blocked:', e));
-        });
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            console.warn(`[HLS] Fatal error on ${cam} (${data.details}), rebinding player...`);
-            if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-              hls.recoverMediaError();
-            } else if (typeof window.rebindLiveHlsPlayer === 'function') {
-              window.rebindLiveHlsPlayer(cam);
-            }
-          }
-        });
-      } else if (videoEl.tagName === 'VIDEO') {
-        // Video element already exists, just attach HLS
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          manifestLoadingTimeOut: 3500,
-          manifestLoadingMaxRetry: 12,
-          manifestLoadingRetryDelay: 500,
-          levelLoadingTimeOut: 3500,
-          fragLoadingTimeOut: 4000
-        });
-        window.hlsPlayers[cam] = hls;
-        hls.loadSource(`${hlsBase}/live/${cam}/index.m3u8`);
-        hls.attachMedia(videoEl);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log(`[HLS] Stream ready for ${cam}`);
-          videoEl.play().catch(e => console.log('Auto-play blocked:', e));
-        });
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            console.warn(`[HLS] Fatal error on ${cam} (${data.details}), rebinding player...`);
-            if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-              hls.recoverMediaError();
-            } else if (typeof window.rebindLiveHlsPlayer === 'function') {
-              window.rebindLiveHlsPlayer(cam);
-            }
-          }
-        });
+    const hls = new Hls({
+      enableWorker: true,
+      lowLatencyMode: true,
+      liveSyncDurationCount: 1,
+      liveMaxLatencyDurationCount: 3,
+      maxBufferLength: 2,
+      maxMaxBufferLength: 4,
+      manifestLoadingTimeOut: 3000,
+      manifestLoadingMaxRetry: 12,
+      manifestLoadingRetryDelay: 400,
+      levelLoadingTimeOut: 3000,
+      fragLoadingTimeOut: 3500
+    });
+    playerState.hls = hls;
+    if (videoEl.id === 'video1' || videoEl.id === 'video2') {
+      window.hlsPlayers = window.hlsPlayers || {};
+      window.hlsPlayers[normCam] = hls;
+    } else {
+      window.hlsPreviewPlayers = window.hlsPreviewPlayers || {};
+      window.hlsPreviewPlayers[normCam] = hls;
+    }
+    hls.loadSource(hlsUrl);
+    hls.attachMedia(videoEl);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      if (playerState.destroyed) return;
+      videoEl.play().catch(() => {});
+    });
+    hls.on(Hls.Events.ERROR, (event, data) => {
+      if (playerState.destroyed) return;
+      if (data.fatal) {
+        console.warn(`[HLS] Fatal error on ${normCam}/${videoEl.id} (${data.details}), rebinding...`);
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError();
+        } else if (typeof window.rebindLiveHlsPlayer === 'function') {
+          window.rebindLiveHlsPlayer(normCam);
+        }
       }
     });
-  } else {
-    // HLS not supported - no fallback to static image, just log
-    console.warn('HLS.js not supported, native HLS required');
+  } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+    videoEl.src = hlsUrl;
+    videoEl.play().catch(() => {});
   }
+};
+
+window.attachWhepPlayer = async function(camId, videoEl, whepUrl, fallbackHlsUrl) {
+  if (!videoEl || videoEl.tagName !== 'VIDEO') return;
+  const normCam = String(camId || 'cam1').toLowerCase().trim();
+  window.destroyStreamPlayer(videoEl.id);
+
+  videoEl.muted = true;
+  videoEl.playsInline = true;
+
+  if (typeof RTCPeerConnection === 'undefined') {
+    window.attachHlsFallback(normCam, videoEl, fallbackHlsUrl);
+    return;
+  }
+
+  const playerState = {
+    camId: normCam,
+    videoId: videoEl.id,
+    mode: 'whep',
+    pc: null,
+    hls: null,
+    jitterDelayMs: 120,
+    statsTimer: null,
+    fallbackTimer: null,
+    destroyed: false,
+    _prevJitterDelaySum: 0,
+    _prevJitterEmitted: 0,
+  };
+  window.streamPlayers[videoEl.id] = playerState;
+  window.cameraStreamModes = window.cameraStreamModes || {};
+  window.cameraStreamModes[normCam] = 'whep';
+
+  let pc;
+  try {
+    pc = new RTCPeerConnection({ iceServers: [] });
+    playerState.pc = pc;
+    pc.addTransceiver('video', { direction: 'recvonly' });
+
+    pc.ontrack = (ev) => {
+      if (playerState.destroyed) return;
+      const stream = (ev.streams && ev.streams[0]) ? ev.streams[0] : new MediaStream([ev.track]);
+      if (videoEl.srcObject !== stream) {
+        videoEl.srcObject = stream;
+      }
+      videoEl.play().catch(() => {});
+    };
+
+    const handleDisconnect = () => {
+      if (playerState.destroyed) return;
+      const st = pc.connectionState || pc.iceConnectionState;
+      if (st === 'failed' || st === 'disconnected' || st === 'closed') {
+        if (window.metadataRingBuffer && window.metadataRingBuffer[normCam]) {
+          window.metadataRingBuffer[normCam].length = 0;
+        }
+        try { videoEl.srcObject = null; } catch (e) {}
+        if (typeof window.rebindLiveHlsPlayer === 'function') {
+          window.rebindLiveHlsPlayer(normCam);
+        }
+      }
+    };
+    pc.onconnectionstatechange = handleDisconnect;
+    pc.oniceconnectionstatechange = handleDisconnect;
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    await new Promise((resolve) => {
+      if (pc.iceGatheringState === 'complete') {
+        resolve();
+        return;
+      }
+      const timer = setTimeout(resolve, 400);
+      const onIce = () => {
+        if (pc.iceGatheringState === 'complete') {
+          clearTimeout(timer);
+          pc.removeEventListener('icegatheringstatechange', onIce);
+          resolve();
+        }
+      };
+      pc.addEventListener('icegatheringstatechange', onIce);
+    });
+
+    if (playerState.destroyed) return;
+
+    const ctrl = new AbortController();
+    const fetchTimer = setTimeout(() => ctrl.abort(), 2500);
+    const resp = await fetch(whepUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/sdp' },
+      body: pc.localDescription ? pc.localDescription.sdp : offer.sdp,
+      signal: ctrl.signal,
+    });
+    clearTimeout(fetchTimer);
+
+    if (!resp.ok) {
+      throw new Error(`WHEP HTTP ${resp.status}`);
+    }
+    const answerSdp = await resp.text();
+    if (playerState.destroyed) return;
+
+    await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+
+    playerState.statsTimer = setInterval(async () => {
+      if (playerState.destroyed || !playerState.pc) return;
+      try {
+        const stats = await playerState.pc.getStats();
+        stats.forEach((report) => {
+          if (report.type === 'inbound-rtp' && (report.kind === 'video' || report.mediaType === 'video')) {
+            const sum = Number(report.jitterBufferDelay || 0);
+            const cnt = Number(report.jitterBufferEmittedCount || 0);
+            const dSum = sum - playerState._prevJitterDelaySum;
+            const dCnt = cnt - playerState._prevJitterEmitted;
+            playerState._prevJitterDelaySum = sum;
+            playerState._prevJitterEmitted = cnt;
+            if (dCnt > 0 && dSum >= 0) {
+              const avgMs = (dSum / dCnt) * 1000 + 60;
+              playerState.jitterDelayMs = Math.max(80, Math.min(450, Math.round(avgMs)));
+            }
+          }
+        });
+      } catch (e) {}
+    }, 500);
+
+    // Fallback to low-latency HLS if WebRTC video never decodes frames (e.g. HEVC unsupported in WebRTC)
+    playerState.fallbackTimer = setTimeout(() => {
+      if (playerState.destroyed || playerState.mode !== 'whep') return;
+      if (videoEl.videoWidth === 0 || videoEl.readyState < 2) {
+        console.warn(`[WHEP] No decoded video frames on ${normCam}/${videoEl.id} after 2500ms, falling back to HLS`);
+        window.attachHlsFallback(normCam, videoEl, fallbackHlsUrl);
+      }
+    }, 2500);
+  } catch (err) {
+    if (!playerState.destroyed) {
+      console.warn(`[WHEP] Fallback to HLS for ${normCam}/${videoEl.id}:`, err.message || err);
+      window.attachHlsFallback(normCam, videoEl, fallbackHlsUrl);
+    }
+  }
+};
+
+function setupVideoStreams() {
+  if (new URLSearchParams(window.location.search).get('offline') === '1') return;
+
+  const whepBase = _getMediaHostBase(8889);
+  const hlsBase = _getMediaHostBase(8888);
+
+  ['cam1', 'cam2'].forEach(cam => {
+    let videoEl = document.getElementById(cam === 'cam1' ? 'video1' : 'video2');
+    if (!videoEl) return;
+
+    if (videoEl.tagName === 'IMG') {
+      const video = document.createElement('video');
+      video.id = videoEl.id;
+      video.className = videoEl.className;
+      video.controls = false;
+      video.muted = true;
+      video.playsInline = true;
+      video.style.width = '100%';
+      video.style.height = '100%';
+      video.style.objectFit = 'contain';
+      videoEl.parentNode.replaceChild(video, videoEl);
+      videoEl = video;
+    }
+
+    const existing = window.streamPlayers && window.streamPlayers[videoEl.id];
+    if (existing && !existing.destroyed && (videoEl.srcObject || videoEl.readyState >= 2)) {
+      return;
+    }
+
+    window.attachWhepPlayer(
+      cam,
+      videoEl,
+      `${whepBase}/live/${cam}/whep`,
+      `${hlsBase}/live/${cam}/index.m3u8`
+    );
+  });
 }
 
 window._hlsRebinding = window._hlsRebinding || {};
 window.rebindLiveHlsPlayer = function(cam) {
-  if (window._hlsRebinding[cam]) return;
-  if (typeof Hls === 'undefined' || !Hls.isSupported()) return;
-  window._hlsRebinding[cam] = true;
-  const hlsBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8888'
-    : `http://${window.location.hostname}:8888`;
-  const srcUrl = `${hlsBase}/live/${cam}/index.m3u8`;
+  const normCam = String(cam || 'cam1').toLowerCase().trim();
+  if (window._hlsRebinding[normCam]) return;
+  window._hlsRebinding[normCam] = true;
+
+  if (window.metadataRingBuffer && window.metadataRingBuffer[normCam]) {
+    window.metadataRingBuffer[normCam].length = 0;
+  }
+
+  const whepBase = _getMediaHostBase(8889);
+  const hlsBase = _getMediaHostBase(8888);
+  const whepUrl = `${whepBase}/live/${normCam}/whep`;
+  const hlsUrl = `${hlsBase}/live/${normCam}/index.m3u8`;
+
   setTimeout(() => {
     try {
-      const videoEl = document.getElementById(cam === 'cam1' ? 'video1' : 'video2');
-      if (!videoEl || videoEl.tagName !== 'VIDEO') {
-        window._hlsRebinding[cam] = false;
-        return;
-      }
-      if (window.hlsPlayers && window.hlsPlayers[cam]) {
-        try { window.hlsPlayers[cam].destroy(); } catch (e) {}
-        delete window.hlsPlayers[cam];
-      }
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        manifestLoadingTimeOut: 3500,
-        manifestLoadingMaxRetry: 15,
-        manifestLoadingRetryDelay: 350,
-        levelLoadingTimeOut: 3500,
-        fragLoadingTimeOut: 4000
-      });
-      window.hlsPlayers = window.hlsPlayers || {};
-      window.hlsPlayers[cam] = hls;
-      hls.loadSource(srcUrl);
-      hls.attachMedia(videoEl);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        videoEl.currentTime = 0;
-        videoEl.play().catch(() => {});
-        window._hlsRebinding[cam] = false;
-      });
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) {
-          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-            hls.recoverMediaError();
-          } else {
-            window._hlsRebinding[cam] = false;
-            setTimeout(() => window.rebindLiveHlsPlayer(cam), 600);
-          }
+      const ids = normCam.includes('2') ? ['video2', 'preview2'] : ['video1', 'preview1'];
+      ids.forEach((vidId) => {
+        const videoEl = document.getElementById(vidId);
+        if (videoEl && videoEl.tagName === 'VIDEO') {
+          window.attachWhepPlayer(normCam, videoEl, whepUrl, hlsUrl);
         }
       });
-      setTimeout(() => { window._hlsRebinding[cam] = false; }, 3500);
-    } catch (e) {
-      window._hlsRebinding[cam] = false;
+    } finally {
+      setTimeout(() => { window._hlsRebinding[normCam] = false; }, 900);
     }
-  }, 750);
+  }, 200);
 };
 
 function fallbackToStaticImage(cam) {
@@ -5951,29 +6253,23 @@ function initClock() {
   setInterval(updateClock, 1000);
 }
 
-// Initialize HLS players for dashboard preview
+// Initialize WebRTC (WHEP) + HLS fallback players for dashboard preview
 function initDashboardHlsPlayers() {
-  const hlsBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? 'http://localhost:8888' 
-    : `http://${window.location.hostname}:8888`;
-  
+  const whepBase = _getMediaHostBase(8889);
+  const hlsBase = _getMediaHostBase(8888);
+
   ['cam1', 'cam2'].forEach(cam => {
     const videoEl = document.getElementById(cam === 'cam1' ? 'preview1' : 'preview2');
     if (!videoEl || videoEl.tagName !== 'VIDEO') return;
-    
-    // Ensure autoplay compliance
+
     videoEl.muted = true;
     videoEl.playsInline = true;
-    
-    // Initialize canvas overlay renderer for dashboard preview
+
     const canvasId = cam === 'cam1' ? 'canvas-cam1' : 'canvas-cam2';
     const canvasRenderer = new CanvasOverlayRenderer(canvasId, videoEl.id, cam.toLowerCase());
     canvasRenderer.start();
-    
-    // Store renderer reference to prevent garbage collection
     window[`canvasRenderer_preview_${cam}`] = canvasRenderer;
-    
-    // Update connection status when metadata WS connects
+
     canvasRenderer.metadataWS.on('connected', () => {
       const badge = document.getElementById(`badgeCam${cam === 'cam1' ? '1' : '2'}`);
       if (badge) {
@@ -5986,7 +6282,7 @@ function initDashboardHlsPlayers() {
         wsStatus.className = 'text-emerald-400';
       }
     });
-    
+
     canvasRenderer.metadataWS.on('disconnected', () => {
       const badge = document.getElementById(`badgeCam${cam === 'cam1' ? '1' : '2'}`);
       if (badge) {
@@ -6003,47 +6299,12 @@ function initDashboardHlsPlayers() {
     const isOfflineMode = new URLSearchParams(window.location.search).get('offline') === '1';
     if (isOfflineMode) return;
 
-    if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-      window.hlsPreviewPlayers = window.hlsPreviewPlayers || {};
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        manifestLoadingTimeOut: 3500,
-        manifestLoadingMaxRetry: 12,
-        manifestLoadingRetryDelay: 500,
-        levelLoadingTimeOut: 3500,
-        fragLoadingTimeOut: 4000
-      });
-      hls.loadSource(`${hlsBase}/live/${cam}/index.m3u8`);
-      hls.attachMedia(videoEl);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        videoEl.play().catch(e => console.log('Auto-play blocked:', e));
-      });
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) {
-          console.warn(`[HLS] Fatal error on ${cam} (${data.details}), retrying with backoff...`);
-          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-            hls.recoverMediaError();
-          } else {
-            setTimeout(() => {
-              hls.loadSource(`${hlsBase}/live/${cam}/index.m3u8`);
-              hls.startLoad(-1);
-            }, 800);
-          }
-        }
-      });
-      window.hlsPreviewPlayers[cam] = hls;
-      window[`hls_preview_${cam}`] = hls;
-    } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-      // Safari native HLS support
-      videoEl.src = `${hlsBase}/live/${cam}/index.m3u8`;
-      videoEl.addEventListener('loadedmetadata', () => {
-        videoEl.play().catch(e => console.log('Auto-play blocked:', e));
-      });
-      videoEl.addEventListener('error', () => console.warn(`HLS native error for ${cam}`));
-    } else {
-      console.warn(`HLS not supported for ${cam}`);
-    }
+    window.attachWhepPlayer(
+      cam,
+      videoEl,
+      `${whepBase}/live/${cam}/whep`,
+      `${hlsBase}/live/${cam}/index.m3u8`
+    );
   });
 }
 

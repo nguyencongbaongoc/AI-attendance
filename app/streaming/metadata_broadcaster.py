@@ -108,6 +108,9 @@ class FrameMetadata:
     codec: Optional[str] = None
     stream_state: Optional[str] = None
     stream_epoch: int = 0
+    frame_width: int = 1920
+    frame_height: int = 1080
+    capture_ts_ms: float = 0.0
 
     def __post_init__(self) -> None:
         self.camera_id = self.camera_id.lower().strip()
@@ -115,6 +118,10 @@ class FrameMetadata:
             self.pts_ns = int(self.timestamp * 1_000_000_000)
         if not self.capture_timestamp:
             self.capture_timestamp = self.timestamp
+        if not self.capture_ts_ms or self.capture_ts_ms <= 0:
+            self.capture_ts_ms = round(time.monotonic() * 1000.0, 2)
+        self.frame_width = max(1, int(self.frame_width or 1920))
+        self.frame_height = max(1, int(self.frame_height or 1080))
         if not self.counts:
             self.counts = {"in": 0, "out": 0}
 
@@ -170,6 +177,9 @@ class FrameMetadata:
             "codec": self.codec,
             "stream_state": self.stream_state or "CONNECTED",
             "stream_epoch": int(self.stream_epoch or 0),
+            "frame_width": int(self.frame_width or 1920),
+            "frame_height": int(self.frame_height or 1080),
+            "capture_ts_ms": float(self.capture_ts_ms or 0.0),
         }
 
 
@@ -702,6 +712,9 @@ class MetadataIngestRequest(BaseModel):
     codec: Optional[str] = None
     stream_state: Optional[str] = None
     stream_epoch: int = 0
+    frame_width: int = Field(default=1920, ge=1)
+    frame_height: int = Field(default=1080, ge=1)
+    capture_ts_ms: Optional[float] = None
 
     @field_validator("camera_id", mode="before")
     @classmethod
@@ -770,6 +783,9 @@ async def ingest_metadata(request: MetadataIngestRequest):
                 identity_source=str(p.get("identity_source", "unknown")),
             )
             for p in request.persons
+            if str(p.get("state", "active")).lower() == "active"
+            and int(p.get("time_since_update", 0) or 0) == 0
+            and int(p.get("missed_frames", 0) or 0) == 0
         ],
         counts={
             "in": int((request.counts or {}).get("in", 0)),
@@ -788,6 +804,9 @@ async def ingest_metadata(request: MetadataIngestRequest):
         codec=request.codec,
         stream_state=request.stream_state,
         stream_epoch=int(request.stream_epoch or 0),
+        frame_width=int(request.frame_width or 1920),
+        frame_height=int(request.frame_height or 1080),
+        capture_ts_ms=float(request.capture_ts_ms) if request.capture_ts_ms is not None else round(time.monotonic() * 1000.0, 2),
     )
     
     await broadcaster.broadcast_metadata(request.camera_id, metadata)

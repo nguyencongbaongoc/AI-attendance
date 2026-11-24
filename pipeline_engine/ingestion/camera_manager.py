@@ -25,7 +25,7 @@ from pipeline_engine.inference.face_detection import SCRFDDetector, SCRFDConfig,
 from pipeline_engine.inference.face_recognition import ArcFaceRecognizer, ArcFaceConfig, FaceEmbedding, align_face_5pt_rgb
 from pipeline_engine.inference.person_detection import YOLOPersonDetector, YOLOConfig, PersonDetection
 from pipeline_engine.inference.body_reid import ReIDDetector, ReIDConfig
-from pipeline_engine.tracking.tracker import Tracker, TrackingConfig, TrackingResult
+from pipeline_engine.tracking.tracker import Tracker, TrackingConfig, TrackingResult, TrackLifecycleState
 from pipeline_engine.vision.face_quality import QualityAssessor
 from app.runtime.gpu_vram_safety import VRAMMonitor, VRAMBudget, GPUVRAMSafety
 from app.identity.global_identity_service import create_global_identity_service
@@ -728,12 +728,17 @@ class CameraManager:
                             attempt += 1
                             cam_counts = attendance.get_camera_counts(camera_id) if hasattr(attendance, "get_camera_counts") else {"in": 0, "out": 0}
                             now_ts = time.time()
+                            exp_w = max(1, int(camera["config"].get("expected", {}).get("width", 1920)))
+                            exp_h = max(1, int(camera["config"].get("expected", {}).get("height", 1080)))
                             self._dispatch_metadata({
                                 "camera_id": camera_id.lower().strip(),
                                 "frame_sequence": int(frame_counter),
                                 "timestamp": now_ts,
                                 "pts_ns": int(now_ts * 1_000_000_000),
                                 "capture_timestamp": now_ts,
+                                "capture_ts_ms": round(time.monotonic() * 1000.0, 2),
+                                "frame_width": exp_w,
+                                "frame_height": exp_h,
                                 "persons": [],
                                 "counts": {"in": int(cam_counts.get("in", 0)), "out": int(cam_counts.get("out", 0))},
                                 "codec": camera["metrics"].codec or "h264",
@@ -768,12 +773,17 @@ class CameraManager:
                                     f"epoch={stream_epoch} | codec: {decoder.detected_codec} | recovery_s={rec_s:.2f}s"
                                 )
                                 rec_ts = time.time()
+                                exp_w = max(1, int(camera["config"].get("expected", {}).get("width", 1920)))
+                                exp_h = max(1, int(camera["config"].get("expected", {}).get("height", 1080)))
                                 self._dispatch_metadata({
                                     "camera_id": camera_id.lower().strip(),
                                     "frame_sequence": int(frame_counter),
                                     "timestamp": rec_ts,
                                     "pts_ns": int(rec_ts * 1_000_000_000),
                                     "capture_timestamp": rec_ts,
+                                    "capture_ts_ms": round(time.monotonic() * 1000.0, 2),
+                                    "frame_width": exp_w,
+                                    "frame_height": exp_h,
                                     "persons": [],
                                     "counts": {"in": int(cam_counts.get("in", 0)), "out": int(cam_counts.get("out", 0))},
                                     "codec": decoder.detected_codec,
@@ -999,12 +1009,18 @@ class CameraManager:
                         out_c = getattr(attendance, "out_count", 0)
 
                     # Get frame dimensions for normalization
-                    frame_w = max(1, camera["config"].get("expected", {}).get("width", 3840))
-                    frame_h = max(1, camera["config"].get("expected", {}).get("height", 2160))
+                    frame_w = max(1, int(getattr(gpu_frame, "width", 0) or camera["config"].get("expected", {}).get("width", 1920)))
+                    frame_h = max(1, int(getattr(gpu_frame, "height", 0) or camera["config"].get("expected", {}).get("height", 1080)))
 
                     persons_data = []
                     enrolled_identities = set(getattr(arcface, "identities", [])) if arcface is not None else set()
                     for track in active_tracks:
+                        if (
+                            getattr(track, "time_since_update", 0) != 0
+                            or getattr(track, "missed_frames", 0) != 0
+                            or getattr(track, "lifecycle_state", None) != TrackLifecycleState.ACTIVE
+                        ):
+                            continue
                         bx1, by1, bx2, by2 = track.bbox_original_frame
                         nx1 = max(0.0, min(1.0, float(bx1) / frame_w))
                         ny1 = max(0.0, min(1.0, float(by1) / frame_h))
@@ -1064,6 +1080,9 @@ class CameraManager:
                         "timestamp": now_ts,
                         "pts_ns": int(now_ts * 1_000_000_000),
                         "capture_timestamp": now_ts,
+                        "capture_ts_ms": round(time.monotonic() * 1000.0, 2),
+                        "frame_width": frame_w,
+                        "frame_height": frame_h,
                         "persons": persons_data,
                         "counts": {"in": int(in_c), "out": int(out_c)},
                         "codec": camera["metrics"].codec or "h264",
